@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   App,
-  Button,
   Card,
   DatePicker,
   Empty,
@@ -12,7 +11,6 @@ import {
   InputNumber,
   List,
   Spin,
-  Statistic,
   Typography,
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
@@ -25,12 +23,16 @@ import {
   type DailyInput,
 } from "@/lib/dailies";
 
+const SAVE_DELAY_MS = 5000;
+
 type FormValues = {
   date: Dayjs;
   weight?: number | null;
   systolic?: number | null;
   diastolic?: number | null;
 };
+
+type SaveStatus = "idle" | "pending" | "saving" | "saved";
 
 function relativeDate(key: string): string {
   const diffDays = dayjs(todayKey()).diff(dayjs(key), "day");
@@ -40,13 +42,41 @@ function relativeDate(key: string): string {
   return dayjs(key).format("MMM D");
 }
 
+function collectInput(values: FormValues): DailyInput {
+  const input: DailyInput = {};
+  if (typeof values.weight === "number" && values.weight > 0) {
+    input.weight = values.weight;
+  }
+  if (
+    typeof values.systolic === "number" &&
+    typeof values.diastolic === "number" &&
+    values.systolic > 0 &&
+    values.diastolic > 0
+  ) {
+    input.systolic = values.systolic;
+    input.diastolic = values.diastolic;
+  }
+  return input;
+}
+
+const STATUS_LABEL: Record<SaveStatus, string> = {
+  idle: "",
+  pending: "Unsaved changes…",
+  saving: "Saving…",
+  saved: "Saved",
+};
+
 export function DailyTracker() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [selectedDate, setSelectedDate] = useState(todayKey());
+
+  const timerRef = useRef<number | null>(null);
+  const latestValues = useRef<FormValues | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -63,85 +93,78 @@ export function DailyTracker() {
     );
   }, [user, message]);
 
-  const latestWeight = entries.find((entry) => entry.weight != null);
-  const latestBp = entries.find(
-    (entry) => entry.systolic != null && entry.diastolic != null,
-  );
+  useEffect(() => {
+    if (status === "pending" || status === "saving") return;
+    const entry = entries.find((item) => item.date === selectedDate);
+    form.setFieldsValue({
+      weight: entry?.weight ?? null,
+      systolic: entry?.systolic ?? null,
+      diastolic: entry?.diastolic ?? null,
+    });
+  }, [entries, selectedDate, status, form]);
 
-  async function onFinish(values: FormValues) {
-    if (!user) return;
+  const flush = useCallback(async () => {
+    timerRef.current = null;
+    const values = latestValues.current;
+    if (!user || !values) return;
 
-    const input: DailyInput = {};
-    if (values.weight != null) input.weight = values.weight;
-
-    const hasSystolic = values.systolic != null;
-    const hasDiastolic = values.diastolic != null;
-    if (hasSystolic || hasDiastolic) {
-      if (!hasSystolic || !hasDiastolic) {
-        message.error("Enter both blood pressure numbers.");
-        return;
-      }
-      input.systolic = values.systolic as number;
-      input.diastolic = values.diastolic as number;
-    }
-
+    const input = collectInput(values);
     if (Object.keys(input).length === 0) {
-      message.error("Enter at least one value.");
+      setStatus("idle");
       return;
     }
 
-    setSaving(true);
+    setStatus("saving");
     try {
       await saveDaily(user.uid, values.date.format("YYYY-MM-DD"), input);
-      form.resetFields(["weight", "systolic", "diastolic"]);
-      message.success("Saved");
+      setStatus("saved");
     } catch {
       message.error("Could not save. Try again.");
-    } finally {
-      setSaving(false);
+      setStatus("idle");
     }
+  }, [user, message]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        void flush();
+      }
+    };
+  }, [flush]);
+
+  function handleValuesChange(
+    changed: Partial<FormValues>,
+    all: FormValues,
+  ) {
+    latestValues.current = all;
+
+    if (changed.date !== undefined) {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+      setStatus("idle");
+      setSelectedDate(all.date.format("YYYY-MM-DD"));
+      return;
+    }
+
+    setStatus("pending");
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      void flush();
+    }, SAVE_DELAY_MS);
   }
 
   return (
     <Flex vertical gap={24}>
-      <Flex gap={12}>
-        <Card size="small" style={{ flex: 1 }}>
-          <Statistic
-            title="Weight"
-            value={latestWeight?.weight ?? "—"}
-            suffix={latestWeight ? "kg" : undefined}
-          />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {latestWeight ? relativeDate(latestWeight.date) : "No data"}
-          </Typography.Text>
-        </Card>
-        <Card size="small" style={{ flex: 1 }}>
-          <Statistic
-            title="Blood pressure"
-            value={
-              latestBp ? `${latestBp.systolic}/${latestBp.diastolic}` : "—"
-            }
-            suffix={latestBp ? "mmHg" : undefined}
-          />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {latestBp ? relativeDate(latestBp.date) : "No data"}
-          </Typography.Text>
-        </Card>
-      </Flex>
-
       <Card title="Log entry">
         <Form
           form={form}
           layout="vertical"
           requiredMark={false}
           initialValues={{ date: dayjs() }}
-          onFinish={onFinish}
+          onValuesChange={handleValuesChange}
         >
-          <Form.Item
-            label="Date"
-            name="date"
-            rules={[{ required: true, message: "Pick a date." }]}
-          >
+          <Form.Item label="Date" name="date">
             <DatePicker
               style={{ width: "100%" }}
               format="YYYY-MM-DD"
@@ -183,9 +206,11 @@ export function DailyTracker() {
             </Flex>
           </Form.Item>
 
-          <Button type="primary" htmlType="submit" loading={saving}>
-            Save
-          </Button>
+          <div style={{ minHeight: 22 }}>
+            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+              {STATUS_LABEL[status]}
+            </Typography.Text>
+          </div>
         </Form>
       </Card>
 
