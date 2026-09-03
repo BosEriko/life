@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, Flex, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { DailyTracker } from "@/components/daily-tracker";
 
@@ -7,23 +8,23 @@ export default function Home() {
   const { user, signOut } = useAuth();
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-4 py-16">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "48px 20px" }}>
+      <Flex
+        align="center"
+        justify="space-between"
+        gap={16}
+        style={{ marginBottom: 32 }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <Typography.Title level={4} style={{ margin: 0 }}>
             life.boseriko.com
-          </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          </Typography.Title>
+          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
             {user?.email}
-          </p>
+          </Typography.Text>
         </div>
-        <button
-          onClick={() => signOut()}
-          className="rounded-full border border-black/[.08] px-4 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-white/[.06]"
-        >
-          Sign out
-        </button>
-      </header>
+        <Button onClick={() => signOut()}>Sign out</Button>
+      </Flex>
 
       <DailyTracker />
     </div>

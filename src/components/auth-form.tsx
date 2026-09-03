@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { FirebaseError } from "firebase/app";
+import { Alert, Button, Card, Flex, Form, Input, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 
 type AuthFormProps = {
   mode: "login" | "register";
+};
+
+type FormValues = {
+  email: string;
+  password: string;
 };
 
 const COPY = {
@@ -50,22 +56,19 @@ function messageForError(error: unknown): string {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const { signIn, register } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const copy = COPY[mode];
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onFinish(values: FormValues) {
     setError(null);
     setSubmitting(true);
     try {
       if (mode === "login") {
-        await signIn(email, password);
+        await signIn(values.email, values.password);
       } else {
-        await register(email, password);
+        await register(values.email, values.password);
       }
     } catch (err) {
       setError(messageForError(err));
@@ -74,64 +77,82 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-6 rounded-2xl border border-black/[.08] p-8 dark:border-white/[.145]"
-      >
-        <h1 className="text-2xl font-semibold tracking-tight">{copy.heading}</h1>
-
-        <div className="space-y-4">
-          <label className="block space-y-1.5 text-sm font-medium">
-            <span>Email</span>
-            <input
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-base outline-none focus:border-black dark:border-white/[.2] dark:focus:border-white"
-            />
-          </label>
-
-          <label className="block space-y-1.5 text-sm font-medium">
-            <span>Password</span>
-            <input
-              type="password"
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
-              required
-              minLength={6}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-base outline-none focus:border-black dark:border-white/[.2] dark:focus:border-white"
-            />
-          </label>
-        </div>
-
-        {error ? (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+    <Flex
+      align="center"
+      justify="center"
+      style={{ minHeight: "100dvh", padding: 24 }}
+    >
+      <div style={{ width: "100%", maxWidth: 380 }}>
+        <Typography.Title
+          level={4}
+          style={{ textAlign: "center", marginBottom: 24 }}
         >
-          {submitting ? "Please wait…" : copy.submit}
-        </button>
+          life.boseriko.com
+        </Typography.Title>
 
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {copy.switchPrompt}{" "}
-          <Link
-            href={copy.switchHref}
-            className="font-medium text-foreground underline"
+        <Card>
+          <Typography.Title level={3} style={{ marginTop: 0 }}>
+            {copy.heading}
+          </Typography.Title>
+
+          <Form
+            layout="vertical"
+            requiredMark={false}
+            onFinish={onFinish}
+            disabled={submitting}
           >
-            {copy.switchLabel}
-          </Link>
-        </p>
-      </form>
-    </div>
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                { required: true, type: "email", message: "Enter a valid email." },
+              ]}
+            >
+              <Input autoComplete="email" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label="Password"
+              name="password"
+              rules={[
+                { required: true, min: 6, message: "At least 6 characters." },
+              ]}
+            >
+              <Input.Password
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
+                size="large"
+              />
+            </Form.Item>
+
+            {error ? (
+              <Alert
+                type="error"
+                message={error}
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            ) : null}
+
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
+              block
+              loading={submitting}
+            >
+              {copy.submit}
+            </Button>
+          </Form>
+
+          <Typography.Paragraph
+            style={{ textAlign: "center", marginTop: 16, marginBottom: 0 }}
+          >
+            {copy.switchPrompt} <Link href={copy.switchHref}>{copy.switchLabel}</Link>
+          </Typography.Paragraph>
+        </Card>
+      </div>
+    </Flex>
   );
 }

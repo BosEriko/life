@@ -1,6 +1,21 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
+import {
+  App,
+  Button,
+  Card,
+  DatePicker,
+  Empty,
+  Flex,
+  Form,
+  InputNumber,
+  List,
+  Spin,
+  Statistic,
+  Typography,
+} from "antd";
+import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import {
   saveDaily,
@@ -10,28 +25,28 @@ import {
   type DailyInput,
 } from "@/lib/dailies";
 
-const inputClass =
-  "w-full rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-base outline-none focus:border-black dark:border-white/[.2] dark:focus:border-white";
+type FormValues = {
+  date: Dayjs;
+  weight?: number | null;
+  systolic?: number | null;
+  diastolic?: number | null;
+};
 
-function formatEntry(entry: DailyEntry): string {
-  const parts: string[] = [];
-  if (entry.weight != null) parts.push(`${entry.weight} kg`);
-  if (entry.systolic != null && entry.diastolic != null) {
-    parts.push(`${entry.systolic}/${entry.diastolic}`);
-  }
-  return parts.join(" · ") || "—";
+function relativeDate(key: string): string {
+  const diffDays = dayjs(todayKey()).diff(dayjs(key), "day");
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) return dayjs(key).format("dddd");
+  return dayjs(key).format("MMM D");
 }
 
 export function DailyTracker() {
   const { user } = useAuth();
+  const { message } = App.useApp();
+  const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [date, setDate] = useState(todayKey());
-  const [weight, setWeight] = useState("");
-  const [systolic, setSystolic] = useState("");
-  const [diastolic, setDiastolic] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -42,163 +57,175 @@ export function DailyTracker() {
         setLoaded(true);
       },
       () => {
-        setError("Could not load your entries.");
+        message.error("Could not load your entries.");
         setLoaded(true);
       },
     );
-  }, [user]);
+  }, [user, message]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const latestWeight = entries.find((entry) => entry.weight != null);
+  const latestBp = entries.find(
+    (entry) => entry.systolic != null && entry.diastolic != null,
+  );
+
+  async function onFinish(values: FormValues) {
     if (!user) return;
 
     const input: DailyInput = {};
+    if (values.weight != null) input.weight = values.weight;
 
-    if (weight.trim() !== "") {
-      const value = Number(weight);
-      if (!Number.isFinite(value) || value <= 0) {
-        setError("Enter a valid weight.");
-        return;
-      }
-      input.weight = value;
-    }
-
-    const hasSystolic = systolic.trim() !== "";
-    const hasDiastolic = diastolic.trim() !== "";
+    const hasSystolic = values.systolic != null;
+    const hasDiastolic = values.diastolic != null;
     if (hasSystolic || hasDiastolic) {
-      const sys = Number(systolic);
-      const dia = Number(diastolic);
-      if (
-        !hasSystolic ||
-        !hasDiastolic ||
-        !Number.isInteger(sys) ||
-        !Number.isInteger(dia) ||
-        sys <= 0 ||
-        dia <= 0
-      ) {
-        setError("Enter both blood pressure numbers as whole values.");
+      if (!hasSystolic || !hasDiastolic) {
+        message.error("Enter both blood pressure numbers.");
         return;
       }
-      input.systolic = sys;
-      input.diastolic = dia;
+      input.systolic = values.systolic as number;
+      input.diastolic = values.diastolic as number;
     }
 
     if (Object.keys(input).length === 0) {
-      setError("Enter at least one value.");
+      message.error("Enter at least one value.");
       return;
     }
 
-    setError(null);
     setSaving(true);
     try {
-      await saveDaily(user.uid, date, input);
-      setWeight("");
-      setSystolic("");
-      setDiastolic("");
+      await saveDaily(user.uid, values.date.format("YYYY-MM-DD"), input);
+      form.resetFields(["weight", "systolic", "diastolic"]);
+      message.success("Saved");
     } catch {
-      setError("Could not save. Try again.");
+      message.error("Could not save. Try again.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="space-y-6">
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-2xl border border-black/[.08] p-6 dark:border-white/[.145]"
-      >
-        <h2 className="text-lg font-semibold tracking-tight">Log daily</h2>
-
-        <label className="block space-y-1.5 text-sm font-medium">
-          <span>Date</span>
-          <input
-            type="date"
-            required
-            max={todayKey()}
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            className={inputClass}
+    <Flex vertical gap={24}>
+      <Flex gap={12}>
+        <Card size="small" style={{ flex: 1 }}>
+          <Statistic
+            title="Weight"
+            value={latestWeight?.weight ?? "—"}
+            suffix={latestWeight ? "kg" : undefined}
           />
-        </label>
-
-        <label className="block space-y-1.5 text-sm font-medium">
-          <span>Weight (kg)</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            min="1"
-            value={weight}
-            onChange={(event) => setWeight(event.target.value)}
-            className={inputClass}
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {latestWeight ? relativeDate(latestWeight.date) : "No data"}
+          </Typography.Text>
+        </Card>
+        <Card size="small" style={{ flex: 1 }}>
+          <Statistic
+            title="Blood pressure"
+            value={
+              latestBp ? `${latestBp.systolic}/${latestBp.diastolic}` : "—"
+            }
+            suffix={latestBp ? "mmHg" : undefined}
           />
-        </label>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {latestBp ? relativeDate(latestBp.date) : "No data"}
+          </Typography.Text>
+        </Card>
+      </Flex>
 
-        <div className="space-y-1.5 text-sm font-medium">
-          <span>Blood pressure (mmHg)</span>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              step="1"
-              min="1"
-              placeholder="Systolic"
-              value={systolic}
-              onChange={(event) => setSystolic(event.target.value)}
-              className={inputClass}
-            />
-            <span className="text-zinc-400">/</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              step="1"
-              min="1"
-              placeholder="Diastolic"
-              value={diastolic}
-              onChange={(event) => setDiastolic(event.target.value)}
-              className={inputClass}
-            />
-          </div>
-        </div>
-
-        {error ? (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+      <Card title="Log entry">
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          initialValues={{ date: dayjs() }}
+          onFinish={onFinish}
         >
-          {saving ? "Saving…" : "Save"}
-        </button>
-      </form>
+          <Form.Item
+            label="Date"
+            name="date"
+            rules={[{ required: true, message: "Pick a date." }]}
+          >
+            <DatePicker
+              style={{ width: "100%" }}
+              format="YYYY-MM-DD"
+              maxDate={dayjs()}
+              allowClear={false}
+            />
+          </Form.Item>
 
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold tracking-tight">Recent</h2>
+          <Form.Item label="Weight" name="weight">
+            <InputNumber
+              style={{ width: "100%" }}
+              min={1}
+              step={0.1}
+              addonAfter="kg"
+              placeholder="72.5"
+            />
+          </Form.Item>
+
+          <Form.Item label="Blood pressure">
+            <Flex gap={8} align="center">
+              <Form.Item name="systolic" noStyle>
+                <InputNumber
+                  style={{ flex: 1 }}
+                  min={1}
+                  precision={0}
+                  placeholder="120"
+                />
+              </Form.Item>
+              <span>/</span>
+              <Form.Item name="diastolic" noStyle>
+                <InputNumber
+                  style={{ flex: 1 }}
+                  min={1}
+                  precision={0}
+                  placeholder="80"
+                />
+              </Form.Item>
+              <Typography.Text type="secondary">mmHg</Typography.Text>
+            </Flex>
+          </Form.Item>
+
+          <Button type="primary" htmlType="submit" loading={saving}>
+            Save
+          </Button>
+        </Form>
+      </Card>
+
+      <div>
+        <Typography.Title level={5}>Recent</Typography.Title>
         {!loaded ? (
-          <p className="text-sm text-zinc-500">Loading…</p>
+          <Flex justify="center" style={{ padding: 24 }}>
+            <Spin />
+          </Flex>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-zinc-500">No entries yet.</p>
+          <Empty description="No entries yet." />
         ) : (
-          <ul className="divide-y divide-black/[.06] rounded-2xl border border-black/[.08] dark:divide-white/[.08] dark:border-white/[.145]">
-            {entries.map((entry) => (
-              <li
-                key={entry.date}
-                className="flex items-center justify-between px-4 py-3 text-sm"
-              >
-                <span className="text-zinc-600 dark:text-zinc-400">
-                  {entry.date}
-                </span>
-                <span className="font-medium tabular-nums">
-                  {formatEntry(entry)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <List
+            bordered
+            dataSource={entries}
+            renderItem={(entry) => (
+              <List.Item>
+                <Typography.Text strong>
+                  {relativeDate(entry.date)}
+                </Typography.Text>
+                <Flex gap={16}>
+                  {entry.weight != null ? (
+                    <Typography.Text type="secondary">
+                      <Typography.Text strong>{entry.weight}</Typography.Text> kg
+                    </Typography.Text>
+                  ) : null}
+                  {entry.systolic != null && entry.diastolic != null ? (
+                    <Typography.Text type="secondary">
+                      <Typography.Text strong>
+                        {entry.systolic}/{entry.diastolic}
+                      </Typography.Text>{" "}
+                      mmHg
+                    </Typography.Text>
+                  ) : null}
+                </Flex>
+              </List.Item>
+            )}
+          />
         )}
       </div>
-    </section>
+    </Flex>
   );
 }

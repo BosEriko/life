@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { Flex, Spin } from "antd";
 import { useAuth } from "@/components/auth-provider";
 
 const PUBLIC_ROUTES = ["/login", "/register"];
@@ -25,9 +26,9 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-zinc-500">
-        Loading…
-      </div>
+      <Flex align="center" justify="center" style={{ minHeight: "100dvh" }}>
+        <Spin size="large" />
+      </Flex>
     );
   }
 
