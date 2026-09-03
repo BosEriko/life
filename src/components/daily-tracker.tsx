@@ -230,6 +230,7 @@ export function DailyTracker() {
               border: `1px solid ${token.colorBorder}`,
               borderRadius: token.borderRadiusLG,
               overflow: "hidden",
+              background: token.colorBgContainer,
             }}
           >
             {entries.map((entry, index) => (

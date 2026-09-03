@@ -5,4 +5,11 @@ body {
 
 body {
   margin: 0;
+  background: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #000000;
+  }
 }

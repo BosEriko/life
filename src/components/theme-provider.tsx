@@ -11,6 +11,21 @@ function prefersDark(): boolean {
   );
 }
 
+function Background({ children }: { children: ReactNode }) {
+  const { token } = theme.useToken();
+  return (
+    <div
+      style={{
+        minHeight: "100dvh",
+        background: token.colorBgLayout,
+        color: token.colorText,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [dark, setDark] = useState(prefersDark);
 
@@ -27,7 +42,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
       }}
     >
-      <App style={{ minHeight: "100dvh" }}>{children}</App>
+      <App>
+        <Background>{children}</Background>
+      </App>
     </ConfigProvider>
   );
 }
