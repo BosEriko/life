@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "rules:build": "sed \"s|__OWNER_EMAIL__|${OWNER_EMAIL:?set OWNER_EMAIL}|\" firestore.rules.template > firestore.rules"
   },
   "dependencies": {
     "firebase": "^12.18.0",

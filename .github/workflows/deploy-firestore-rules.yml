@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - firestore.rules
+      - firestore.rules.template
       - firebase.json
       - .github/workflows/deploy-firestore-rules.yml
 
@@ -20,6 +20,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - run: |
+          test -n "$OWNER_EMAIL" || { echo "OWNER_EMAIL secret is not set"; exit 1; }
+          sed "s|__OWNER_EMAIL__|${OWNER_EMAIL}|" firestore.rules.template > firestore.rules
+        env:
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
 
       - run: npx --yes firebase-tools deploy --only firestore:rules --project life-boseriko-com --non-interactive --token "$FIREBASE_TOKEN"
         env:
