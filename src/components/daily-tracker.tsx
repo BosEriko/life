@@ -9,8 +9,8 @@ import {
   Flex,
   Form,
   InputNumber,
-  List,
   Spin,
+  theme,
   Typography,
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
@@ -69,6 +69,7 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
 export function DailyTracker() {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -178,7 +179,7 @@ export function DailyTracker() {
               style={{ width: "100%" }}
               min={1}
               step={0.1}
-              addonAfter="kg"
+              suffix="kg"
               placeholder="72.5"
             />
           </Form.Item>
@@ -223,11 +224,27 @@ export function DailyTracker() {
         ) : entries.length === 0 ? (
           <Empty description="No entries yet." />
         ) : (
-          <List
-            bordered
-            dataSource={entries}
-            renderItem={(entry) => (
-              <List.Item>
+          <Flex
+            vertical
+            style={{
+              border: `1px solid ${token.colorBorder}`,
+              borderRadius: token.borderRadiusLG,
+              overflow: "hidden",
+            }}
+          >
+            {entries.map((entry, index) => (
+              <Flex
+                key={entry.date}
+                align="center"
+                justify="space-between"
+                style={{
+                  padding: "12px 16px",
+                  borderTop:
+                    index === 0
+                      ? undefined
+                      : `1px solid ${token.colorBorderSecondary}`,
+                }}
+              >
                 <Typography.Text strong>
                   {relativeDate(entry.date)}
                 </Typography.Text>
@@ -246,9 +263,9 @@ export function DailyTracker() {
                     </Typography.Text>
                   ) : null}
                 </Flex>
-              </List.Item>
-            )}
-          />
+              </Flex>
+            ))}
+          </Flex>
         )}
       </div>
     </Flex>
