@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { WeightTracker } from "@/components/weight-tracker";
+import { DailyTracker } from "@/components/daily-tracker";
 
 export default function Home() {
   const { user, signOut } = useAuth();
@@ -25,7 +25,7 @@ export default function Home() {
         </button>
       </header>
 
-      <WeightTracker />
+      <DailyTracker />
     </div>
   );
 }
