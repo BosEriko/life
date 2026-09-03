@@ -23,7 +23,7 @@ import {
   type DailyInput,
 } from "@/lib/dailies";
 
-const SAVE_DELAY_MS = 5000;
+const SAVE_DELAY_MS = 2000;
 
 type FormValues = {
   date: Dayjs;
