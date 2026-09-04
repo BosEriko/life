@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   App,
+  Button,
   Card,
   DatePicker,
   Empty,
@@ -13,6 +14,7 @@ import {
   theme,
   Typography,
 } from "antd";
+import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -134,6 +136,19 @@ export function DailyTracker() {
     };
   }, [flush]);
 
+  function applyDate(next: Dayjs) {
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    setStatus("idle");
+    setSelectedDate(next.format("YYYY-MM-DD"));
+  }
+
+  function stepDay(amount: number) {
+    const next = dayjs(selectedDate).add(amount, "day");
+    form.setFieldValue("date", next);
+    applyDate(next);
+  }
+
   function handleValuesChange(
     changed: Partial<FormValues>,
     all: FormValues,
@@ -141,10 +156,7 @@ export function DailyTracker() {
     latestValues.current = all;
 
     if (changed.date !== undefined) {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-      setStatus("idle");
-      setSelectedDate(all.date.format("YYYY-MM-DD"));
+      applyDate(all.date);
       return;
     }
 
@@ -165,13 +177,27 @@ export function DailyTracker() {
           initialValues={{ date: dayjs() }}
           onValuesChange={handleValuesChange}
         >
-          <Form.Item label="Date" name="date">
-            <DatePicker
-              style={{ width: "100%" }}
-              format="YYYY-MM-DD"
-              maxDate={dayjs()}
-              allowClear={false}
-            />
+          <Form.Item label="Date">
+            <Flex align="center" gap={8}>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={() => stepDay(-1)}
+                aria-label="Previous day"
+              />
+              <Form.Item name="date" noStyle>
+                <DatePicker
+                  style={{ flex: 1 }}
+                  format="YYYY-MM-DD"
+                  allowClear={false}
+                  inputReadOnly
+                />
+              </Form.Item>
+              <Button
+                icon={<RightOutlined />}
+                onClick={() => stepDay(1)}
+                aria-label="Next day"
+              />
+            </Flex>
           </Form.Item>
 
           <Form.Item label="Weight" name="weight">
