@@ -32,6 +32,7 @@ import {
 import {
   EMPTY_IDEALS,
   evaluateIdeal,
+  rangeText,
   watchIdeals,
   type IdealKey,
   type Ideals,
@@ -347,6 +348,29 @@ export function DailyTracker() {
   const systolicPlacement = systolicEval === "low" ? "bottom" : "top";
   const diastolicPlacement = diastolicEval === "low" ? "bottom" : "top";
 
+  const weightEval = evaluateIdeal(
+    typeof watchedWeight === "number" ? watchedWeight : null,
+    ideals.weight,
+  );
+  const waterEval = evaluateIdeal(
+    typeof watchedWater === "number" ? watchedWater : null,
+    ideals.water,
+  );
+  const weightTip =
+    weightEval === "high"
+      ? `Above your ideal (${rangeText(ideals.weight)} kg)`
+      : weightEval === "low"
+        ? `Below your ideal (${rangeText(ideals.weight)} kg)`
+        : undefined;
+  const waterTip =
+    waterEval === "high"
+      ? `Above your ideal (${rangeText(ideals.water)} ml)`
+      : waterEval === "low"
+        ? `Below your ideal (${rangeText(ideals.water)} ml)`
+        : undefined;
+  const weightPlacement = weightEval === "low" ? "bottom" : "top";
+  const waterPlacement = waterEval === "low" ? "bottom" : "top";
+
   function idealStatus(
     value: unknown,
     key: IdealKey,
@@ -403,15 +427,21 @@ export function DailyTracker() {
           </Flex>
         </Form.Item>
 
-        <Form.Item label={<><Icon name="weight" />Weight</>} name="weight">
-          <InputNumber
-            style={{ width: "100%" }}
-            min={1}
-            step={0.1}
-            suffix="kg"
-            placeholder="72.5"
-            status={idealStatus(watchedWeight, "weight")}
-          />
+        <Form.Item label={<><Icon name="weight" />Weight</>}>
+          <Tooltip title={weightTip} placement={weightPlacement}>
+            <div>
+              <Form.Item name="weight" noStyle>
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={1}
+                  step={0.1}
+                  suffix="kg"
+                  placeholder="72.5"
+                  status={idealStatus(watchedWeight, "weight")}
+                />
+              </Form.Item>
+            </div>
+          </Tooltip>
         </Form.Item>
 
         <Form.Item label={<><Icon name="bp" />Blood pressure</>}>
@@ -479,16 +509,20 @@ export function DailyTracker() {
 
         <Form.Item label={<><Icon name="water" />Water</>}>
           <Flex vertical gap={8}>
-            <Form.Item name="water" noStyle>
-              <InputNumber
-                style={{ width: "100%" }}
-                min={0}
-                step={250}
-                suffix="ml"
-                placeholder="2000"
-                status={idealStatus(watchedWater, "water")}
-              />
-            </Form.Item>
+            <Tooltip title={waterTip} placement={waterPlacement}>
+              <div>
+                <Form.Item name="water" noStyle>
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    min={0}
+                    step={250}
+                    suffix="ml"
+                    placeholder="2000"
+                    status={idealStatus(watchedWater, "water")}
+                  />
+                </Form.Item>
+              </div>
+            </Tooltip>
             <Flex gap={8} wrap>
               {WATER_PRESETS.map((amount) => (
                 <Button
