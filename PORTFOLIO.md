@@ -54,7 +54,7 @@ Anyone can create an account; every account only ever sees its own data.
 | --- | --- |
 | **Framework** | Next.js 16 (App Router, Turbopack), React 19 |
 | **Language** | TypeScript (strict) |
-| **UI** | Ant Design 6, a custom sage-green theme, Newsreader + Manrope |
+| **UI** | Ant Design 6, a custom sage-green theme, Manrope |
 | **Charts / PDF** | `@ant-design/charts`, `jsPDF` + `jspdf-autotable` (both lazy-loaded) |
 | **Backend** | Firebase — Auth (email/password + Google) and Cloud Firestore |
 | **Tooling / CI** | ESLint 9, GitHub Actions (auto-deploys the Firestore rules) |
