@@ -10,6 +10,18 @@ body {
     Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* keep wide controls from forcing horizontal page scroll on small screens */
+@media (max-width: 720px) {
+  .ant-picker-range {
+    width: 100%;
+  }
+
+  .ant-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
 h1.ant-typography,
 h2.ant-typography,
 h3.ant-typography,

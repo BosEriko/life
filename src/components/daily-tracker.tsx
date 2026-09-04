@@ -388,7 +388,7 @@ export function DailyTracker() {
         onValuesChange={handleValuesChange}
       >
         <Form.Item label={<><Icon name="date" />Date</>}>
-          <Flex align="center" gap={8}>
+          <Flex align="center" gap={8} wrap>
             <Button
               icon={<LeftOutlined />}
               onClick={() => stepDay(-1)}
@@ -396,7 +396,7 @@ export function DailyTracker() {
             />
             <Form.Item name="date" noStyle>
               <DatePicker
-                style={{ flex: 1 }}
+                style={{ flex: 1, minWidth: 132 }}
                 format="YYYY-MM-DD"
                 allowClear={false}
                 inputReadOnly
@@ -451,7 +451,7 @@ export function DailyTracker() {
           }
         >
           <Flex vertical gap={10}>
-            <Flex gap={8} align="flex-end">
+            <Flex gap={8} align="flex-end" wrap>
               <Tooltip title={systolicTip} placement={systolicPlacement}>
                 <div style={{ flex: 1 }}>
                   <Typography.Text

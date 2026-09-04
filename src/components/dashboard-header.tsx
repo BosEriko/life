@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Flex, theme, Typography } from "antd";
+import { Button, Flex, Grid, theme, Typography } from "antd";
 import { BulbFilled, BulbOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -12,6 +12,8 @@ export function DashboardHeader() {
   const { isDark, setMode } = useThemeMode();
   const { state: saveState } = useSaveStatus();
   const { token } = theme.useToken();
+  const screens = Grid.useBreakpoint();
+  const compact = screens.md === false;
 
   const savePill = {
     idle: { text: "Auto-saving", color: token.colorSuccess },
@@ -22,11 +24,12 @@ export function DashboardHeader() {
 
   return (
     <Flex
-      align="flex-start"
+      vertical={compact}
+      align={compact ? "stretch" : "flex-start"}
       justify="space-between"
-      gap={16}
+      gap={compact ? 14 : 16}
       wrap
-      style={{ marginBottom: 36 }}
+      style={{ marginBottom: compact ? 28 : 36 }}
     >
       <div style={{ minWidth: 0 }}>
         <Typography.Text
@@ -46,7 +49,12 @@ export function DashboardHeader() {
         </Typography.Title>
       </div>
 
-      <Flex align="center" gap={12} wrap justify="flex-end">
+      <Flex
+        align="center"
+        gap={compact ? 10 : 12}
+        wrap
+        justify={compact ? "space-between" : "flex-end"}
+      >
         <Flex
           align="center"
           gap={6}
@@ -69,27 +77,31 @@ export function DashboardHeader() {
           </Typography.Text>
         </Flex>
 
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {dayjs().format("dddd, MMMM D, YYYY")}
-        </Typography.Text>
+        {!compact ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {dayjs().format("dddd, MMMM D, YYYY")}
+          </Typography.Text>
+        ) : null}
 
-        {user?.email ? (
+        {!compact && user?.email ? (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {user.email}
           </Typography.Text>
         ) : null}
 
-        <Button
-          type="text"
-          size="small"
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          icon={isDark ? <BulbFilled /> : <BulbOutlined />}
-          onClick={() => setMode(isDark ? "light" : "dark")}
-        />
+        <Flex align="center" gap={compact ? 10 : 12}>
+          <Button
+            type="text"
+            size="small"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            icon={isDark ? <BulbFilled /> : <BulbOutlined />}
+            onClick={() => setMode(isDark ? "light" : "dark")}
+          />
 
-        <Button size="small" onClick={() => signOut()}>
-          Sign out
-        </Button>
+          <Button size="small" onClick={() => signOut()}>
+            Sign out
+          </Button>
+        </Flex>
       </Flex>
     </Flex>
   );
