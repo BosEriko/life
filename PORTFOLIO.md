@@ -1,129 +1,109 @@
 # Life Tracker
 
-A private, single-user web app for logging daily health and well-being data and
-watching it trend over time. It lives at `life.boseriko.com` and is meant to be
-set as a browser homepage — open a tab, log the day, glance at the graphs.
+**A private health-tracking web app I use as my browser homepage.** Open a tab,
+log the day — weight, blood pressure, water, habits — and watch the trends.
+Designed, built, and maintained solo with Next.js, React, TypeScript, and Firebase.
 
-Everything is one person's data behind their own login; there is no multi-tenant
-layer, no sharing, and no public surface.
+🔗 **Live:** [life.boseriko.com](https://life.boseriko.com) — create an account and
+it's yours; every account only ever sees its own data.
 
----
-
-## What it does
-
-- **Log a day in seconds.** One screen captures weight, blood pressure
-  (systolic / diastolic, with posture and arm), water intake, a free-text note,
-  and four yes/no habits (junk food, junk drink, bath, brush).
-- **No save button.** Edits autosave 2 seconds after you stop typing, with a
-  single status toast that moves through *Unsaved changes → Saving… → Saved*.
-- **Any day, past or future.** `◀ / ▶ / Today` controls plus a date picker; the
-  form always reflects what's already stored for the selected day.
-- **See trends.** A line chart for weight, blood pressure, or water over a
-  chosen window (7D / 30D / 90D / 1Y / All, or a custom date range).
-- **See habits at a glance.** A GitHub-style contribution calendar, one row per
-  habit, ~6 months wide, with a hover tooltip per day.
-- **Rolling averages** for weight, blood pressure, and water over a
-  configurable window.
-- **Personal targets ("ideals").** Set min/max ranges per metric. Averages and
-  the live log-entry inputs turn red with a warning icon when a value falls
-  outside its range; blood-pressure fields also surface short, non-prescriptive
-  guidance on nudging the number up or down.
-- **Reusable water presets.** Name your bottles/glasses and their volume; those
-  names replace the generic `+500 / +1000` quick-add buttons.
-- **Export a PDF report.** A floating action button opens a range picker and
-  generates a formatted report — summary stats plus a full day-by-day table.
+![Life Tracker dashboard](COVER.png)
 
 ---
 
-## Tech stack
+## What this project demonstrates
 
-| Area        | Choice                                                           |
-| ----------- | -------------------------------------------------------------- |
-| Framework   | Next.js 16 (App Router, `src/`, Turbopack), React 19          |
-| Language    | TypeScript (strict)                                            |
-| UI          | Ant Design 6 + a custom sage-green theme (light/dark)         |
-| Icons       | Font Awesome (solid) + Ant Design Icons                        |
-| Charts      | `@ant-design/charts` (line charts)                            |
-| PDF         | `jsPDF` + `jspdf-autotable`                                    |
-| Backend     | Firebase — Email/Password Auth + Cloud Firestore              |
-| Lint        | ESLint 9 / `eslint-config-next`                               |
-| CI          | GitHub Actions (deploys Firestore rules)                      |
-
----
-
-## Architecture
-
-### Auth
-
-- **Email/password + Google.** Dedicated `/login` and `/register` pages; Google
-  sign-in via `signInWithPopup`.
-- **Client-side route guard.** A provider subscribes to
-  `onAuthStateChanged`; a guard component redirects unauthenticated users to
-  `/login` and authenticated users away from the auth pages. This is a UX gate,
-  not the security boundary — that lives in Firestore rules.
-- Firebase is initialised lazily so the SDK never runs during static
-  prerendering.
-
-### Data model
-
-All documents are namespaced under the signed-in user:
-
-| Collection / doc                     | Shape                                                          |
-| ------------------------------------ | ------------------------------------------------------------ |
-| `users/{uid}/dailies/{YYYY-MM-DD}`   | One doc per day. Doc **id is the local date**, so days sort chronologically. Fields: `weight`, `systolic`, `diastolic`, `bpTime`, `bpPosture`, `bpArm`, `water`, `notes`, `junkFood`, `junkDrink`, `bath`, `brushTeeth`, `updatedAt`. |
-| `users/{uid}/ideals/current`         | Single doc. `{ min, max }` target range for `weight`, `systolic`, `diastolic`, `water`. |
-| `users/{uid}/presets/{id}`           | Water presets: `{ name, ml, createdAt }`.                     |
-
-- **Merge writes.** Editing a day patches its existing document, so a morning
-  weigh-in and an afternoon blood-pressure reading land on the same record.
-- **Per-field dirty tracking.** Only the fields actually touched in an editing
-  session are written, so saving weight never overwrites a day's habit flags or
-  notes. `bpTime` is stamped with the local time only when the BP numbers
-  themselves change.
-- **Local time.** The "today" key and all displayed times come from the
-  browser clock, matching how the app is used.
-- Each screen subscribes to Firestore in real time (`onSnapshot`), so the
-  averages, calendar, chart, and recent list update the moment a day is saved.
-
-### Security
-
-- Firestore rules grant a signed-in user read and write access to **their own
-  subtree only** — `match /users/{userId}/{document=**}` with
-  `request.auth != null && request.auth.uid == userId` — and deny everything
-  else (`match /{document=**} { allow read, write: if false; }`).
-- `firestore.rules` is generated from `firestore.rules.template` (a plain copy,
-  no secrets) and deployed via `firebase-tools` (auth token in `FIREBASE_TOKEN`)
-  by a GitHub Action whenever the template changes on `main`.
-
-### Front-end details worth noting
-
-- **Theme.** A single sage-green accent, warm off-white in light mode and a
-  green-tinted charcoal (never pure black) in dark mode. Defaults to light and
-  ignores the OS setting; a header toggle switches modes and the choice is
-  persisted to `localStorage`. Read through `useSyncExternalStore` so SSR and the
-  first client render agree (no hydration mismatch).
-- **Lazy loading.** The chart library and the PDF library are dynamically
-  imported — the chart on mount (`ssr: false`), the PDF code only when the user
-  clicks download — so neither is in the initial bundle.
-- **Debounced autosave** with an unmount flush, a keyed Ant Design `message` for
-  the save lifecycle, and preset quick-add buttons that feed the same debounce.
-- **Contextual validation.** Inputs and average tiles read the "ideals" doc
-  live; out-of-range values get `status="error"` plus a tooltip whose placement
-  flips (above for high, below for low).
-- **Responsive layout.** A three-column CSS grid (`auto-fit`, `minmax`) —
-  log entry / stats + calendar / trends + recent — that collapses to two then
-  one column as width shrinks, with no hard breakpoints.
+- **End-to-end ownership** — product design, UI, data modelling, auth, security
+  rules, and CI, all built and maintained by one person.
+- **Real-time state that stays consistent** — every panel subscribes to Firestore
+  live, and a per-field write-tracking layer means two edits to the same day
+  (a morning weigh-in, an afternoon BP reading) merge instead of overwriting.
+- **Attention to the browser** — SSR-safe theming and breakpoints with no
+  hydration mismatches, heavy libraries code-split out of the initial bundle, and
+  autosave that survives navigation.
+- **Security at the right layer** — per-user Firestore rules are the real
+  boundary (not the client route guard), deployed through CI with no secrets in
+  the repo.
+- **A consistent quality bar** — strict TypeScript, ESLint, and a passing
+  production build on every change.
 
 ---
 
-## Scripts
+## Features
 
-| Command             | Purpose                                             |
-| ------------------- | ------------------------------------------------- |
-| `npm run dev`       | Local dev server                                  |
-| `npm run build`     | Production build                                  |
-| `npm run lint`      | ESLint                                            |
-| `npm run rules:build` | Copy `firestore.rules.template` to `firestore.rules` |
+- **One-screen daily log** — weight, blood pressure (systolic/diastolic + posture
+  + arm + auto-stamped time), water, notes, and habit checkboxes.
+- **No save button** — edits autosave 2 seconds after you stop typing; a header
+  status pill moves through *Auto-saving → Unsaved changes → Saving… → Save failed*.
+- **Any date** — `◀ / ▶ / Today` plus a picker; the form always reflects what's
+  stored for the selected day, past or future.
+- **Trends** — a line chart for weight, blood pressure, or water over
+  7D / 30D / 90D / 1Y / All, or a custom date range.
+- **Averages** — rolling means with change-vs-previous-period, over a window you
+  pick (remembered between visits).
+- **Habits** — a GitHub-style contribution calendar grouped into Hygiene and
+  Junk, with a consistency figure per habit.
+- **Personal targets** — set min/max "ideal" ranges; averages and live inputs
+  flag out-of-range values with a badge, colour, and a short guidance tooltip.
+- **Water presets** — name your bottles and glasses once; they become the
+  quick-add buttons.
+- **PDF export** — a floating button generates a formatted report: summary stats
+  plus a full day-by-day table.
 
-Environment: `NEXT_PUBLIC_FIREBASE_*` values in `.env.local` (client-side
-Firebase config — not secret).
+---
+
+## Built with
+
+| | |
+| --- | --- |
+| **Framework** | Next.js 16 (App Router, Turbopack), React 19 |
+| **Language** | TypeScript (strict) |
+| **UI** | Ant Design 6, a custom sage-green theme, Newsreader + Manrope |
+| **Charts / PDF** | `@ant-design/charts`, `jsPDF` + `jspdf-autotable` (both lazy-loaded) |
+| **Backend** | Firebase — Auth (email/password + Google) and Cloud Firestore |
+| **Tooling / CI** | ESLint 9, GitHub Actions (auto-deploys the Firestore rules) |
+
+---
+
+## Implementation notes
+
+**Conflict-safe writes.** Each day is one Firestore document keyed by the local
+date. Writes are `merge` patches, and the form tracks which fields the user
+actually touched in the current session — only those are sent. So autosaving a
+weight entry never wipes that day's notes or habit flags, and the blood-pressure
+timestamp is stamped only when the BP numbers themselves change.
+
+**Autosave.** `onValuesChange` → debounce (2s) → flush. A pending flush also runs
+on unmount, so navigating away never loses an edit. Save state lives in a small
+React context, which is how the header pill reflects it from outside the form.
+
+**Hydration-safe theming.** Light/dark is read through `useSyncExternalStore` with
+a deterministic server snapshot, so the server and first client render always
+agree — no hydration warning, no theme flash. The mode ignores the OS setting,
+defaults to light, and persists to `localStorage`.
+
+**Bundle size.** The chart library loads on mount (`ssr: false`); the PDF stack
+loads only when the user clicks download. Neither is in the initial JavaScript.
+
+**Security rules without secrets.** `firestore.rules.template` is committed and
+contains no owner identity — access is `request.auth.uid == userId` on
+`/users/{userId}/**`, and everything else is denied. A GitHub Action deploys it
+via `firebase-tools` on every push to `main`.
+
+**Responsive layout.** A CSS `auto-fit` / `minmax` grid collapses its columns
+with no media queries; the one spot that genuinely needs a breakpoint (the
+header) uses `Grid.useBreakpoint()` so the desktop markup stays untouched.
+
+---
+
+## Run it locally
+
+```bash
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build
+npm run lint
+```
+
+`NEXT_PUBLIC_FIREBASE_*` in `.env.local` holds the client Firebase config (public
+by design). `npm run rules:build` compiles `firestore.rules` from the template.
