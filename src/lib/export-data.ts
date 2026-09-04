@@ -1,10 +1,4 @@
-import { createHash } from "node:crypto";
-import { NextResponse } from "next/server";
-import type { Firestore } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase-admin";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const MAX_DAYS = 2000;
 
@@ -19,29 +13,12 @@ const RANGE_DAYS: Record<string, number> = {
   "365": 365,
 };
 
-function extractKey(request: Request): string {
-  const header = request.headers.get("authorization") ?? "";
-  if (header.startsWith("Bearer ")) return header.slice(7).trim();
-  return (request.headers.get("x-api-key") ?? "").trim();
-}
-
-async function resolveUid(
-  db: Firestore,
-  request: Request,
-): Promise<string | null> {
-  const provided = extractKey(request);
-  if (!provided) return null;
-
-  const hash = createHash("sha256").update(provided).digest("hex");
-  const snap = await db
-    .collectionGroup("apiKeys")
-    .where("hash", "==", hash)
-    .limit(1)
-    .get();
-
-  if (snap.empty) return null;
-  return snap.docs[0].ref.parent.parent?.id ?? null;
-}
+export type ExportOptions = {
+  range?: string | null;
+  from?: string | null;
+  to?: string | null;
+  limit?: number | null;
+};
 
 function toIso(value: unknown): string | null {
   if (value && typeof value === "object" && "toDate" in value) {
@@ -54,19 +31,13 @@ function clean<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
-export async function GET(request: Request) {
+export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   const db = getAdminDb();
 
-  const uid = await resolveUid(db, request);
-  if (!uid) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const to = opts.to ?? null;
+  let from = opts.from ?? null;
 
-  const { searchParams } = new URL(request.url);
-  const to = searchParams.get("to");
-  let from = searchParams.get("from");
-
-  const range = (searchParams.get("range") ?? "").toLowerCase();
+  const range = (opts.range ?? "").toLowerCase();
   if (!from && range && range !== "all") {
     const days = RANGE_DAYS[range];
     if (days) {
@@ -76,10 +47,9 @@ export async function GET(request: Request) {
     }
   }
 
-  const limitParam = Number(searchParams.get("limit"));
   const limit =
-    Number.isFinite(limitParam) && limitParam > 0
-      ? Math.min(limitParam, MAX_DAYS)
+    typeof opts.limit === "number" && opts.limit > 0
+      ? Math.min(opts.limit, MAX_DAYS)
       : MAX_DAYS;
 
   const userRef = db.collection("users").doc(uid);
@@ -132,12 +102,12 @@ export async function GET(request: Request) {
     return { name: p.name ?? "", ml: p.ml ?? 0 };
   });
 
-  return NextResponse.json({
+  return {
     generatedAt: new Date().toISOString(),
-    range: { from: from ?? null, to: to ?? null },
+    range: { from, to },
     count: dailies.length,
     dailies,
     ideals,
     presets,
-  });
+  };
 }

@@ -6,6 +6,8 @@ import { CopyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { generateApiKey, watchApiKey, type ApiKeyMeta } from "@/models/api-key";
 
+const KEY_PLACEHOLDER = "<YOUR_API_KEY>";
+
 export function DeveloperModal({
   open,
   onClose,
@@ -52,63 +54,47 @@ export function DeveloperModal({
     }
   }
 
-  const endpoint =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/export`
-      : "/api/export";
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "https://life.boseriko.com";
 
-  const curlExample = `curl -s "${endpoint}?range=30d" \\\n  -H "Authorization: Bearer ${
-    freshKey ?? "<YOUR_API_KEY>"
-  }"`;
+  function mcpUrl(key: string): string {
+    return `${origin}/api/mcp/${key}`;
+  }
+
+  const shownUrl = mcpUrl(freshKey ?? KEY_PLACEHOLDER);
+
+  const testCommand = `curl -s "${shownUrl}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`;
 
   function instructionsFor(key: string): string {
-    return `# Skill: Life Tracker data
+    return `# Skill: Life Tracker (MCP)
 
 ## Description
-Read my personal health tracker (weight, blood pressure, water intake, daily
-habits) through a read-only JSON API and answer from that data.
+My personal health tracker is exposed as an MCP server. Connect to it and read
+my weight, blood pressure, water intake, and daily habits to answer my questions.
 
-## When to use
-Whenever I ask about my weight, blood pressure, hydration, habits, streaks,
-averages, targets, or how any of these have changed over time.
+## MCP server
+URL: ${mcpUrl(key)}
+Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
 
-## Endpoint
-GET ${endpoint}
-Header: Authorization: Bearer ${key}
-
-## Parameters (all optional)
-- range: 7d | 30d | 90d | 1y | all (default all). Keeps the last N days, UTC.
-- from: YYYY-MM-DD, inclusive lower bound. Overrides range.
-- to: YYYY-MM-DD, inclusive upper bound.
-- limit: max number of days, newest first (default and max 2000).
-
-## Response shape
-{
-  "generatedAt": ISO timestamp,
-  "range": { "from": string|null, "to": string|null },
-  "count": number of days,
-  "dailies": [ {
-    "date": "YYYY-MM-DD",
-    "weight": kg, "systolic": mmHg, "diastolic": mmHg,
-    "bpTime": "HH:mm", "bpPosture": "sitting"|"standing", "bpArm": "left"|"right",
-    "water": ml, "notes": string,
-    "junkFood": bool, "junkDrink": bool, "bath": bool, "brushTeeth": bool,
-    "updatedAt": ISO
-  } ],
-  "ideals": { "weight": {min,max}|null, "systolic": ..., "diastolic": ..., "water": ... },
-  "presets": [ { "name": string, "ml": number } ]
-}
-Any daily field may be null. Units: weight kg, blood pressure mmHg, water ml.
-"presets" are my labelled water containers.
+## Tools
+- get_entries({ range?, from?, to?, limit? }) -> daily entries, newest first.
+    range: 7d | 30d | 90d | 1y | all (default all), counted in UTC.
+    from / to: YYYY-MM-DD inclusive; from overrides range.
+    limit: max number of days, 1-2000.
+  Each entry: date, weight (kg), systolic/diastolic (mmHg), bpTime "HH:mm",
+  bpPosture "sitting"|"standing", bpArm "left"|"right", water (ml), notes,
+  junkFood, junkDrink, bath, brushTeeth (booleans), updatedAt. Any field may be null.
+- get_ideals() -> target { min, max } for weight, systolic, diastolic, water
+  (a metric is null when no target is set).
+- get_presets() -> my labelled water containers, each { name, ml }.
+- search(query) / fetch(id) -> the same data as documents
+  (entries-7d ... entries-all, ideals, presets).
 
 ## How to answer
-1. Pick a range that fits the question and call the endpoint.
-2. Compute the answer from the JSON (averages, trends, streaks, counts).
-3. When I ask about targets, compare against "ideals".
-4. State the date range you used.
-
-## Example
-curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${key}"`;
+1. Call get_entries with a range that fits the question.
+2. Compute averages, trends, streaks, and counts from the entries.
+3. Compare against get_ideals when I ask about targets.
+4. State the date range you used.`;
   }
 
   async function copyText(text: string) {
@@ -136,20 +122,20 @@ curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${key}"`;
   }
 
   async function copyWithPlaceholder() {
-    await copyText(instructionsFor("<YOUR_API_KEY>"));
+    await copyText(instructionsFor(KEY_PLACEHOLDER));
     setConfirmOpen(false);
   }
 
   return (
     <Modal
       open={open}
-      title="Developer · REST API"
+      title="Developer · MCP"
       footer={null}
       onCancel={handleClose}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        A read-only JSON endpoint for your entries, ideals, and presets — for
-        pulling your data into ChatGPT or your own scripts.
+        Your entries, targets, and presets as an MCP server — connect it to
+        ChatGPT (or Claude) so it can read your data. Read-only.
       </Typography.Paragraph>
 
       <div style={{ marginBottom: 20 }}>
@@ -184,24 +170,24 @@ curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${key}"`;
         ]}
       >
         <Typography.Paragraph style={{ marginBottom: 0 }}>
-          <strong>Yes</strong> generates a new API key and embeds it in the copied
-          text — this invalidates any key currently in use.{" "}
+          <strong>Yes</strong> generates a new key and embeds it in the copied
+          URL — this invalidates any key currently in use.{" "}
           <strong>No</strong> copies a version with a{" "}
-          <Typography.Text code>&lt;YOUR_API_KEY&gt;</Typography.Text>{" "}
-          placeholder.
+          <Typography.Text code>{KEY_PLACEHOLDER}</Typography.Text> placeholder.
         </Typography.Paragraph>
       </Modal>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        Endpoint
+        MCP server URL
       </Typography.Title>
       <Typography.Paragraph style={{ marginBottom: 4 }}>
-        <Typography.Text code copyable>{`GET ${endpoint}`}</Typography.Text>
+        <Typography.Text code copyable={{ text: shownUrl }}>
+          {shownUrl}
+        </Typography.Text>
       </Typography.Paragraph>
       <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-        Send the key as{" "}
-        <Typography.Text code>Authorization: Bearer &lt;key&gt;</Typography.Text>{" "}
-        or <Typography.Text code>x-api-key: &lt;key&gt;</Typography.Text>.
+        Streamable HTTP. The key lives in the URL, so treat the whole URL as the
+        secret.
       </Typography.Paragraph>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
@@ -257,33 +243,48 @@ curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${key}"`;
       </div>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        Filters (query parameters)
+        Connect in ChatGPT
+      </Typography.Title>
+      <ol style={{ paddingInlineStart: 18, fontSize: 13, margin: "0 0 12px" }}>
+        <li>
+          Settings → Connectors → turn on <em>Developer mode</em> → Add custom
+          connector.
+        </li>
+        <li>
+          Paste the URL above, choose <strong>No authentication</strong>, save.
+        </li>
+        <li>In a chat, enable the connector and ask about your data.</li>
+      </ol>
+
+      <Typography.Title level={5} style={{ marginBottom: 4 }}>
+        Tools
       </Typography.Title>
       <ul style={{ paddingInlineStart: 18, fontSize: 13, margin: "0 0 12px" }}>
         <li>
-          <Typography.Text code>range</Typography.Text> —{" "}
-          <Typography.Text code>7d</Typography.Text>,{" "}
-          <Typography.Text code>30d</Typography.Text>,{" "}
-          <Typography.Text code>90d</Typography.Text>,{" "}
-          <Typography.Text code>1y</Typography.Text>, or{" "}
-          <Typography.Text code>all</Typography.Text> (default). Keeps the last N
-          days, counted in UTC.
+          <Typography.Text code>get_entries</Typography.Text> —{" "}
+          <Typography.Text code>range</Typography.Text> (
+          <Typography.Text code>7d</Typography.Text>/
+          <Typography.Text code>30d</Typography.Text>/
+          <Typography.Text code>90d</Typography.Text>/
+          <Typography.Text code>1y</Typography.Text>/
+          <Typography.Text code>all</Typography.Text>),{" "}
+          <Typography.Text code>from</Typography.Text>/
+          <Typography.Text code>to</Typography.Text> (
+          <Typography.Text code>YYYY-MM-DD</Typography.Text>),{" "}
+          <Typography.Text code>limit</Typography.Text> (≤ 2000).
         </li>
         <li>
-          <Typography.Text code>from</Typography.Text> /{" "}
-          <Typography.Text code>to</Typography.Text> —{" "}
-          <Typography.Text code>YYYY-MM-DD</Typography.Text>, inclusive.{" "}
-          <Typography.Text code>from</Typography.Text> overrides{" "}
-          <Typography.Text code>range</Typography.Text>.
+          <Typography.Text code>get_ideals</Typography.Text>,{" "}
+          <Typography.Text code>get_presets</Typography.Text> — no arguments.
         </li>
         <li>
-          <Typography.Text code>limit</Typography.Text> — max number of days,
-          newest first (default and max 2000).
+          <Typography.Text code>search</Typography.Text> /{" "}
+          <Typography.Text code>fetch</Typography.Text> — same data as documents.
         </li>
       </ul>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        Example
+        Test it
       </Typography.Title>
       <Typography.Paragraph style={{ marginBottom: 0 }}>
         <pre
@@ -296,15 +297,8 @@ curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${key}"`;
             background: "rgba(127,127,127,0.12)",
           }}
         >
-          <code>{curlExample}</code>
+          <code>{testCommand}</code>
         </pre>
-      </Typography.Paragraph>
-      <Typography.Paragraph
-        type="secondary"
-        style={{ fontSize: 12, marginTop: 8, marginBottom: 0 }}
-      >
-        Also try <Typography.Text code>?from=2026-01-01&amp;to=2026-03-31</Typography.Text>{" "}
-        or <Typography.Text code>?range=7d&amp;limit=100</Typography.Text>.
       </Typography.Paragraph>
     </Modal>
   );
