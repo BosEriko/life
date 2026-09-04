@@ -8,10 +8,9 @@ import {
 } from "react";
 import { App, ConfigProvider, theme } from "antd";
 
-const DARK_QUERY = "(prefers-color-scheme: dark)";
 const MODE_KEY = "theme-mode";
 
-export type ThemeMode = "system" | "light" | "dark";
+export type ThemeMode = "light" | "dark";
 
 export const TERRACOTTA = "#8c442c";
 export const TERRACOTTA_DARK = "#e0a58f";
@@ -54,20 +53,6 @@ export function useIsDark(): boolean {
   return useContext(DarkContext);
 }
 
-function subscribe(callback: () => void) {
-  const media = window.matchMedia(DARK_QUERY);
-  media.addEventListener("change", callback);
-  return () => media.removeEventListener("change", callback);
-}
-
-function getSnapshot(): boolean {
-  return window.matchMedia(DARK_QUERY).matches;
-}
-
-function getServerSnapshot(): boolean {
-  return false;
-}
-
 const modeListeners = new Set<() => void>();
 
 function modeSubscribe(callback: () => void) {
@@ -85,17 +70,15 @@ function modeSubscribe(callback: () => void) {
 function modeSnapshot(): ThemeMode {
   try {
     const value = window.localStorage.getItem(MODE_KEY);
-    if (value === "light" || value === "dark" || value === "system") {
-      return value;
-    }
+    if (value === "dark") return "dark";
   } catch {
     // localStorage unavailable
   }
-  return "system";
+  return "light";
 }
 
 function modeServerSnapshot(): ThemeMode {
-  return "system";
+  return "light";
 }
 
 export function setThemeMode(mode: ThemeMode) {
@@ -107,7 +90,7 @@ export function setThemeMode(mode: ThemeMode) {
   modeListeners.forEach((listener) => listener());
 }
 
-const ThemeModeContext = createContext<ThemeMode>("system");
+const ThemeModeContext = createContext<ThemeMode>("light");
 
 export function useThemeMode(): {
   mode: ThemeMode;
@@ -137,17 +120,12 @@ function Background({ children }: { children: ReactNode }) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const systemDark = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
   const mode = useSyncExternalStore(
     modeSubscribe,
     modeSnapshot,
     modeServerSnapshot,
   );
-  const dark = mode === "system" ? systemDark : mode === "dark";
+  const dark = mode === "dark";
 
   return (
     <ConfigProvider

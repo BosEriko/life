@@ -97,9 +97,10 @@ All documents are namespaced under the signed-in user:
 ### Front-end details worth noting
 
 - **Theme.** A single sage-green accent, warm off-white in light mode and a
-  green-tinted charcoal (never pure black) in dark mode. The active mode follows
-  `prefers-color-scheme` through `useSyncExternalStore`, which keeps SSR and the
-  first client render in agreement (no hydration mismatch, no theme flash).
+  green-tinted charcoal (never pure black) in dark mode. Defaults to light and
+  ignores the OS setting; a header toggle switches modes and the choice is
+  persisted to `localStorage`. Read through `useSyncExternalStore` so SSR and the
+  first client render agree (no hydration mismatch).
 - **Lazy loading.** The chart library and the PDF library are dynamically
   imported — the chart on mount (`ssr: false`), the PDF code only when the user
   clicks download — so neither is in the initial bundle.

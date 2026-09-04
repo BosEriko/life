@@ -39,7 +39,7 @@ export function DashboardHeader() {
             color: token.colorPrimary,
           }}
         >
-          Bos Eriko's
+          Bos Eriko&apos;s
         </Typography.Text>
         <Typography.Title level={2} style={{ margin: "6px 0 0", fontWeight: 400 }}>
           Life Tracker

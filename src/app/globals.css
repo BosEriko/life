@@ -10,12 +10,6 @@ body {
     Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #10140f;
-  }
-}
-
 h1.ant-typography,
 h2.ant-typography,
 h3.ant-typography,
