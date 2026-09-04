@@ -223,9 +223,9 @@ export function AverageStats() {
           type="link"
           size="small"
           style={{ padding: 0, height: "auto" }}
+          icon={<Icon name="target" style={{ marginRight: 0 }} />}
           onClick={() => setIdealsOpen(true)}
         >
-          <Icon name="target" style={{ marginRight: 6 }} />
           Set ideal ranges
         </Button>
       </Flex>
