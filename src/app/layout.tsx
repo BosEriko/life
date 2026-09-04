@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Newsreader } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import "antd/dist/reset.css";
 import "./globals.css";
@@ -13,13 +13,6 @@ const sans = Manrope({
   display: "swap",
 });
 
-const serif = Newsreader({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   title: "Life Tracker",
   description: "Personal homepage",
@@ -27,7 +20,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
+    <html lang="en" className={sans.variable}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400&display=swap"
+        />
+      </head>
       <body>
         <AntdRegistry>
           <ThemeProvider>
