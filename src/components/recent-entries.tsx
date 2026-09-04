@@ -54,8 +54,8 @@ export function RecentEntries() {
           {entries.map((entry, index) => (
             <Flex
               key={entry.date}
-              align="center"
-              justify="space-between"
+              vertical
+              gap={4}
               style={{
                 padding: "12px 16px",
                 borderTop:
@@ -64,32 +64,42 @@ export function RecentEntries() {
                     : `1px solid ${token.colorBorderSecondary}`,
               }}
             >
-              <Typography.Text strong>
-                {relativeDate(entry.date)}
-              </Typography.Text>
-              <Flex gap={16}>
-                {entry.weight != null ? (
-                  <Typography.Text type="secondary">
-                    <Typography.Text strong>{entry.weight}</Typography.Text> kg
-                  </Typography.Text>
-                ) : null}
-                {entry.systolic != null && entry.diastolic != null ? (
-                  <Typography.Text type="secondary">
-                    <Typography.Text strong>
-                      {entry.systolic}/{entry.diastolic}
-                    </Typography.Text>{" "}
-                    mmHg
-                    {entry.bpTime
-                      ? ` · ${formatBpTime(entry.date, entry.bpTime)}`
-                      : ""}
-                  </Typography.Text>
-                ) : null}
-                {entry.water != null ? (
-                  <Typography.Text type="secondary">
-                    <Typography.Text strong>{entry.water}</Typography.Text> ml
-                  </Typography.Text>
-                ) : null}
+              <Flex align="center" justify="space-between" gap={12}>
+                <Typography.Text strong>
+                  {relativeDate(entry.date)}
+                </Typography.Text>
+                <Flex gap={16} wrap justify="flex-end">
+                  {entry.weight != null ? (
+                    <Typography.Text type="secondary">
+                      <Typography.Text strong>{entry.weight}</Typography.Text> kg
+                    </Typography.Text>
+                  ) : null}
+                  {entry.systolic != null && entry.diastolic != null ? (
+                    <Typography.Text type="secondary">
+                      <Typography.Text strong>
+                        {entry.systolic}/{entry.diastolic}
+                      </Typography.Text>{" "}
+                      mmHg
+                      {entry.bpTime
+                        ? ` · ${formatBpTime(entry.date, entry.bpTime)}`
+                        : ""}
+                    </Typography.Text>
+                  ) : null}
+                  {entry.water != null ? (
+                    <Typography.Text type="secondary">
+                      <Typography.Text strong>{entry.water}</Typography.Text> ml
+                    </Typography.Text>
+                  ) : null}
+                </Flex>
               </Flex>
+              {entry.notes ? (
+                <Typography.Text
+                  type="secondary"
+                  style={{ fontSize: 12, whiteSpace: "pre-wrap" }}
+                >
+                  {entry.notes}
+                </Typography.Text>
+              ) : null}
             </Flex>
           ))}
         </Flex>

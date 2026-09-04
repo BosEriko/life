@@ -24,6 +24,7 @@ export type DailyEntry = {
   bpPosture: BpPosture | null;
   bpArm: BpArm | null;
   water: number | null;
+  notes: string | null;
   updatedAt: Timestamp | null;
 };
 
@@ -35,6 +36,7 @@ export type DailyInput = {
   bpPosture?: BpPosture;
   bpArm?: BpArm;
   water?: number;
+  notes?: string;
 };
 
 function dailiesCollection(uid: string) {
@@ -73,6 +75,7 @@ export async function saveDaily(uid: string, date: string, input: DailyInput) {
   if (input.bpPosture !== undefined) payload.bpPosture = input.bpPosture;
   if (input.bpArm !== undefined) payload.bpArm = input.bpArm;
   if (input.water !== undefined) payload.water = input.water;
+  if (input.notes !== undefined) payload.notes = input.notes;
 
   await setDoc(doc(dailiesCollection(uid), date), payload, { merge: true });
 }
@@ -103,6 +106,7 @@ export function watchDailies(
             bpPosture: (data.bpPosture as BpPosture | undefined) ?? null,
             bpArm: (data.bpArm as BpArm | undefined) ?? null,
             water: (data.water as number | undefined) ?? null,
+            notes: (data.notes as string | undefined) ?? null,
             updatedAt: (data.updatedAt as Timestamp | undefined) ?? null,
           };
         }),

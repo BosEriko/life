@@ -8,6 +8,7 @@ import {
   DatePicker,
   Flex,
   Form,
+  Input,
   InputNumber,
   Segmented,
   Typography,
@@ -36,6 +37,7 @@ type FormValues = {
   bpPosture?: BpPosture;
   bpArm?: BpArm;
   water?: number | null;
+  notes?: string | null;
 };
 
 const WATER_PRESETS = [500, 1000, 1500, 2000];
@@ -52,7 +54,11 @@ const ARM_OPTIONS = [
 
 type SaveStatus = "idle" | "pending" | "saving";
 
-function collectInput(values: FormValues, stampBpTime: boolean): DailyInput {
+function collectInput(
+  values: FormValues,
+  stampBpTime: boolean,
+  includeNotes: boolean,
+): DailyInput {
   const input: DailyInput = {};
   if (typeof values.weight === "number" && values.weight > 0) {
     input.weight = values.weight;
@@ -72,6 +78,9 @@ function collectInput(values: FormValues, stampBpTime: boolean): DailyInput {
   if (typeof values.water === "number" && values.water > 0) {
     input.water = values.water;
   }
+  if (includeNotes && typeof values.notes === "string") {
+    input.notes = values.notes.trim();
+  }
   return input;
 }
 
@@ -88,6 +97,7 @@ export function DailyTracker() {
   const timerRef = useRef<number | null>(null);
   const latestValues = useRef<FormValues | null>(null);
   const bpDirtyRef = useRef(false);
+  const notesDirtyRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -112,6 +122,7 @@ export function DailyTracker() {
       bpPosture: entry?.bpPosture ?? "sitting",
       bpArm: entry?.bpArm ?? "left",
       water: entry?.water ?? null,
+      notes: entry?.notes ?? "",
     });
   }, [entries, selectedDate, status, form]);
 
@@ -120,7 +131,11 @@ export function DailyTracker() {
     const values = latestValues.current;
     if (!user || !values) return;
 
-    const input = collectInput(values, bpDirtyRef.current);
+    const input = collectInput(
+      values,
+      bpDirtyRef.current,
+      notesDirtyRef.current,
+    );
     if (Object.keys(input).length === 0) {
       setStatus("idle");
       message.destroy(SAVE_MSG_KEY);
@@ -137,6 +152,7 @@ export function DailyTracker() {
     try {
       await saveDaily(user.uid, values.date.format("YYYY-MM-DD"), input);
       bpDirtyRef.current = false;
+      notesDirtyRef.current = false;
       setStatus("idle");
       message.open({
         key: SAVE_MSG_KEY,
@@ -168,6 +184,7 @@ export function DailyTracker() {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
     bpDirtyRef.current = false;
+    notesDirtyRef.current = false;
     message.destroy(SAVE_MSG_KEY);
     setStatus("idle");
     setSelectedDate(next.format("YYYY-MM-DD"));
@@ -222,6 +239,9 @@ export function DailyTracker() {
     if (changed.systolic !== undefined || changed.diastolic !== undefined) {
       bpDirtyRef.current = true;
     }
+    if (changed.notes !== undefined) {
+      notesDirtyRef.current = true;
+    }
 
     markPending();
   }
@@ -238,6 +258,7 @@ export function DailyTracker() {
             date: dayjs(),
             bpPosture: "sitting",
             bpArm: "left",
+            notes: "",
           }}
           onValuesChange={handleValuesChange}
         >
@@ -360,6 +381,13 @@ export function DailyTracker() {
                 ))}
               </Flex>
             </Flex>
+          </Form.Item>
+
+          <Form.Item label="Notes" name="notes">
+            <Input.TextArea
+              autoSize={{ minRows: 2, maxRows: 6 }}
+              placeholder="Anything worth noting about today…"
+            />
           </Form.Item>
         </Form>
     </Card>
