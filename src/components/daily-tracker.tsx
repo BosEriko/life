@@ -28,6 +28,13 @@ import {
   type DailyEntry,
   type DailyInput,
 } from "@/models/dailies";
+import {
+  EMPTY_IDEALS,
+  evaluateIdeal,
+  watchIdeals,
+  type IdealKey,
+  type Ideals,
+} from "@/models/ideals";
 
 const SAVE_DELAY_MS = 2000;
 
@@ -108,6 +115,12 @@ export function DailyTracker() {
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [selectedDate, setSelectedDate] = useState(todayKey());
+  const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
+
+  const watchedWeight = Form.useWatch("weight", form);
+  const watchedSystolic = Form.useWatch("systolic", form);
+  const watchedDiastolic = Form.useWatch("diastolic", form);
+  const watchedWater = Form.useWatch("water", form);
 
   const timerRef = useRef<number | null>(null);
   const latestValues = useRef<FormValues | null>(null);
@@ -130,6 +143,11 @@ export function DailyTracker() {
       },
     );
   }, [user, message]);
+
+  useEffect(() => {
+    if (!user) return;
+    return watchIdeals(user.uid, setIdeals, () => {});
+  }, [user]);
 
   useEffect(() => {
     if (status === "pending" || status === "saving") return;
@@ -294,6 +312,15 @@ export function DailyTracker() {
 
   const currentEntry = entries.find((item) => item.date === selectedDate);
 
+  function idealStatus(
+    value: unknown,
+    key: IdealKey,
+  ): "error" | undefined {
+    const numeric = typeof value === "number" ? value : null;
+    const result = evaluateIdeal(numeric, ideals[key]);
+    return result === "low" || result === "high" ? "error" : undefined;
+  }
+
   return (
     <Card title={<><Icon name="logEntry" />Log entry</>}>
       <Form
@@ -348,6 +375,7 @@ export function DailyTracker() {
             step={0.1}
             suffix="kg"
             placeholder="72.5"
+            status={idealStatus(watchedWeight, "weight")}
           />
         </Form.Item>
 
@@ -367,6 +395,7 @@ export function DailyTracker() {
                     min={1}
                     precision={0}
                     placeholder="120"
+                    status={idealStatus(watchedSystolic, "systolic")}
                   />
                 </Form.Item>
               </div>
@@ -384,6 +413,7 @@ export function DailyTracker() {
                     min={1}
                     precision={0}
                     placeholder="80"
+                    status={idealStatus(watchedDiastolic, "diastolic")}
                   />
                 </Form.Item>
               </div>
@@ -417,6 +447,7 @@ export function DailyTracker() {
                 step={250}
                 suffix="ml"
                 placeholder="2000"
+                status={idealStatus(watchedWater, "water")}
               />
             </Form.Item>
             <Flex gap={8} wrap>
