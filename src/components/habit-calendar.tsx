@@ -5,7 +5,7 @@ import { App, Flex, Spin, theme, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
-import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
+import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 
 const WEEKS = 26;
 const CELL = 11;

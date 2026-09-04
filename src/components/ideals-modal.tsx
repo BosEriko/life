@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { App, Flex, Form, InputNumber, Modal, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
-import { saveIdeals, type IdealKey, type Ideals } from "@/lib/ideals";
+import { saveIdeals, type IdealKey, type Ideals } from "@/models/ideals";
 
 const ROWS: {
   key: IdealKey;

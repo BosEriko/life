@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon, type IconName } from "@/components/icon";
 import { IdealsModal } from "@/components/ideals-modal";
-import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
+import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import {
   EMPTY_IDEALS,
   evaluateIdeal,
@@ -15,7 +15,7 @@ import {
   worstStatus,
   type Ideals,
   type IdealStatus,
-} from "@/lib/ideals";
+} from "@/models/ideals";
 
 const HISTORY_LIMIT = 1000;
 const RANGE_STORAGE_KEY = "averages-range";

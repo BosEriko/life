@@ -16,7 +16,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { useIsDark } from "@/components/theme-provider";
-import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
+import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 
 const HISTORY_LIMIT = 1000;
 

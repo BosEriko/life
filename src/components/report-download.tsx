@@ -5,7 +5,7 @@ import { App, FloatButton, Modal, Segmented, Typography } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
+import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 
 const HISTORY_LIMIT = 1000;
 

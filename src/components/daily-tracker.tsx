@@ -27,7 +27,7 @@ import {
   type BpPosture,
   type DailyEntry,
   type DailyInput,
-} from "@/lib/dailies";
+} from "@/models/dailies";
 
 const SAVE_DELAY_MS = 2000;
 

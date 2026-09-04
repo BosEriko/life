@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { App, Empty, Flex, Spin, theme, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
-import { relativeDate, watchDailies, type DailyEntry } from "@/lib/dailies";
+import { relativeDate, watchDailies, type DailyEntry } from "@/models/dailies";
 import { Icon } from "@/components/icon";
 
 export function RecentEntries() {
@@ -41,26 +41,15 @@ export function RecentEntries() {
       ) : entries.length === 0 ? (
         <Empty description="No entries yet." />
       ) : (
-        <Flex
-          vertical
-          style={{
-            border: `1px solid ${token.colorBorder}`,
-            borderRadius: token.borderRadiusLG,
-            overflow: "hidden",
-            background: token.colorBgContainer,
-          }}
-        >
-          {entries.map((entry, index) => (
+        <Flex vertical>
+          {entries.map((entry) => (
             <Flex
               key={entry.date}
               vertical
               gap={4}
               style={{
-                padding: "12px 16px",
-                borderTop:
-                  index === 0
-                    ? undefined
-                    : `1px solid ${token.colorBorderSecondary}`,
+                padding: "12px 0",
+                borderTop: `1px solid ${token.colorBorderSecondary}`,
               }}
             >
               <Flex align="center" justify="space-between" gap={12}>
