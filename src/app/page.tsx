@@ -7,6 +7,7 @@ import { AverageStats } from "@/components/average-stats";
 import { DailyTracker } from "@/components/daily-tracker";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
+import { ReportDownload } from "@/components/report-download";
 
 const MetricsChart = dynamic(
   () => import("@/components/metrics-chart").then((mod) => mod.MetricsChart),
@@ -60,6 +61,8 @@ export default function Home() {
           <RecentEntries />
         </Flex>
       </div>
+
+      <ReportDownload />
     </div>
   );
 }
