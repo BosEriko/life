@@ -432,27 +432,35 @@ export function DailyTracker() {
           </Flex>
         </Form.Item>
 
-        <Form.Item label="Junk">
-          <Flex gap={16} wrap>
-            <Form.Item name="junkFood" valuePropName="checked" noStyle>
-              <Checkbox>Food</Checkbox>
-            </Form.Item>
-            <Form.Item name="junkDrink" valuePropName="checked" noStyle>
-              <Checkbox>Drink</Checkbox>
-            </Form.Item>
-          </Flex>
-        </Form.Item>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            columnGap: 16,
+          }}
+        >
+          <Form.Item label="Hygiene">
+            <Flex gap={16} wrap>
+              <Form.Item name="bath" valuePropName="checked" noStyle>
+                <Checkbox>Bath</Checkbox>
+              </Form.Item>
+              <Form.Item name="brushTeeth" valuePropName="checked" noStyle>
+                <Checkbox>Brush</Checkbox>
+              </Form.Item>
+            </Flex>
+          </Form.Item>
 
-        <Form.Item label="Hygiene">
-          <Flex gap={16} wrap>
-            <Form.Item name="bath" valuePropName="checked" noStyle>
-              <Checkbox>Bath</Checkbox>
-            </Form.Item>
-            <Form.Item name="brushTeeth" valuePropName="checked" noStyle>
-              <Checkbox>Brush</Checkbox>
-            </Form.Item>
-          </Flex>
-        </Form.Item>
+          <Form.Item label="Junk">
+            <Flex gap={16} wrap>
+              <Form.Item name="junkFood" valuePropName="checked" noStyle>
+                <Checkbox>Food</Checkbox>
+              </Form.Item>
+              <Form.Item name="junkDrink" valuePropName="checked" noStyle>
+                <Checkbox>Drink</Checkbox>
+              </Form.Item>
+            </Flex>
+          </Form.Item>
+        </div>
 
         <Form.Item label="Notes" name="notes">
           <Input.TextArea

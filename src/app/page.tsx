@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Button, Flex, Spin, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { DailyTracker } from "@/components/daily-tracker";
+import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
 
 const MetricsChart = dynamic(
@@ -50,6 +51,7 @@ export default function Home() {
       >
         <DailyTracker />
         <Flex vertical gap={40}>
+          <HabitCalendar />
           <MetricsChart />
           <RecentEntries />
         </Flex>
