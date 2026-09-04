@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { App, FloatButton, Grid, Modal, Segmented, Typography } from "antd";
-import { DownloadOutlined } from "@ant-design/icons";
+import { CodeOutlined, DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { DeveloperModal } from "@/components/developer-modal";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 
 const HISTORY_LIMIT = 1000;
@@ -39,6 +40,7 @@ export function ReportDownload() {
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [open, setOpen] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
   const [range, setRange] = useState<Range>("30");
   const [busy, setBusy] = useState(false);
 
@@ -163,12 +165,22 @@ export function ReportDownload() {
 
   return (
     <>
-      <FloatButton
-        type="primary"
-        icon={<DownloadOutlined />}
-        tooltip={screens.md === false ? undefined : "Download report"}
-        onClick={() => setOpen(true)}
-      />
+      <FloatButton.Group shape="circle">
+        <FloatButton
+          icon={<CodeOutlined />}
+          tooltip={screens.md === false ? undefined : "Developer / API"}
+          onClick={() => setDevOpen(true)}
+        />
+        <FloatButton
+          type="primary"
+          icon={<DownloadOutlined />}
+          tooltip={screens.md === false ? undefined : "Download report"}
+          onClick={() => setOpen(true)}
+        />
+      </FloatButton.Group>
+
+      <DeveloperModal open={devOpen} onClose={() => setDevOpen(false)} />
+
       <Modal
         open={open}
         title="Download report"
