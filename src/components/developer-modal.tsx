@@ -19,6 +19,8 @@ export function DeveloperModal({
   const [loaded, setLoaded] = useState(false);
   const [freshKey, setFreshKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [copyBusy, setCopyBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -33,6 +35,7 @@ export function DeveloperModal({
   }, [user]);
 
   function handleClose() {
+    setConfirmOpen(false);
     setFreshKey(null);
     onClose();
   }
@@ -54,10 +57,12 @@ export function DeveloperModal({
       ? `${window.location.origin}/api/export`
       : "/api/export";
 
-  const keyLabel = freshKey ?? "<YOUR_API_KEY>";
-  const curlExample = `curl -s "${endpoint}?range=30d" \\\n  -H "Authorization: Bearer ${keyLabel}"`;
+  const curlExample = `curl -s "${endpoint}?range=30d" \\\n  -H "Authorization: Bearer ${
+    freshKey ?? "<YOUR_API_KEY>"
+  }"`;
 
-  const chatgptInstructions = `# Skill: Life Tracker data
+  function instructionsFor(key: string): string {
+    return `# Skill: Life Tracker data
 
 ## Description
 Read my personal health tracker (weight, blood pressure, water intake, daily
@@ -69,7 +74,7 @@ averages, targets, or how any of these have changed over time.
 
 ## Endpoint
 GET ${endpoint}
-Header: Authorization: Bearer ${keyLabel}
+Header: Authorization: Bearer ${key}
 
 ## Parameters (all optional)
 - range: 7d | 30d | 90d | 1y | all (default all). Keeps the last N days, UTC.
@@ -103,15 +108,36 @@ Any daily field may be null. Units: weight kg, blood pressure mmHg, water ml.
 4. State the date range you used.
 
 ## Example
-curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${keyLabel}"`;
+curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${key}"`;
+  }
 
-  async function copyInstructions() {
+  async function copyText(text: string) {
     try {
-      await navigator.clipboard.writeText(chatgptInstructions);
+      await navigator.clipboard.writeText(text);
       message.success("Instructions copied");
     } catch {
       message.error("Could not copy.");
     }
+  }
+
+  async function copyWithNewKey() {
+    if (!user) return;
+    setCopyBusy(true);
+    try {
+      const key = await generateApiKey(user.uid);
+      setFreshKey(key);
+      await copyText(instructionsFor(key));
+      setConfirmOpen(false);
+    } catch {
+      message.error("Could not generate a key.");
+    } finally {
+      setCopyBusy(false);
+    }
+  }
+
+  async function copyWithPlaceholder() {
+    await copyText(instructionsFor("<YOUR_API_KEY>"));
+    setConfirmOpen(false);
   }
 
   return (
@@ -127,20 +153,44 @@ curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${keyLabel}"`;
       </Typography.Paragraph>
 
       <div style={{ marginBottom: 20 }}>
-        <Button icon={<CopyOutlined />} onClick={copyInstructions}>
+        <Button icon={<CopyOutlined />} onClick={() => setConfirmOpen(true)}>
           Copy ChatGPT instructions
         </Button>
         <Typography.Paragraph
           type="secondary"
           style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}
         >
-          A skill-format block to paste into a Custom GPT&apos;s instructions or a
-          chat.
-          {freshKey
-            ? " Your new key is filled in."
-            : " Replace the placeholder with a key from below."}
+          A skill-format block for a Custom GPT&apos;s instructions or a chat.
+          You&apos;ll be asked whether to embed a fresh key.
         </Typography.Paragraph>
       </div>
+
+      <Modal
+        open={confirmOpen}
+        title="Copy with API key?"
+        onCancel={() => setConfirmOpen(false)}
+        footer={[
+          <Button key="placeholder" onClick={copyWithPlaceholder}>
+            No — use a placeholder
+          </Button>,
+          <Button
+            key="newkey"
+            type="primary"
+            loading={copyBusy}
+            onClick={copyWithNewKey}
+          >
+            Yes — generate a new key
+          </Button>,
+        ]}
+      >
+        <Typography.Paragraph style={{ marginBottom: 0 }}>
+          <strong>Yes</strong> generates a new API key and embeds it in the copied
+          text — this invalidates any key currently in use.{" "}
+          <strong>No</strong> copies a version with a{" "}
+          <Typography.Text code>&lt;YOUR_API_KEY&gt;</Typography.Text>{" "}
+          placeholder.
+        </Typography.Paragraph>
+      </Modal>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
         Endpoint
