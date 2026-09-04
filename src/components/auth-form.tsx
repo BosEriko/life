@@ -3,9 +3,20 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FirebaseError } from "firebase/app";
-import { Alert, Button, Card, Divider, Flex, Form, Input, Typography } from "antd";
+import {
+  Alert,
+  Button,
+  Card,
+  Divider,
+  Flex,
+  Form,
+  Input,
+  theme,
+  Typography,
+} from "antd";
 import { GoogleOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
 
 type AuthFormProps = {
   mode: "login" | "register";
@@ -69,6 +80,7 @@ const DISMISSED_POPUP_CODES = [
 
 export function AuthForm({ mode }: AuthFormProps) {
   const { signIn, register, signInWithGoogle } = useAuth();
+  const { token } = theme.useToken();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -116,6 +128,28 @@ export function AuthForm({ mode }: AuthFormProps) {
       <div style={{ width: "100%", maxWidth: 400 }}>
         <Card>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                margin: "0 auto 12px",
+                borderRadius: 12,
+                background: token.colorPrimary,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon
+                name="brand"
+                style={{
+                  margin: 0,
+                  opacity: 1,
+                  color: token.colorTextLightSolid,
+                  fontSize: 20,
+                }}
+              />
+            </div>
             <Typography.Title level={3} style={{ margin: 0 }}>
               Life Tracker
             </Typography.Title>

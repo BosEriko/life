@@ -16,6 +16,7 @@ import {
   faHeartPulse,
   faNoteSticky,
   faPenToSquare,
+  faSeedling,
   faSliders,
   faSoap,
   faTooth,
@@ -42,6 +43,7 @@ const ICONS = {
   target: faBullseye,
   alert: faTriangleExclamation,
   presets: faSliders,
+  brand: faSeedling,
 } as const;
 
 export type IconName = keyof typeof ICONS;

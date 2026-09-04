@@ -60,7 +60,7 @@ type FormValues = {
   brushTeeth?: boolean;
 };
 
-const WATER_PRESETS = [500, 1000, 1500, 2000];
+const WATER_PRESETS = [500, 1000];
 
 const BP_TIPS = {
   systolicLow:
