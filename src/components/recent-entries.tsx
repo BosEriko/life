@@ -90,18 +90,6 @@ export function RecentEntries() {
                       <Typography.Text strong>{entry.water}</Typography.Text> ml
                     </Typography.Text>
                   ) : null}
-                  {entry.junkFood ? (
-                    <Typography.Text type="warning">Food</Typography.Text>
-                  ) : null}
-                  {entry.junkDrink ? (
-                    <Typography.Text type="warning">Drink</Typography.Text>
-                  ) : null}
-                  {entry.bath ? (
-                    <Typography.Text type="success">Bath</Typography.Text>
-                  ) : null}
-                  {entry.brushTeeth ? (
-                    <Typography.Text type="success">Brush</Typography.Text>
-                  ) : null}
                 </Flex>
               </Flex>
               {entry.notes ? (

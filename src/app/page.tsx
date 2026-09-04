@@ -23,7 +23,7 @@ export default function Home() {
   const { user, signOut } = useAuth();
 
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "48px 20px" }}>
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 20px" }}>
       <Flex
         align="center"
         justify="space-between"
@@ -44,14 +44,14 @@ export default function Home() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-          gap: 40,
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 32,
           alignItems: "start",
         }}
       >
         <DailyTracker />
+        <HabitCalendar />
         <Flex vertical gap={40}>
-          <HabitCalendar />
           <MetricsChart />
           <RecentEntries />
         </Flex>
