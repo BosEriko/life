@@ -12,6 +12,7 @@ import {
   Input,
   InputNumber,
   Segmented,
+  Tooltip,
   Typography,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
@@ -54,6 +55,17 @@ type FormValues = {
 };
 
 const WATER_PRESETS = [500, 1000, 1500, 2000];
+
+const BP_TIPS = {
+  systolicLow:
+    "Below your ideal systolic. To nudge it up: drink more water, add a little salt, eat smaller and more frequent meals, and stand up slowly. See a doctor if you feel faint or dizzy.",
+  systolicHigh:
+    "Above your ideal systolic. To bring it down: cut back on salt and processed food, move daily (a brisk walk helps), limit alcohol and caffeine, sleep well, and lower stress. See a doctor if it stays high.",
+  diastolicLow:
+    "Below your ideal diastolic. To raise it: keep fluids up, don't skip meals, ease off alcohol, and rise slowly from sitting or lying down. See a doctor if it comes with fatigue or dizziness.",
+  diastolicHigh:
+    "Above your ideal diastolic. To lower it: reduce salt, add potassium-rich foods (leafy greens, banana), exercise regularly, cut alcohol, and wind down before bed. See a doctor if it stays high.",
+} as const;
 
 const POSTURE_OPTIONS = [
   { label: "Sitting", value: "sitting" },
@@ -312,6 +324,29 @@ export function DailyTracker() {
 
   const currentEntry = entries.find((item) => item.date === selectedDate);
 
+  const systolicEval = evaluateIdeal(
+    typeof watchedSystolic === "number" ? watchedSystolic : null,
+    ideals.systolic,
+  );
+  const diastolicEval = evaluateIdeal(
+    typeof watchedDiastolic === "number" ? watchedDiastolic : null,
+    ideals.diastolic,
+  );
+  const systolicTip =
+    systolicEval === "low"
+      ? BP_TIPS.systolicLow
+      : systolicEval === "high"
+        ? BP_TIPS.systolicHigh
+        : undefined;
+  const diastolicTip =
+    diastolicEval === "low"
+      ? BP_TIPS.diastolicLow
+      : diastolicEval === "high"
+        ? BP_TIPS.diastolicHigh
+        : undefined;
+  const systolicPlacement = systolicEval === "low" ? "bottom" : "top";
+  const diastolicPlacement = diastolicEval === "low" ? "bottom" : "top";
+
   function idealStatus(
     value: unknown,
     key: IdealKey,
@@ -382,41 +417,45 @@ export function DailyTracker() {
         <Form.Item label={<><Icon name="bp" />Blood pressure</>}>
           <Flex vertical gap={10}>
             <Flex gap={8} align="flex-end">
-              <div style={{ flex: 1 }}>
-                <Typography.Text
-                  type="secondary"
-                  style={{ fontSize: 12, display: "block", marginBottom: 2 }}
-                >
-                  Systolic
-                </Typography.Text>
-                <Form.Item name="systolic" noStyle>
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    min={1}
-                    precision={0}
-                    placeholder="120"
-                    status={idealStatus(watchedSystolic, "systolic")}
-                  />
-                </Form.Item>
-              </div>
+              <Tooltip title={systolicTip} placement={systolicPlacement}>
+                <div style={{ flex: 1 }}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, display: "block", marginBottom: 2 }}
+                  >
+                    Systolic
+                  </Typography.Text>
+                  <Form.Item name="systolic" noStyle>
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={1}
+                      precision={0}
+                      placeholder="120"
+                      status={idealStatus(watchedSystolic, "systolic")}
+                    />
+                  </Form.Item>
+                </div>
+              </Tooltip>
               <span style={{ paddingBottom: 6 }}>/</span>
-              <div style={{ flex: 1 }}>
-                <Typography.Text
-                  type="secondary"
-                  style={{ fontSize: 12, display: "block", marginBottom: 2 }}
-                >
-                  Diastolic
-                </Typography.Text>
-                <Form.Item name="diastolic" noStyle>
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    min={1}
-                    precision={0}
-                    placeholder="80"
-                    status={idealStatus(watchedDiastolic, "diastolic")}
-                  />
-                </Form.Item>
-              </div>
+              <Tooltip title={diastolicTip} placement={diastolicPlacement}>
+                <div style={{ flex: 1 }}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, display: "block", marginBottom: 2 }}
+                  >
+                    Diastolic
+                  </Typography.Text>
+                  <Form.Item name="diastolic" noStyle>
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={1}
+                      precision={0}
+                      placeholder="80"
+                      status={idealStatus(watchedDiastolic, "diastolic")}
+                    />
+                  </Form.Item>
+                </div>
+              </Tooltip>
               <Typography.Text type="secondary" style={{ paddingBottom: 6 }}>
                 mmHg
               </Typography.Text>
