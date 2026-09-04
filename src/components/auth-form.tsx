@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FirebaseError } from "firebase/app";
-import { Alert, Button, Card, Flex, Form, Input, Typography } from "antd";
-import { LockOutlined, MailOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Divider, Flex, Form, Input, Typography } from "antd";
+import { GoogleOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 
 type AuthFormProps = {
@@ -48,6 +48,12 @@ function messageForError(error: unknown): string {
         return "Password should be at least 6 characters.";
       case "auth/too-many-requests":
         return "Too many attempts. Try again later.";
+      case "auth/account-exists-with-different-credential":
+        return "An account already exists with this email. Sign in with the method you used originally.";
+      case "auth/popup-blocked":
+        return "Your browser blocked the sign-in popup. Allow popups and try again.";
+      case "auth/unauthorized-domain":
+        return "This domain is not authorized for sign-in.";
       default:
         return "Something went wrong. Please try again.";
     }
@@ -55,8 +61,14 @@ function messageForError(error: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+const DISMISSED_POPUP_CODES = [
+  "auth/popup-closed-by-user",
+  "auth/cancelled-popup-request",
+  "auth/user-cancelled",
+];
+
 export function AuthForm({ mode }: AuthFormProps) {
-  const { signIn, register } = useAuth();
+  const { signIn, register, signInWithGoogle } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -72,6 +84,24 @@ export function AuthForm({ mode }: AuthFormProps) {
         await register(values.email, values.password);
       }
     } catch (err) {
+      setError(messageForError(err));
+      setSubmitting(false);
+    }
+  }
+
+  async function onGoogle() {
+    setError(null);
+    setSubmitting(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      if (
+        err instanceof FirebaseError &&
+        DISMISSED_POPUP_CODES.includes(err.code)
+      ) {
+        setSubmitting(false);
+        return;
+      }
       setError(messageForError(err));
       setSubmitting(false);
     }
@@ -149,6 +179,20 @@ export function AuthForm({ mode }: AuthFormProps) {
               {copy.submit}
             </Button>
           </Form>
+
+          <Divider plain style={{ margin: "16px 0", fontSize: 12 }}>
+            or
+          </Divider>
+
+          <Button
+            size="large"
+            block
+            icon={<GoogleOutlined />}
+            disabled={submitting}
+            onClick={onGoogle}
+          >
+            Continue with Google
+          </Button>
 
           <Typography.Paragraph
             style={{ textAlign: "center", marginTop: 16, marginBottom: 0 }}

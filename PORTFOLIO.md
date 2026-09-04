@@ -55,7 +55,8 @@ layer, no sharing, and no public surface.
 
 ### Auth
 
-- **Email/password only.** Dedicated `/login` and `/register` pages.
+- **Email/password + Google.** Dedicated `/login` and `/register` pages; Google
+  sign-in via `signInWithPopup`.
 - **Client-side route guard.** A provider subscribes to
   `onAuthStateChanged`; a guard component redirects unauthenticated users to
   `/login` and authenticated users away from the auth pages. This is a UX gate,
