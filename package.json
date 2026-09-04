@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "rules:build": "sed \"s|__OWNER_EMAIL__|${OWNER_EMAIL:?set OWNER_EMAIL}|\" firestore.rules.template > firestore.rules"
+    "rules:build": "cp firestore.rules.template firestore.rules"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.7",

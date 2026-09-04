@@ -21,11 +21,7 @@ jobs:
         with:
           node-version: 22
 
-      - run: |
-          test -n "$OWNER_EMAIL" || { echo "OWNER_EMAIL secret is not set"; exit 1; }
-          sed "s|__OWNER_EMAIL__|${OWNER_EMAIL}|" firestore.rules.template > firestore.rules
-        env:
-          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+      - run: cp firestore.rules.template firestore.rules
 
       - run: npx --yes firebase-tools deploy --only firestore:rules --project life-boseriko-com --non-interactive --token "$FIREBASE_TOKEN"
         env:

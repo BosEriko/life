@@ -86,13 +86,13 @@ All documents are namespaced under the signed-in user:
 
 ### Security
 
-- Firestore rules restrict **every** read and write to one owner:
-  `request.auth != null && request.auth.token.email == '<owner>'`.
-- The owner's email is **not committed**. `firestore.rules.template` ships with
-  an `__OWNER_EMAIL__` placeholder; a GitHub Action substitutes the real value
-  from an `OWNER_EMAIL` secret and deploys the compiled rules via
-  `firebase-tools` (auth token in `FIREBASE_TOKEN`) whenever the template
-  changes on `main`.
+- Firestore rules grant a signed-in user read and write access to **their own
+  subtree only** — `match /users/{userId}/{document=**}` with
+  `request.auth != null && request.auth.uid == userId` — and deny everything
+  else (`match /{document=**} { allow read, write: if false; }`).
+- `firestore.rules` is generated from `firestore.rules.template` (a plain copy,
+  no secrets) and deployed via `firebase-tools` (auth token in `FIREBASE_TOKEN`)
+  by a GitHub Action whenever the template changes on `main`.
 
 ### Front-end details worth noting
 
@@ -121,7 +121,7 @@ All documents are namespaced under the signed-in user:
 | `npm run dev`       | Local dev server                                  |
 | `npm run build`     | Production build                                  |
 | `npm run lint`      | ESLint                                            |
-| `npm run rules:build` | Compile `firestore.rules` from the template (needs `OWNER_EMAIL`) |
+| `npm run rules:build` | Copy `firestore.rules.template` to `firestore.rules` |
 
 Environment: `NEXT_PUBLIC_FIREBASE_*` values in `.env.local` (client-side
 Firebase config — not secret).
