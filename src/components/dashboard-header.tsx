@@ -1,36 +1,54 @@
 "use client";
 
-import { Button, Flex, Grid, theme, Typography } from "antd";
-import { BulbFilled, BulbOutlined } from "@ant-design/icons";
+import { Button, Dropdown, Flex, Grid, theme, Typography } from "antd";
+import type { MenuProps } from "antd";
+import {
+  BulbFilled,
+  BulbOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
-import { useSaveStatus } from "@/components/save-status";
 import { useThemeMode } from "@/components/theme-provider";
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
   const { isDark, setMode } = useThemeMode();
-  const { state: saveState } = useSaveStatus();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const compact = screens.md === false;
 
-  const savePill = {
-    idle: { text: "Auto-saving", color: token.colorSuccess },
-    pending: { text: "Unsaved changes", color: token.colorWarning },
-    saving: { text: "Saving…", color: token.colorInfo },
-    error: { text: "Save failed", color: token.colorError },
-  }[saveState];
+  const today = dayjs().format("dddd, MMMM D, YYYY");
+
+  const menuItems: MenuProps["items"] = [
+    ...(user?.email
+      ? [{ key: "email", label: user.email, disabled: true }]
+      : []),
+    { key: "date", label: today, disabled: true },
+    { type: "divider" },
+    {
+      key: "theme",
+      icon: isDark ? <BulbFilled /> : <BulbOutlined />,
+      label: isDark ? "Light mode" : "Dark mode",
+      onClick: () => setMode(isDark ? "light" : "dark"),
+    },
+    {
+      key: "signout",
+      icon: <LogoutOutlined />,
+      label: "Sign out",
+      onClick: () => signOut(),
+    },
+  ];
 
   return (
     <Flex
-      vertical={compact}
-      align={compact ? "stretch" : "center"}
+      align="center"
       justify="space-between"
-      gap={compact ? 14 : 16}
+      gap={12}
       wrap
-      style={{ marginBottom: compact ? 28 : 36 }}
+      style={{ marginBottom: compact ? 24 : 36 }}
     >
       <Flex align="center" gap={12} style={{ minWidth: 0 }}>
         <div
@@ -60,47 +78,26 @@ export function DashboardHeader() {
         </Typography.Title>
       </Flex>
 
-      <Flex
-        align="center"
-        gap={compact ? 10 : 12}
-        wrap
-        justify={compact ? "space-between" : "flex-end"}
-      >
-        <Flex
-          align="center"
-          gap={6}
-          style={{
-            padding: "3px 10px",
-            borderRadius: 999,
-            background: token.colorFillSecondary,
-          }}
+      {compact ? (
+        <Dropdown
+          trigger={["click"]}
+          placement="bottomRight"
+          menu={{ items: menuItems }}
         >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: savePill.color,
-            }}
-          />
-          <Typography.Text style={{ fontSize: 12 }}>
-            {savePill.text}
-          </Typography.Text>
-        </Flex>
-
-        {!compact ? (
+          <Button icon={<MenuOutlined />} aria-label="Menu" />
+        </Dropdown>
+      ) : (
+        <Flex align="center" gap={12} wrap justify="flex-end">
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {dayjs().format("dddd, MMMM D, YYYY")}
+            {today}
           </Typography.Text>
-        ) : null}
 
-        {!compact && user?.email ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {user.email}
-          </Typography.Text>
-        ) : null}
+          {user?.email ? (
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {user.email}
+            </Typography.Text>
+          ) : null}
 
-        <Flex align="center" gap={compact ? 10 : 12}>
           <Button
             type="text"
             size="small"
@@ -113,7 +110,7 @@ export function DashboardHeader() {
             Sign out
           </Button>
         </Flex>
-      </Flex>
+      )}
     </Flex>
   );
 }

@@ -42,6 +42,7 @@ import { watchWaterPresets, type WaterPreset } from "@/models/presets";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
 import { IdealBadge } from "@/components/ideal-badge";
 import { useSaveStatus } from "@/components/save-status";
+import { SavePill } from "@/components/save-pill";
 import { Tip } from "@/components/tip";
 
 const SAVE_DELAY_MS = 2000;
@@ -368,6 +369,7 @@ export function DailyTracker() {
     <>
     <Card
       title={<><Icon name="logEntry" />Log entry</>}
+      extra={<SavePill />}
       style={{
         boxShadow:
           "0 12px 32px -6px rgba(20, 40, 30, 0.10), 0 3px 10px -2px rgba(20, 40, 30, 0.05)",
