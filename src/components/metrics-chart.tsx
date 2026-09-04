@@ -39,6 +39,28 @@ const PRESET_OPTIONS = [
 
 type Point = { date: string; value: number; series: string };
 
+const METRIC_STORAGE_KEY = "trends-metric";
+
+function loadMetric(): Metric {
+  try {
+    const saved = window.localStorage.getItem(METRIC_STORAGE_KEY);
+    if (saved === "weight" || saved === "bp" || saved === "water") {
+      return saved;
+    }
+  } catch {
+    // localStorage unavailable
+  }
+  return "weight";
+}
+
+function saveMetric(metric: Metric) {
+  try {
+    window.localStorage.setItem(METRIC_STORAGE_KEY, metric);
+  } catch {
+    // localStorage unavailable
+  }
+}
+
 export function MetricsChart() {
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -47,7 +69,7 @@ export function MetricsChart() {
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [metric, setMetric] = useState<Metric>("weight");
+  const [metric, setMetric] = useState<Metric>(loadMetric);
   const [preset, setPreset] = useState<Preset>("30");
   const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
 
@@ -138,7 +160,11 @@ export function MetricsChart() {
         <Segmented
           options={METRIC_OPTIONS}
           value={metric}
-          onChange={(value) => setMetric(value as Metric)}
+          onChange={(value) => {
+            const next = value as Metric;
+            setMetric(next);
+            saveMetric(next);
+          }}
         />
       </Flex>
 
