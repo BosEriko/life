@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { App, Flex, Spin, theme, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
 import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
 
 const WEEKS = 26;
@@ -13,11 +14,47 @@ const HISTORY_LIMIT = 220;
 
 type HabitField = "junkFood" | "junkDrink" | "bath" | "brushTeeth";
 
-const HABITS: { label: string; field: HabitField; tone: "bad" | "good" }[] = [
-  { label: "Junk food", field: "junkFood", tone: "bad" },
-  { label: "Junk drink", field: "junkDrink", tone: "bad" },
-  { label: "Bath", field: "bath", tone: "good" },
-  { label: "Brush", field: "brushTeeth", tone: "good" },
+const HABITS: { label: ReactNode; field: HabitField; tone: "bad" | "good" }[] = [
+  {
+    label: (
+      <>
+        <Icon name="junkFood" />
+        Junk food
+      </>
+    ),
+    field: "junkFood",
+    tone: "bad",
+  },
+  {
+    label: (
+      <>
+        <Icon name="junkDrink" />
+        Junk drink
+      </>
+    ),
+    field: "junkDrink",
+    tone: "bad",
+  },
+  {
+    label: (
+      <>
+        <Icon name="bath" />
+        Bath
+      </>
+    ),
+    field: "bath",
+    tone: "good",
+  },
+  {
+    label: (
+      <>
+        <Icon name="brush" />
+        Brush
+      </>
+    ),
+    field: "brushTeeth",
+    tone: "good",
+  },
 ];
 
 export function HabitCalendar() {
@@ -67,7 +104,10 @@ export function HabitCalendar() {
 
   return (
     <div>
-      <Typography.Title level={5}>Habits</Typography.Title>
+      <Typography.Title level={5}>
+        <Icon name="habits" />
+        Habits
+      </Typography.Title>
 
       {!loaded ? (
         <Flex justify="center" style={{ padding: 24 }}>

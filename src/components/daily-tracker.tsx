@@ -15,6 +15,7 @@ import {
   Typography,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { Icon } from "@/components/icon";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -294,7 +295,7 @@ export function DailyTracker() {
   const currentEntry = entries.find((item) => item.date === selectedDate);
 
   return (
-    <Card title="Log entry">
+    <Card title={<><Icon name="logEntry" />Log entry</>}>
       <Form
         form={form}
         layout="vertical"
@@ -311,7 +312,7 @@ export function DailyTracker() {
         }}
         onValuesChange={handleValuesChange}
       >
-        <Form.Item label="Date">
+        <Form.Item label={<><Icon name="date" />Date</>}>
           <Flex align="center" gap={8}>
             <Button
               icon={<LeftOutlined />}
@@ -340,7 +341,7 @@ export function DailyTracker() {
           </Flex>
         </Form.Item>
 
-        <Form.Item label="Weight" name="weight">
+        <Form.Item label={<><Icon name="weight" />Weight</>} name="weight">
           <InputNumber
             style={{ width: "100%" }}
             min={1}
@@ -350,7 +351,7 @@ export function DailyTracker() {
           />
         </Form.Item>
 
-        <Form.Item label="Blood pressure">
+        <Form.Item label={<><Icon name="bp" />Blood pressure</>}>
           <Flex vertical gap={10}>
             <Flex gap={8} align="flex-end">
               <div style={{ flex: 1 }}>
@@ -407,7 +408,7 @@ export function DailyTracker() {
           </Flex>
         </Form.Item>
 
-        <Form.Item label="Water">
+        <Form.Item label={<><Icon name="water" />Water</>}>
           <Flex vertical gap={8}>
             <Form.Item name="water" noStyle>
               <InputNumber
@@ -439,7 +440,7 @@ export function DailyTracker() {
             columnGap: 16,
           }}
         >
-          <Form.Item label="Hygiene">
+          <Form.Item label={<><Icon name="hygiene" />Hygiene</>}>
             <Flex gap={16} wrap>
               <Form.Item name="bath" valuePropName="checked" noStyle>
                 <Checkbox>Bath</Checkbox>
@@ -450,7 +451,7 @@ export function DailyTracker() {
             </Flex>
           </Form.Item>
 
-          <Form.Item label="Junk">
+          <Form.Item label={<><Icon name="junkFood" />Junk</>}>
             <Flex gap={16} wrap>
               <Form.Item name="junkFood" valuePropName="checked" noStyle>
                 <Checkbox>Food</Checkbox>
@@ -462,7 +463,7 @@ export function DailyTracker() {
           </Form.Item>
         </div>
 
-        <Form.Item label="Notes" name="notes">
+        <Form.Item label={<><Icon name="notes" />Notes</>} name="notes">
           <Input.TextArea
             autoSize={{ minRows: 2, maxRows: 6 }}
             placeholder="Anything worth noting about today…"

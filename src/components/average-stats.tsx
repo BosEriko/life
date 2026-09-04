@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { App, Flex, Segmented, Spin, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon, type IconName } from "@/components/icon";
 import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
 
 const HISTORY_LIMIT = 1000;
@@ -104,13 +105,15 @@ export function AverageStats() {
     };
   }, [entries, range]);
 
-  const items: { label: string; value: string; hint?: string }[] = [
+  const items: { label: string; icon: IconName; value: string; hint?: string }[] = [
     {
       label: "Weight",
+      icon: "weight",
       value: stats.weight != null ? `${stats.weight.toFixed(1)} kg` : "—",
     },
     {
       label: "Blood pressure",
+      icon: "bp",
       value:
         stats.systolic != null && stats.diastolic != null
           ? `${Math.round(stats.systolic)}/${Math.round(stats.diastolic)} mmHg`
@@ -119,6 +122,7 @@ export function AverageStats() {
     },
     {
       label: "Water",
+      icon: "water",
       value: stats.water != null ? `${Math.round(stats.water)} ml` : "—",
     },
   ];
@@ -133,7 +137,7 @@ export function AverageStats() {
         style={{ marginBottom: 4 }}
       >
         <Typography.Title level={5} style={{ margin: 0 }}>
-          Averages
+          <Icon name="averages" />Averages
         </Typography.Title>
         <Segmented
           size="small"
@@ -162,6 +166,7 @@ export function AverageStats() {
                 type="secondary"
                 style={{ fontSize: 12, display: "block", marginBottom: 2 }}
               >
+                <Icon name={item.icon} />
                 {item.label}
               </Typography.Text>
               <Tooltip title={item.hint} placement="bottom">

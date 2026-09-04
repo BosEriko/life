@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { FirebaseError } from "firebase/app";
 import { Alert, Button, Card, Flex, Form, Input, Typography } from "antd";
+import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 
 type AuthFormProps = {
@@ -108,7 +109,11 @@ export function AuthForm({ mode }: AuthFormProps) {
                 { required: true, type: "email", message: "Enter a valid email." },
               ]}
             >
-              <Input autoComplete="email" size="large" />
+              <Input
+                autoComplete="email"
+                size="large"
+                prefix={<MailOutlined />}
+              />
             </Form.Item>
 
             <Form.Item
@@ -123,6 +128,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                   mode === "login" ? "current-password" : "new-password"
                 }
                 size="large"
+                prefix={<LockOutlined />}
               />
             </Form.Item>
 

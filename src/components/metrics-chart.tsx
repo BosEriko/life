@@ -14,6 +14,7 @@ import {
 import { Line } from "@ant-design/charts";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
 import { useIsDark } from "@/components/theme-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
 
@@ -155,7 +156,7 @@ export function MetricsChart() {
         style={{ marginBottom: 12 }}
       >
         <Typography.Title level={5} style={{ margin: 0 }}>
-          Trends
+          <Icon name="trends" />Trends
         </Typography.Title>
         <Segmented
           options={METRIC_OPTIONS}

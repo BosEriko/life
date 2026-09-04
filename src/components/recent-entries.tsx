@@ -3,12 +3,8 @@
 import { useEffect, useState } from "react";
 import { App, Empty, Flex, Spin, theme, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
-import {
-  formatBpTime,
-  relativeDate,
-  watchDailies,
-  type DailyEntry,
-} from "@/lib/dailies";
+import { relativeDate, watchDailies, type DailyEntry } from "@/lib/dailies";
+import { Icon } from "@/components/icon";
 
 export function RecentEntries() {
   const { user } = useAuth();
@@ -34,7 +30,10 @@ export function RecentEntries() {
 
   return (
     <div>
-      <Typography.Title level={5}>Recent</Typography.Title>
+      <Typography.Title level={5}>
+        <Icon name="recent" />
+        Recent
+      </Typography.Title>
       {!loaded ? (
         <Flex justify="center" style={{ padding: 24 }}>
           <Spin />
@@ -71,23 +70,25 @@ export function RecentEntries() {
                 <Flex gap={16} wrap justify="flex-end">
                   {entry.weight != null ? (
                     <Typography.Text type="secondary">
-                      <Typography.Text strong>{entry.weight}</Typography.Text> kg
+                      <Icon name="weight" style={{ marginRight: 4 }} />
+                      <Typography.Text strong>{entry.weight}</Typography.Text>{" "}
+                      kg
                     </Typography.Text>
                   ) : null}
                   {entry.systolic != null && entry.diastolic != null ? (
                     <Typography.Text type="secondary">
+                      <Icon name="bp" style={{ marginRight: 4 }} />
                       <Typography.Text strong>
                         {entry.systolic}/{entry.diastolic}
                       </Typography.Text>{" "}
                       mmHg
-                      {entry.bpTime
-                        ? ` · ${formatBpTime(entry.date, entry.bpTime)}`
-                        : ""}
                     </Typography.Text>
                   ) : null}
                   {entry.water != null ? (
                     <Typography.Text type="secondary">
-                      <Typography.Text strong>{entry.water}</Typography.Text> ml
+                      <Icon name="water" style={{ marginRight: 4 }} />
+                      <Typography.Text strong>{entry.water}</Typography.Text>{" "}
+                      ml
                     </Typography.Text>
                   ) : null}
                 </Flex>
