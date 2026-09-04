@@ -320,7 +320,8 @@ export function DeveloperModal({
         </li>
         <li>
           <Typography.Text code>get_ideals</Typography.Text>,{" "}
-          <Typography.Text code>get_presets</Typography.Text> — no arguments.
+          <Typography.Text code>get_presets</Typography.Text>,{" "}
+          <Typography.Text code>get_profile</Typography.Text> — no arguments.
         </li>
         <li>
           <Typography.Text code>search</Typography.Text> /{" "}

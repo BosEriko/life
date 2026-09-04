@@ -31,6 +31,28 @@ function clean<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
+function computeAge(birthday: string | null): number | null {
+  if (!birthday) return null;
+  const born = new Date(birthday);
+  if (Number.isNaN(born.getTime())) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - born.getUTCFullYear();
+  const hadBirthdayThisYear =
+    now.getUTCMonth() > born.getUTCMonth() ||
+    (now.getUTCMonth() === born.getUTCMonth() &&
+      now.getUTCDate() >= born.getUTCDate());
+  if (!hadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+function computeHeightTotalInches(
+  feet: number | null,
+  inches: number | null,
+): number | null {
+  if (feet == null && inches == null) return null;
+  return (feet ?? 0) * 12 + (inches ?? 0);
+}
+
 export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   const db = getAdminDb();
 
@@ -61,10 +83,11 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   if (from) dailiesQuery = dailiesQuery.where("date", ">=", from);
   if (to) dailiesQuery = dailiesQuery.where("date", "<=", to);
 
-  const [dailiesSnap, idealsSnap, presetsSnap] = await Promise.all([
+  const [dailiesSnap, idealsSnap, presetsSnap, profileSnap] = await Promise.all([
     dailiesQuery.get(),
     userRef.collection("ideals").doc("current").get(),
     userRef.collection("presets").orderBy("ml", "asc").get(),
+    userRef.collection("profile").doc("current").get(),
   ]);
 
   const dailies = dailiesSnap.docs
@@ -102,6 +125,26 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     return { name: p.name ?? "", ml: p.ml ?? 0 };
   });
 
+  const profileData = profileSnap.data() ?? {};
+  const heightFeet =
+    typeof profileData.heightFeet === "number" ? profileData.heightFeet : null;
+  const heightInches =
+    typeof profileData.heightInches === "number"
+      ? profileData.heightInches
+      : null;
+  const birthday =
+    typeof profileData.birthday === "string" ? profileData.birthday : null;
+  const profile = {
+    name: clean(profileData.name),
+    birthday: clean(profileData.birthday),
+    heightFeet: clean(profileData.heightFeet),
+    heightInches: clean(profileData.heightInches),
+    sex: clean(profileData.sex),
+    timezone: clean(profileData.timezone),
+    ageYears: computeAge(birthday),
+    heightTotalInches: computeHeightTotalInches(heightFeet, heightInches),
+  };
+
   return {
     generatedAt: new Date().toISOString(),
     range: { from, to },
@@ -109,5 +152,6 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     dailies,
     ideals,
     presets,
+    profile,
   };
 }

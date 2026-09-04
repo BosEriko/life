@@ -77,6 +77,12 @@ const TOOLS = [
       "The user's labelled water containers, each { name, ml }.",
     inputSchema: { type: "object", properties: {} },
   },
+  {
+    name: "get_profile",
+    description:
+      "The user's personal profile: name, birthday, height (feet/inches), biological sex, timezone, plus derived ageYears and heightTotalInches. Any field may be null if not set.",
+    inputSchema: { type: "object", properties: {} },
+  },
 ];
 
 function rpc(
@@ -132,18 +138,29 @@ async function runTool(
         title: "Water containers (presets)",
         url: "mcp://life-tracker/presets",
       },
+      {
+        id: "profile",
+        title: "Personal profile",
+        url: "mcp://life-tracker/profile",
+      },
     ];
     return { results };
   }
 
   if (name === "fetch") {
     const id = String(args.id ?? "");
-    if (id === "ideals" || id === "presets") {
+    if (id === "ideals" || id === "presets" || id === "profile") {
       const data = await fetchExportData(uid, { limit: 1 });
+      const byId = { ideals: data.ideals, presets: data.presets, profile: data.profile };
+      const titleById = {
+        ideals: "Target ranges",
+        presets: "Water containers",
+        profile: "Personal profile",
+      };
       return {
         id,
-        title: id === "ideals" ? "Target ranges" : "Water containers",
-        text: JSON.stringify(id === "ideals" ? data.ideals : data.presets),
+        title: titleById[id],
+        text: JSON.stringify(byId[id]),
         url: `mcp://life-tracker/${id}`,
       };
     }
@@ -182,6 +199,10 @@ async function runTool(
     return (await fetchExportData(uid, { limit: 1 })).presets;
   }
 
+  if (name === "get_profile") {
+    return (await fetchExportData(uid, { limit: 1 })).profile;
+  }
+
   throw new Error(`Unknown tool: ${name}`);
 }
 
@@ -210,7 +231,7 @@ export async function POST(
       capabilities: { tools: {} },
       serverInfo: { name: "life-tracker", version: "1.0.0" },
       instructions:
-        "Read the user's personal health tracker. Use get_entries for daily weight / blood pressure / water / habit data, get_ideals for their target ranges, and get_presets for their water containers. search + fetch expose the same data as documents.",
+        "Read the user's personal health tracker. Use get_entries for daily weight / blood pressure / water / habit data, get_ideals for their target ranges, get_presets for their water containers, and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
     });
   }
 

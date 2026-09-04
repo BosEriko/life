@@ -2,11 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { App, FloatButton, Grid, Modal, Segmented, Typography } from "antd";
-import { CodeOutlined, DownloadOutlined } from "@ant-design/icons";
+import {
+  CodeOutlined,
+  DownloadOutlined,
+  IdcardOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { DeveloperModal } from "@/components/developer-modal";
+import { ProfileModal } from "@/components/profile-modal";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
+import { EMPTY_PROFILE, watchProfile, type Profile } from "@/models/profile";
 
 const HISTORY_LIMIT = 1000;
 
@@ -41,6 +47,8 @@ export function ReportDownload() {
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [open, setOpen] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [range, setRange] = useState<Range>("30");
   const [busy, setBusy] = useState(false);
 
@@ -53,6 +61,11 @@ export function ReportDownload() {
       HISTORY_LIMIT,
     );
   }, [user, message]);
+
+  useEffect(() => {
+    if (!user) return;
+    return watchProfile(user.uid, setProfile, () => {});
+  }, [user]);
 
   const rows = useMemo(() => {
     const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
@@ -167,6 +180,11 @@ export function ReportDownload() {
     <>
       <FloatButton.Group shape="circle">
         <FloatButton
+          icon={<IdcardOutlined />}
+          tooltip={screens.md === false ? undefined : "Profile"}
+          onClick={() => setProfileOpen(true)}
+        />
+        <FloatButton
           icon={<CodeOutlined />}
           tooltip={screens.md === false ? undefined : "Developer / MCP"}
           onClick={() => setDevOpen(true)}
@@ -180,6 +198,12 @@ export function ReportDownload() {
       </FloatButton.Group>
 
       <DeveloperModal open={devOpen} onClose={() => setDevOpen(false)} />
+
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        profile={profile}
+      />
 
       <Modal
         open={open}
