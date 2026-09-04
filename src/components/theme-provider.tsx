@@ -1,9 +1,20 @@
 "use client";
 
-import { useSyncExternalStore, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { App, ConfigProvider, theme } from "antd";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+const DarkContext = createContext(false);
+
+export function useIsDark(): boolean {
+  return useContext(DarkContext);
+}
 
 function subscribe(callback: () => void) {
   const media = window.matchMedia(DARK_QUERY);
@@ -44,7 +55,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }}
     >
       <App>
-        <Background>{children}</Background>
+        <DarkContext.Provider value={dark}>
+          <Background>{children}</Background>
+        </DarkContext.Provider>
       </App>
     </ConfigProvider>
   );

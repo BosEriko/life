@@ -1,14 +1,27 @@
 "use client";
 
-import { Button, Flex, Typography } from "antd";
+import dynamic from "next/dynamic";
+import { Button, Flex, Spin, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { DailyTracker } from "@/components/daily-tracker";
+
+const MetricsChart = dynamic(
+  () => import("@/components/metrics-chart").then((mod) => mod.MetricsChart),
+  {
+    ssr: false,
+    loading: () => (
+      <Flex justify="center" style={{ padding: 48 }}>
+        <Spin />
+      </Flex>
+    ),
+  },
+);
 
 export default function Home() {
   const { user, signOut } = useAuth();
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", padding: "48px 20px" }}>
+    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "48px 20px" }}>
       <Flex
         align="center"
         justify="space-between"
@@ -26,7 +39,17 @@ export default function Home() {
         <Button onClick={() => signOut()}>Sign out</Button>
       </Flex>
 
-      <DailyTracker />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+          gap: 40,
+          alignItems: "start",
+        }}
+      >
+        <DailyTracker />
+        <MetricsChart />
+      </div>
     </div>
   );
 }

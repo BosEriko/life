@@ -53,11 +53,12 @@ export function watchDailies(
   uid: string,
   onChange: (entries: DailyEntry[]) => void,
   onError: (error: Error) => void,
+  max = 30,
 ) {
   const recent = query(
     dailiesCollection(uid),
     orderBy("date", "desc"),
-    limit(30),
+    limit(max),
   );
   return onSnapshot(
     recent,
