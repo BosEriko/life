@@ -9,6 +9,7 @@ import {
   DatePicker,
   Flex,
   Form,
+  Grid,
   Input,
   InputNumber,
   Segmented,
@@ -126,6 +127,7 @@ export function DailyTracker() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { state: status, setState: setStatus } = useSaveStatus();
+  const screens = Grid.useBreakpoint();
   const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayKey());
@@ -539,13 +541,15 @@ export function DailyTracker() {
             <Flex gap={8} wrap align="center">
               {presets.length > 0
                 ? presets.map((preset) => (
-                    <Button
+                    <Tip
                       key={preset.id}
-                      size="small"
-                      onClick={() => addWater(preset.ml)}
+                      title={`${preset.ml} ml`}
+                      placement="bottom"
                     >
-                      {preset.name}
-                    </Button>
+                      <Button size="small" onClick={() => addWater(preset.ml)}>
+                        {preset.name}
+                      </Button>
+                    </Tip>
                   ))
                 : WATER_PRESETS.map((amount) => (
                     <Button
@@ -572,7 +576,7 @@ export function DailyTracker() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gridTemplateColumns: screens.md ? "1fr 1fr" : "1fr",
             columnGap: 16,
           }}
         >

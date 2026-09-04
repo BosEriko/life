@@ -4,6 +4,7 @@ import { Button, Flex, Grid, theme, Typography } from "antd";
 import { BulbFilled, BulbOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
 import { useSaveStatus } from "@/components/save-status";
 import { useThemeMode } from "@/components/theme-provider";
 
@@ -25,29 +26,39 @@ export function DashboardHeader() {
   return (
     <Flex
       vertical={compact}
-      align={compact ? "stretch" : "flex-start"}
+      align={compact ? "stretch" : "center"}
       justify="space-between"
       gap={compact ? 14 : 16}
       wrap
       style={{ marginBottom: compact ? 28 : 36 }}
     >
-      <div style={{ minWidth: 0 }}>
-        <Typography.Text
+      <Flex align="center" gap={12} style={{ minWidth: 0 }}>
+        <div
           style={{
-            display: "block",
-            textTransform: "uppercase",
-            letterSpacing: "0.14em",
-            fontSize: 11,
-            fontWeight: 600,
-            color: token.colorPrimary,
+            width: 36,
+            height: 36,
+            flexShrink: 0,
+            borderRadius: 10,
+            background: token.colorPrimary,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          Bos Eriko&apos;s
-        </Typography.Text>
-        <Typography.Title level={2} style={{ margin: "6px 0 0", fontWeight: 400 }}>
+          <Icon
+            name="brand"
+            style={{
+              margin: 0,
+              opacity: 1,
+              color: token.colorTextLightSolid,
+              fontSize: 17,
+            }}
+          />
+        </div>
+        <Typography.Title level={2} style={{ margin: 0, fontWeight: 400 }}>
           Life Tracker
         </Typography.Title>
-      </div>
+      </Flex>
 
       <Flex
         align="center"

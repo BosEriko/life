@@ -2,8 +2,9 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { Flex, Spin } from "antd";
+import { Flex } from "antd";
 import { useAuth } from "@/components/auth-provider";
+import { BrandLoader } from "@/components/brand-loader";
 
 const PUBLIC_ROUTES = ["/login", "/register"];
 
@@ -27,7 +28,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <Flex align="center" justify="center" style={{ minHeight: "100dvh" }}>
-        <Spin size="large" />
+        <BrandLoader size={52} />
       </Flex>
     );
   }
