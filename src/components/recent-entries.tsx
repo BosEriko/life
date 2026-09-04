@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { App, Empty, Flex, Spin, theme, Typography } from "antd";
+import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { relativeDate, watchDailies, type DailyEntry } from "@/models/dailies";
+import {
+  relativeDate,
+  todayKey,
+  watchDailies,
+  type DailyEntry,
+} from "@/models/dailies";
 import { Icon } from "@/components/icon";
+
+const DAYS = 7;
 
 export function RecentEntries() {
   const { user } = useAuth();
@@ -25,8 +33,16 @@ export function RecentEntries() {
         message.error("Could not load your entries.");
         setLoaded(true);
       },
+      DAYS,
     );
   }, [user, message]);
+
+  const recent = useMemo(() => {
+    const cutoff = dayjs(todayKey()).subtract(DAYS - 1, "day");
+    return entries.filter(
+      (entry) => !dayjs(entry.date).isBefore(cutoff, "day"),
+    );
+  }, [entries]);
 
   return (
     <div>
@@ -38,11 +54,11 @@ export function RecentEntries() {
         <Flex justify="center" style={{ padding: 24 }}>
           <Spin />
         </Flex>
-      ) : entries.length === 0 ? (
-        <Empty description="No entries yet." />
+      ) : recent.length === 0 ? (
+        <Empty description="Nothing logged in the last 7 days." />
       ) : (
         <Flex vertical>
-          {entries.map((entry) => (
+          {recent.map((entry) => (
             <Flex
               key={entry.date}
               vertical
