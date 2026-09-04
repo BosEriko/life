@@ -48,7 +48,7 @@ function loadRange(): Range {
   } catch {
     // localStorage unavailable
   }
-  return "365";
+  return "7";
 }
 
 function saveRange(range: Range) {
