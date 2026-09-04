@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Button, Flex, Spin, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { DailyTracker } from "@/components/daily-tracker";
+import { RecentEntries } from "@/components/recent-entries";
 
 const MetricsChart = dynamic(
   () => import("@/components/metrics-chart").then((mod) => mod.MetricsChart),
@@ -30,7 +31,7 @@ export default function Home() {
       >
         <div style={{ minWidth: 0 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            life.boseriko.com
+            Bos Eriko&apos;s Personal Life Tracker
           </Typography.Title>
           <Typography.Text type="secondary" style={{ fontSize: 13 }}>
             {user?.email}
@@ -48,7 +49,10 @@ export default function Home() {
         }}
       >
         <DailyTracker />
-        <MetricsChart />
+        <Flex vertical gap={40}>
+          <MetricsChart />
+          <RecentEntries />
+        </Flex>
       </div>
     </div>
   );

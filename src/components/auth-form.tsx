@@ -87,7 +87,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           level={4}
           style={{ textAlign: "center", marginBottom: 24 }}
         >
-          life.boseriko.com
+          Bos Eriko&apos;s Personal Life Tracker
         </Typography.Title>
 
         <Card>

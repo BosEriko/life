@@ -6,19 +6,17 @@ import {
   Button,
   Card,
   DatePicker,
-  Empty,
   Flex,
   Form,
   InputNumber,
   Segmented,
-  Spin,
-  theme,
   Typography,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import {
+  formatBpTime,
   saveDaily,
   todayKey,
   watchDailies,
@@ -54,18 +52,6 @@ const ARM_OPTIONS = [
 
 type SaveStatus = "idle" | "pending" | "saving";
 
-function formatBpTime(dateKey: string, time: string): string {
-  return dayjs(`${dateKey}T${time}`).format("h:mm A");
-}
-
-function relativeDate(key: string): string {
-  const diffDays = dayjs(todayKey()).diff(dayjs(key), "day");
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays > 1 && diffDays < 7) return dayjs(key).format("dddd");
-  return dayjs(key).format("MMM D");
-}
-
 function collectInput(values: FormValues, stampBpTime: boolean): DailyInput {
   const input: DailyInput = {};
   if (typeof values.weight === "number" && values.weight > 0) {
@@ -94,10 +80,8 @@ const SAVE_MSG_KEY = "daily-save";
 export function DailyTracker() {
   const { user } = useAuth();
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [selectedDate, setSelectedDate] = useState(todayKey());
 
@@ -111,11 +95,9 @@ export function DailyTracker() {
       user.uid,
       (next) => {
         setEntries(next);
-        setLoaded(true);
       },
       () => {
         message.error("Could not load your entries.");
-        setLoaded(true);
       },
     );
   }, [user, message]);
@@ -247,9 +229,8 @@ export function DailyTracker() {
   const currentEntry = entries.find((item) => item.date === selectedDate);
 
   return (
-    <Flex vertical gap={24}>
-      <Card title="Log entry">
-        <Form
+    <Card title="Log entry">
+      <Form
           form={form}
           layout="vertical"
           requiredMark={false}
@@ -381,70 +362,7 @@ export function DailyTracker() {
             </Flex>
           </Form.Item>
         </Form>
-      </Card>
-
-      <div>
-        <Typography.Title level={5}>Recent</Typography.Title>
-        {!loaded ? (
-          <Flex justify="center" style={{ padding: 24 }}>
-            <Spin />
-          </Flex>
-        ) : entries.length === 0 ? (
-          <Empty description="No entries yet." />
-        ) : (
-          <Flex
-            vertical
-            style={{
-              border: `1px solid ${token.colorBorder}`,
-              borderRadius: token.borderRadiusLG,
-              overflow: "hidden",
-              background: token.colorBgContainer,
-            }}
-          >
-            {entries.map((entry, index) => (
-              <Flex
-                key={entry.date}
-                align="center"
-                justify="space-between"
-                style={{
-                  padding: "12px 16px",
-                  borderTop:
-                    index === 0
-                      ? undefined
-                      : `1px solid ${token.colorBorderSecondary}`,
-                }}
-              >
-                <Typography.Text strong>
-                  {relativeDate(entry.date)}
-                </Typography.Text>
-                <Flex gap={16}>
-                  {entry.weight != null ? (
-                    <Typography.Text type="secondary">
-                      <Typography.Text strong>{entry.weight}</Typography.Text> kg
-                    </Typography.Text>
-                  ) : null}
-                  {entry.systolic != null && entry.diastolic != null ? (
-                    <Typography.Text type="secondary">
-                      <Typography.Text strong>
-                        {entry.systolic}/{entry.diastolic}
-                      </Typography.Text>{" "}
-                      mmHg
-                      {entry.bpTime
-                        ? ` · ${formatBpTime(entry.date, entry.bpTime)}`
-                        : ""}
-                    </Typography.Text>
-                  ) : null}
-                  {entry.water != null ? (
-                    <Typography.Text type="secondary">
-                      <Typography.Text strong>{entry.water}</Typography.Text> ml
-                    </Typography.Text>
-                  ) : null}
-                </Flex>
-              </Flex>
-            ))}
-          </Flex>
-        )}
-      </div>
-    </Flex>
+    </Card>
   );
 }
+

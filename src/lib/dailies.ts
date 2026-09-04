@@ -9,6 +9,7 @@ import {
   setDoc,
   type Timestamp,
 } from "firebase/firestore";
+import dayjs from "dayjs";
 import { getFirebaseDb } from "@/lib/firebase";
 
 export type BpPosture = "sitting" | "standing";
@@ -46,6 +47,18 @@ export function todayKey(): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+export function relativeDate(key: string): string {
+  const diffDays = dayjs(todayKey()).diff(dayjs(key), "day");
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) return dayjs(key).format("dddd");
+  return dayjs(key).format("MMM D");
+}
+
+export function formatBpTime(dateKey: string, time: string): string {
+  return dayjs(`${dateKey}T${time}`).format("h:mm A");
 }
 
 export async function saveDaily(uid: string, date: string, input: DailyInput) {
