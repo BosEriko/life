@@ -175,6 +175,16 @@ export function DailyTracker() {
 
   useEffect(() => {
     if (status === "pending" || status === "saving") return;
+    if (
+      bpDirtyRef.current ||
+      notesDirtyRef.current ||
+      junkFoodDirtyRef.current ||
+      junkDrinkDirtyRef.current ||
+      bathDirtyRef.current ||
+      brushTeethDirtyRef.current
+    ) {
+      return;
+    }
     const entry = entries.find((item) => item.date === selectedDate);
     form.setFieldsValue({
       weight: entry?.weight ?? null,
@@ -209,10 +219,12 @@ export function DailyTracker() {
       return;
     }
 
+    const savedBp = input.systolic !== undefined && input.diastolic !== undefined;
+
     setStatus("saving");
     try {
       await saveDaily(user.uid, values.date.format("YYYY-MM-DD"), input);
-      bpDirtyRef.current = false;
+      if (savedBp) bpDirtyRef.current = false;
       notesDirtyRef.current = false;
       junkFoodDirtyRef.current = false;
       junkDrinkDirtyRef.current = false;
