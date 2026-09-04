@@ -34,11 +34,14 @@ import {
   evaluateIdeal,
   rangeText,
   watchIdeals,
+  worstStatus,
   type IdealKey,
   type Ideals,
 } from "@/models/ideals";
 import { watchWaterPresets, type WaterPreset } from "@/models/presets";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
+import { IdealBadge } from "@/components/ideal-badge";
+import { useSaveStatus } from "@/components/save-status";
 
 const SAVE_DELAY_MS = 2000;
 
@@ -80,8 +83,6 @@ const ARM_OPTIONS = [
   { label: "Right arm", value: "right" },
 ];
 
-type SaveStatus = "idle" | "pending" | "saving";
-
 type CollectOptions = {
   stampBpTime: boolean;
   includeNotes: boolean;
@@ -121,14 +122,12 @@ function collectInput(values: FormValues, opts: CollectOptions): DailyInput {
   return input;
 }
 
-const SAVE_MSG_KEY = "daily-save";
-
 export function DailyTracker() {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const { state: status, setState: setStatus } = useSaveStatus();
   const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
-  const [status, setStatus] = useState<SaveStatus>("idle");
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
   const [presets, setPresets] = useState<WaterPreset[]>([]);
@@ -204,17 +203,10 @@ export function DailyTracker() {
     });
     if (Object.keys(input).length === 0) {
       setStatus("idle");
-      message.destroy(SAVE_MSG_KEY);
       return;
     }
 
     setStatus("saving");
-    message.open({
-      key: SAVE_MSG_KEY,
-      type: "loading",
-      content: "Saving…",
-      duration: 0,
-    });
     try {
       await saveDaily(user.uid, values.date.format("YYYY-MM-DD"), input);
       bpDirtyRef.current = false;
@@ -224,22 +216,10 @@ export function DailyTracker() {
       bathDirtyRef.current = false;
       brushTeethDirtyRef.current = false;
       setStatus("idle");
-      message.open({
-        key: SAVE_MSG_KEY,
-        type: "success",
-        content: "Saved",
-        duration: 2,
-      });
     } catch {
-      setStatus("idle");
-      message.open({
-        key: SAVE_MSG_KEY,
-        type: "error",
-        content: "Could not save. Try again.",
-        duration: 3,
-      });
+      setStatus("error");
     }
-  }, [user, message]);
+  }, [user, setStatus]);
 
   useEffect(() => {
     return () => {
@@ -259,7 +239,6 @@ export function DailyTracker() {
     junkDrinkDirtyRef.current = false;
     bathDirtyRef.current = false;
     brushTeethDirtyRef.current = false;
-    message.destroy(SAVE_MSG_KEY);
     setStatus("idle");
     setSelectedDate(next.format("YYYY-MM-DD"));
   }
@@ -287,12 +266,6 @@ export function DailyTracker() {
 
   function markPending() {
     setStatus("pending");
-    message.open({
-      key: SAVE_MSG_KEY,
-      type: "warning",
-      content: "Unsaved changes",
-      duration: 0,
-    });
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
       void flush();
@@ -391,7 +364,13 @@ export function DailyTracker() {
 
   return (
     <>
-    <Card title={<><Icon name="logEntry" />Log entry</>}>
+    <Card
+      title={<><Icon name="logEntry" />Log entry</>}
+      style={{
+        boxShadow:
+          "0 12px 32px -6px rgba(20, 40, 30, 0.10), 0 3px 10px -2px rgba(20, 40, 30, 0.05)",
+      }}
+    >
       <Form
         form={form}
         layout="vertical"
@@ -437,7 +416,15 @@ export function DailyTracker() {
           </Flex>
         </Form.Item>
 
-        <Form.Item label={<><Icon name="weight" />Weight</>}>
+        <Form.Item
+          label={
+            <>
+              <Icon name="weight" />
+              Weight
+              <IdealBadge status={weightEval} />
+            </>
+          }
+        >
           <Tooltip title={weightTip} placement={weightPlacement}>
             <div>
               <Form.Item name="weight" noStyle>
@@ -454,7 +441,15 @@ export function DailyTracker() {
           </Tooltip>
         </Form.Item>
 
-        <Form.Item label={<><Icon name="bp" />Blood pressure</>}>
+        <Form.Item
+          label={
+            <>
+              <Icon name="bp" />
+              Blood pressure
+              <IdealBadge status={worstStatus(systolicEval, diastolicEval)} />
+            </>
+          }
+        >
           <Flex vertical gap={10}>
             <Flex gap={8} align="flex-end">
               <Tooltip title={systolicTip} placement={systolicPlacement}>
@@ -517,7 +512,15 @@ export function DailyTracker() {
           </Flex>
         </Form.Item>
 
-        <Form.Item label={<><Icon name="water" />Water</>}>
+        <Form.Item
+          label={
+            <>
+              <Icon name="water" />
+              Water
+              <IdealBadge status={waterEval} />
+            </>
+          }
+        >
           <Flex vertical gap={8}>
             <Tooltip title={waterTip} placement={waterPlacement}>
               <div>

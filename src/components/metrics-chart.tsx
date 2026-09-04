@@ -15,7 +15,11 @@ import { Line } from "@ant-design/charts";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
-import { useIsDark } from "@/components/theme-provider";
+import {
+  TERRACOTTA,
+  TERRACOTTA_DARK,
+  useIsDark,
+} from "@/components/theme-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 
 const HISTORY_LIMIT = 1000;
@@ -139,12 +143,13 @@ export function MetricsChart() {
     return points;
   }, [entries, metric, start, end]);
 
+  const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const colorRange =
     metric === "weight"
       ? [token.colorPrimary]
       : metric === "water"
-        ? [token.colorInfo]
-        : [token.colorError, token.colorInfo];
+        ? [token.colorPrimary]
+        : [terracotta, token.colorPrimary];
 
   return (
     <div>

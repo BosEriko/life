@@ -2,9 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { App, Button, Flex, Segmented, Spin, theme, Tooltip, Typography } from "antd";
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  MinusOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon, type IconName } from "@/components/icon";
+import { IdealBadge } from "@/components/ideal-badge";
 import { IdealsModal } from "@/components/ideals-modal";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import {
@@ -68,13 +74,38 @@ function offBound(status: IdealStatus): string {
   return status === "high" ? "above" : "below";
 }
 
+type StatDelta = { dir: "up" | "down" | "flat"; text: string };
+
 type StatItem = {
   label: string;
   icon: IconName;
   value: string;
   status: IdealStatus;
   tip?: string;
+  delta?: StatDelta;
 };
+
+type WindowStats = {
+  weight: number | null;
+  systolic: number | null;
+  diastolic: number | null;
+  water: number | null;
+};
+
+function meanStats(entries: DailyEntry[]): WindowStats {
+  const pick = (key: "weight" | "systolic" | "diastolic" | "water") =>
+    mean(
+      entries
+        .map((entry) => entry[key])
+        .filter((value): value is number => value != null),
+    );
+  return {
+    weight: pick("weight"),
+    systolic: pick("systolic"),
+    diastolic: pick("diastolic"),
+    water: pick("water"),
+  };
+}
 
 export function AverageStats() {
   const { user } = useAuth();
@@ -119,20 +150,19 @@ export function AverageStats() {
                 "day",
               ),
           );
+    return meanStats(inRange);
+  }, [entries, range]);
 
-    const pick = (key: "weight" | "systolic" | "diastolic" | "water") =>
-      mean(
-        inRange
-          .map((entry) => entry[key])
-          .filter((value): value is number => value != null),
-      );
-
-    return {
-      weight: pick("weight"),
-      systolic: pick("systolic"),
-      diastolic: pick("diastolic"),
-      water: pick("water"),
-    };
+  const prevStats = useMemo<WindowStats | null>(() => {
+    if (range === "all") return null;
+    const span = Number(range);
+    const end = dayjs(todayKey()).subtract(span, "day");
+    const start = dayjs(todayKey()).subtract(span * 2 - 1, "day");
+    const inRange = entries.filter((entry) => {
+      const day = dayjs(entry.date);
+      return !day.isBefore(start, "day") && !day.isAfter(end, "day");
+    });
+    return meanStats(inRange);
   }, [entries, range]);
 
   const items: StatItem[] = useMemo(() => {
@@ -141,6 +171,23 @@ export function AverageStats() {
     const sysStatus = evaluateIdeal(stats.systolic, ideals.systolic);
     const diaStatus = evaluateIdeal(stats.diastolic, ideals.diastolic);
     const bpStatus = worstStatus(sysStatus, diaStatus);
+
+    const priorLabel = range === "7" ? "week" : "period";
+    const deltaFor = (
+      current: number | null,
+      previous: number | null | undefined,
+      unit: string,
+      precision: number,
+    ): StatDelta | undefined => {
+      if (current == null || previous == null) return undefined;
+      const change = Number((current - previous).toFixed(precision));
+      const dir = change > 0 ? "up" : change < 0 ? "down" : "flat";
+      const sign = change > 0 ? "+" : change < 0 ? "−" : "±";
+      return {
+        dir,
+        text: `${sign}${Math.abs(change).toFixed(precision)} ${unit} vs prior ${priorLabel}`,
+      };
+    };
 
     const bpParts: string[] = [];
     if (sysStatus === "low" || sysStatus === "high") {
@@ -164,6 +211,7 @@ export function AverageStats() {
           weightStatus === "low" || weightStatus === "high"
             ? `${weightStatus === "high" ? "Above" : "Below"} ideal (${rangeText(ideals.weight)} kg)`
             : undefined,
+        delta: deltaFor(stats.weight, prevStats?.weight, "kg", 1),
       },
       {
         label: "Blood pressure",
@@ -176,6 +224,7 @@ export function AverageStats() {
         tip: bpParts.length
           ? `Outside ideal — ${bpParts.join(", ")}`
           : "systolic/diastolic",
+        delta: deltaFor(stats.systolic, prevStats?.systolic, "mmHg", 0),
       },
       {
         label: "Water",
@@ -186,9 +235,10 @@ export function AverageStats() {
           waterStatus === "low" || waterStatus === "high"
             ? `${waterStatus === "high" ? "Above" : "Below"} ideal (${rangeText(ideals.water)} ml)`
             : undefined,
+        delta: deltaFor(stats.water, prevStats?.water, "ml", 0),
       },
     ];
-  }, [stats, ideals]);
+  }, [stats, prevStats, ideals, range]);
 
   return (
     <div>
@@ -235,22 +285,34 @@ export function AverageStats() {
           <Spin />
         </Flex>
       ) : (
-        <Flex gap={28} wrap style={{ marginTop: 12 }}>
+        <Flex vertical gap={12} style={{ marginTop: 12 }}>
           {items.map((item) => {
             const off = item.status === "low" || item.status === "high";
             return (
-              <div key={item.label}>
-                <Typography.Text
-                  type="secondary"
-                  style={{ fontSize: 12, display: "block", marginBottom: 2 }}
-                >
-                  <Icon name={item.icon} />
-                  {item.label}
-                </Typography.Text>
+              <div
+                key={item.label}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: token.borderRadiusLG,
+                  background: token.colorFillTertiary,
+                }}
+              >
+                <Flex align="center" justify="space-between" gap={8}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12 }}
+                  >
+                    <Icon name={item.icon} />
+                    {item.label}
+                  </Typography.Text>
+                  <IdealBadge status={item.status} />
+                </Flex>
                 <Tooltip title={item.tip} placement="bottom">
                   <Typography.Text
                     strong
                     style={{
+                      display: "block",
+                      marginTop: 4,
                       fontSize: 18,
                       cursor: item.tip ? "help" : undefined,
                       color: off ? token.colorError : undefined,
@@ -269,6 +331,26 @@ export function AverageStats() {
                     ) : null}
                   </Typography.Text>
                 </Tooltip>
+                {item.delta ? (
+                  <Flex align="center" gap={4} style={{ marginTop: 4 }}>
+                    {item.delta.dir === "up" ? (
+                      <ArrowUpOutlined
+                        style={{ fontSize: 11, color: token.colorTextTertiary }}
+                      />
+                    ) : item.delta.dir === "down" ? (
+                      <ArrowDownOutlined
+                        style={{ fontSize: 11, color: token.colorTextTertiary }}
+                      />
+                    ) : (
+                      <MinusOutlined
+                        style={{ fontSize: 11, color: token.colorTextTertiary }}
+                      />
+                    )}
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {item.delta.text}
+                    </Typography.Text>
+                  </Flex>
+                ) : null}
               </div>
             );
           })}

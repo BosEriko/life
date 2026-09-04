@@ -18,14 +18,14 @@ type FormValues = {
 
 const COPY = {
   login: {
-    heading: "Sign in",
+    tagline: "Your private daily sanctuary for health & well-being.",
     submit: "Sign in",
     switchPrompt: "Need an account?",
     switchHref: "/register",
     switchLabel: "Register",
   },
   register: {
-    heading: "Create account",
+    tagline: "Begin tracking your personal wellness journey.",
     submit: "Register",
     switchPrompt: "Already have an account?",
     switchHref: "/login",
@@ -83,18 +83,16 @@ export function AuthForm({ mode }: AuthFormProps) {
       justify="center"
       style={{ minHeight: "100dvh", padding: 24 }}
     >
-      <div style={{ width: "100%", maxWidth: 380 }}>
-        <Typography.Title
-          level={4}
-          style={{ textAlign: "center", marginBottom: 24 }}
-        >
-          Life Tracker
-        </Typography.Title>
-
+      <div style={{ width: "100%", maxWidth: 400 }}>
         <Card>
-          <Typography.Title level={3} style={{ marginTop: 0 }}>
-            {copy.heading}
-          </Typography.Title>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <Typography.Title level={3} style={{ margin: 0 }}>
+              Life Tracker
+            </Typography.Title>
+            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+              {copy.tagline}
+            </Typography.Text>
+          </div>
 
           <Form
             layout="vertical"

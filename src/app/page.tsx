@@ -1,13 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Button, Flex, Spin, Typography } from "antd";
-import { useAuth } from "@/components/auth-provider";
+import { Flex, Spin } from "antd";
 import { AverageStats } from "@/components/average-stats";
 import { DailyTracker } from "@/components/daily-tracker";
+import { DashboardHeader } from "@/components/dashboard-header";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
 import { ReportDownload } from "@/components/report-download";
+import { SaveStatusProvider } from "@/components/save-status";
 
 const MetricsChart = dynamic(
   () => import("@/components/metrics-chart").then((mod) => mod.MetricsChart),
@@ -22,47 +23,32 @@ const MetricsChart = dynamic(
 );
 
 export default function Home() {
-  const { user, signOut } = useAuth();
-
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 20px" }}>
-      <Flex
-        align="center"
-        justify="space-between"
-        gap={16}
-        style={{ marginBottom: 32 }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Life Tracker
-          </Typography.Title>
-          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-            {user?.email}
-          </Typography.Text>
+    <SaveStatusProvider>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 20px" }}>
+        <DashboardHeader />
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: 32,
+            alignItems: "start",
+          }}
+        >
+          <DailyTracker />
+          <Flex vertical gap={40}>
+            <AverageStats />
+            <HabitCalendar />
+          </Flex>
+          <Flex vertical gap={40}>
+            <MetricsChart />
+            <RecentEntries />
+          </Flex>
         </div>
-        <Button onClick={() => signOut()}>Sign out</Button>
-      </Flex>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 32,
-          alignItems: "start",
-        }}
-      >
-        <DailyTracker />
-        <Flex vertical gap={40}>
-          <AverageStats />
-          <HabitCalendar />
-        </Flex>
-        <Flex vertical gap={40}>
-          <MetricsChart />
-          <RecentEntries />
-        </Flex>
+        <ReportDownload />
       </div>
-
-      <ReportDownload />
-    </div>
+    </SaveStatusProvider>
   );
 }

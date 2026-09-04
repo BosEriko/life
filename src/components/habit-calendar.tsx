@@ -5,6 +5,11 @@ import { App, Flex, Spin, theme, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import {
+  TERRACOTTA,
+  TERRACOTTA_DARK,
+  useIsDark,
+} from "@/components/theme-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 
 const WEEKS = 26;
@@ -61,6 +66,8 @@ export function HabitCalendar() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const isDark = useIsDark();
+  const badColor = isDark ? TERRACOTTA_DARK : TERRACOTTA;
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -87,6 +94,23 @@ export function HabitCalendar() {
   const byDate = useMemo(() => {
     const map = new Map<string, DailyEntry>();
     for (const entry of entries) map.set(entry.date, entry);
+    return map;
+  }, [entries]);
+
+  const figures = useMemo(() => {
+    const logged = entries.length;
+    const map = new Map<HabitField, string>();
+    for (const habit of HABITS) {
+      const on = entries.filter((entry) => entry[habit.field] === true).length;
+      if (habit.tone === "good") {
+        map.set(
+          habit.field,
+          logged ? `${Math.round((on / logged) * 100)}% consistency` : "—",
+        );
+      } else {
+        map.set(habit.field, `${on} ${on === 1 ? "day" : "days"} logged`);
+      }
+    }
     return map;
   }, [entries]);
 
@@ -135,12 +159,19 @@ export function HabitCalendar() {
           >
             {HABITS.map((habit) => (
               <div key={habit.field}>
-                <Typography.Text
-                  type="secondary"
-                  style={{ fontSize: 12, display: "block", marginBottom: 4 }}
+                <Flex
+                  align="center"
+                  justify="space-between"
+                  gap={8}
+                  style={{ marginBottom: 4 }}
                 >
-                  {habit.label}
-                </Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {habit.label}
+                  </Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {figures.get(habit.field)}
+                  </Typography.Text>
+                </Flex>
                 <div
                   style={{
                     display: "grid",
@@ -156,7 +187,7 @@ export function HabitCalendar() {
                       ? "transparent"
                       : on
                         ? habit.tone === "bad"
-                          ? token.colorError
+                          ? badColor
                           : token.colorSuccess
                         : token.colorFillSecondary;
                     return (
