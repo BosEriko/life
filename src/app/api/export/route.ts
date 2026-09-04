@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { Firestore } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase-admin";
@@ -25,27 +25,22 @@ function extractKey(request: Request): string {
   return (request.headers.get("x-api-key") ?? "").trim();
 }
 
-async function authorized(
+async function resolveUid(
   db: Firestore,
-  uid: string,
   request: Request,
-): Promise<boolean> {
+): Promise<string | null> {
   const provided = extractKey(request);
-  if (!provided) return false;
+  if (!provided) return null;
 
+  const hash = createHash("sha256").update(provided).digest("hex");
   const snap = await db
-    .collection("users")
-    .doc(uid)
-    .collection("apiKeys")
-    .doc("current")
+    .collectionGroup("apiKeys")
+    .where("hash", "==", hash)
+    .limit(1)
     .get();
-  const stored = snap.data()?.hash;
-  if (typeof stored !== "string" || stored.length === 0) return false;
 
-  const providedHash = createHash("sha256").update(provided).digest("hex");
-  const a = Buffer.from(providedHash);
-  const b = Buffer.from(stored);
-  return a.length === b.length && timingSafeEqual(a, b);
+  if (snap.empty) return null;
+  return snap.docs[0].ref.parent.parent?.id ?? null;
 }
 
 function toIso(value: unknown): string | null {
@@ -60,16 +55,10 @@ function clean<T>(value: T | undefined): T | null {
 }
 
 export async function GET(request: Request) {
-  const uid = process.env.EXPORT_UID;
-  if (!uid) {
-    return NextResponse.json(
-      { error: "EXPORT_UID is not configured." },
-      { status: 500 },
-    );
-  }
-
   const db = getAdminDb();
-  if (!(await authorized(db, uid, request))) {
+
+  const uid = await resolveUid(db, request);
+  if (!uid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

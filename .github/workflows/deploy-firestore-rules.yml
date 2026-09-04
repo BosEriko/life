@@ -1,10 +1,11 @@
-name: Deploy Firestore rules
+name: Deploy Firestore rules & indexes
 
 on:
   push:
     branches: [main]
     paths:
       - firestore.rules.template
+      - firestore.indexes.json
       - firebase.json
       - .github/workflows/deploy-firestore-rules.yml
 
@@ -23,6 +24,6 @@ jobs:
 
       - run: cp firestore.rules.template firestore.rules
 
-      - run: npx --yes firebase-tools deploy --only firestore:rules --project life-boseriko-com --non-interactive --token "$FIREBASE_TOKEN"
+      - run: npx --yes firebase-tools deploy --only firestore --project life-boseriko-com --non-interactive --token "$FIREBASE_TOKEN"
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
