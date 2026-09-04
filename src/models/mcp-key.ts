@@ -4,7 +4,7 @@ import { getFirebaseDb } from "@/lib/firebase";
 export type McpKeyMeta = { prefix: string; createdAt: string | null };
 
 function keyDoc(uid: string) {
-  return doc(getFirebaseDb(), "users", uid, "apiKeys", "current");
+  return doc(getFirebaseDb(), "users", uid, "mcpKeys", "current");
 }
 
 function randomKey(): string {

@@ -2,7 +2,7 @@
   "indexes": [],
   "fieldOverrides": [
     {
-      "collectionGroup": "apiKeys",
+      "collectionGroup": "mcpKeys",
       "fieldPath": "hash",
       "indexes": [
         { "order": "ASCENDING", "queryScope": "COLLECTION" },

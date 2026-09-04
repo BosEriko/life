@@ -7,7 +7,7 @@ export async function resolveUidFromKey(key: string): Promise<string | null> {
 
   const hash = createHash("sha256").update(trimmed).digest("hex");
   const snap = await getAdminDb()
-    .collectionGroup("apiKeys")
+    .collectionGroup("mcpKeys")
     .where("hash", "==", hash)
     .limit(1)
     .get();
