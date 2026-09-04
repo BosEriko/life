@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { App, Button, Modal, Popconfirm, Spin, Typography } from "antd";
+import { useEffect, useState, type CSSProperties } from "react";
+import { App, Button, Modal, Popconfirm, Spin, Tabs, Typography } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
-import { generateApiKey, watchApiKey, type ApiKeyMeta } from "@/models/api-key";
+import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/mcp-key";
 
-const KEY_PLACEHOLDER = "<YOUR_API_KEY>";
+const KEY_PLACEHOLDER = "<YOUR_MCP_KEY>";
+
+const PRE_STYLE: CSSProperties = {
+  margin: "4px 0 0",
+  padding: 12,
+  borderRadius: 8,
+  fontSize: 12,
+  overflowX: "auto",
+  background: "rgba(127,127,127,0.12)",
+};
 
 export function DeveloperModal({
   open,
@@ -17,7 +26,7 @@ export function DeveloperModal({
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
-  const [meta, setMeta] = useState<ApiKeyMeta | null>(null);
+  const [meta, setMeta] = useState<McpKeyMeta | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [freshKey, setFreshKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -26,7 +35,7 @@ export function DeveloperModal({
 
   useEffect(() => {
     if (!user) return;
-    return watchApiKey(
+    return watchMcpKey(
       user.uid,
       (next) => {
         setMeta(next);
@@ -46,7 +55,7 @@ export function DeveloperModal({
     if (!user) return;
     setBusy(true);
     try {
-      setFreshKey(await generateApiKey(user.uid));
+      setFreshKey(await generateMcpKey(user.uid));
     } catch {
       message.error("Could not generate a key.");
     } finally {
@@ -65,42 +74,13 @@ export function DeveloperModal({
 
   const testCommand = `curl -s "${shownUrl}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`;
 
-  function instructionsFor(key: string): string {
-    return `# Skill: Life Tracker (MCP)
-
-## Description
-My personal health tracker is exposed as an MCP server. Connect to it and read
-my weight, blood pressure, water intake, and daily habits to answer my questions.
-
-## MCP server
-URL: ${mcpUrl(key)}
-Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
-
-## Tools
-- get_entries({ range?, from?, to?, limit? }) -> daily entries, newest first.
-    range: 7d | 30d | 90d | 1y | all (default all), counted in UTC.
-    from / to: YYYY-MM-DD inclusive; from overrides range.
-    limit: max number of days, 1-2000.
-  Each entry: date, weight (kg), systolic/diastolic (mmHg), bpTime "HH:mm",
-  bpPosture "sitting"|"standing", bpArm "left"|"right", water (ml), notes,
-  junkFood, junkDrink, bath, brushTeeth (booleans), updatedAt. Any field may be null.
-- get_ideals() -> target { min, max } for weight, systolic, diastolic, water
-  (a metric is null when no target is set).
-- get_presets() -> my labelled water containers, each { name, ml }.
-- search(query) / fetch(id) -> the same data as documents
-  (entries-7d ... entries-all, ideals, presets).
-
-## How to answer
-1. Call get_entries with a range that fits the question.
-2. Compute averages, trends, streaks, and counts from the entries.
-3. Compare against get_ideals when I ask about targets.
-4. State the date range you used.`;
-  }
+  const jsonConfig = `{\n  "mcpServers": {\n    "life-tracker": { "url": "${shownUrl}" }\n  }\n}`;
+  const codexConfig = `[mcp_servers.life-tracker]\nurl = "${shownUrl}"`;
 
   async function copyText(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      message.success("Instructions copied");
+      message.success("MCP URL copied");
     } catch {
       message.error("Could not copy.");
     }
@@ -110,9 +90,9 @@ Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
     if (!user) return;
     setCopyBusy(true);
     try {
-      const key = await generateApiKey(user.uid);
+      const key = await generateMcpKey(user.uid);
       setFreshKey(key);
-      await copyText(instructionsFor(key));
+      await copyText(mcpUrl(key));
       setConfirmOpen(false);
     } catch {
       message.error("Could not generate a key.");
@@ -122,7 +102,7 @@ Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
   }
 
   async function copyWithPlaceholder() {
-    await copyText(instructionsFor(KEY_PLACEHOLDER));
+    await copyText(mcpUrl(KEY_PLACEHOLDER));
     setConfirmOpen(false);
   }
 
@@ -134,26 +114,13 @@ Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
       onCancel={handleClose}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Your entries, targets, and presets as an MCP server — connect it to
-        ChatGPT (or Claude) so it can read your data. Read-only.
+        Your entries, targets, and presets as an MCP server — connect it to any
+        MCP-capable agent so it can read your data. Read-only.
       </Typography.Paragraph>
-
-      <div style={{ marginBottom: 20 }}>
-        <Button icon={<CopyOutlined />} onClick={() => setConfirmOpen(true)}>
-          Copy ChatGPT instructions
-        </Button>
-        <Typography.Paragraph
-          type="secondary"
-          style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}
-        >
-          A skill-format block for a Custom GPT&apos;s instructions or a chat.
-          You&apos;ll be asked whether to embed a fresh key.
-        </Typography.Paragraph>
-      </div>
 
       <Modal
         open={confirmOpen}
-        title="Copy with API key?"
+        title="Copy with MCP key?"
         onCancel={() => setConfirmOpen(false)}
         footer={[
           <Button key="placeholder" onClick={copyWithPlaceholder}>
@@ -180,18 +147,34 @@ Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
         MCP server URL
       </Typography.Title>
-      <Typography.Paragraph style={{ marginBottom: 4 }}>
-        <Typography.Text code copyable={{ text: shownUrl }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: 4,
+        }}
+      >
+        <Typography.Text code style={{ wordBreak: "break-all" }}>
           {shownUrl}
         </Typography.Text>
-      </Typography.Paragraph>
+        <Button
+          size="small"
+          icon={<CopyOutlined />}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Copy
+        </Button>
+      </div>
       <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
         Streamable HTTP. The key lives in the URL, so treat the whole URL as the
-        secret.
+        secret. On copy you&apos;ll be asked whether to use a real key or a
+        placeholder.
       </Typography.Paragraph>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        API key
+        MCP key
       </Typography.Title>
 
       {!loaded ? (
@@ -219,7 +202,7 @@ Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
         </Typography.Paragraph>
       ) : (
         <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-          No API key yet.
+          No MCP key yet.
         </Typography.Paragraph>
       )}
 
@@ -237,24 +220,84 @@ Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
           </Popconfirm>
         ) : (
           <Button type="primary" loading={busy} onClick={handleGenerate}>
-            {meta || freshKey ? "Regenerate key" : "Generate API key"}
+            {meta || freshKey ? "Regenerate key" : "Generate MCP key"}
           </Button>
         )}
       </div>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        Connect in ChatGPT
+        Connect it
       </Typography.Title>
-      <ol style={{ paddingInlineStart: 18, fontSize: 13, margin: "0 0 12px" }}>
-        <li>
-          Settings → Connectors → turn on <em>Developer mode</em> → Add custom
-          connector.
-        </li>
-        <li>
-          Paste the URL above, choose <strong>No authentication</strong>, save.
-        </li>
-        <li>In a chat, enable the connector and ask about your data.</li>
-      </ol>
+      <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
+        Add it as a remote MCP server. Transport is Streamable HTTP with no
+        authentication — the key is already in the URL.
+      </Typography.Paragraph>
+      <Tabs
+        size="small"
+        style={{ marginBottom: 12 }}
+        items={[
+          {
+            key: "claude",
+            label: "Claude",
+            children: (
+              <Typography.Paragraph
+                style={{ fontSize: 13, marginBottom: 0 }}
+              >
+                claude.ai or Claude Desktop → Settings →{" "}
+                <strong>Connectors</strong> → Add custom connector → paste the
+                URL, leave authentication as <strong>None</strong>.
+              </Typography.Paragraph>
+            ),
+          },
+          {
+            key: "chatgpt",
+            label: "ChatGPT",
+            children: (
+              <Typography.Paragraph
+                style={{ fontSize: 13, marginBottom: 0 }}
+              >
+                Settings → <strong>Connectors</strong> → enable{" "}
+                <em>Developer mode</em> → Add custom connector → paste the URL,
+                choose <strong>No authentication</strong>. Enable it in a chat.
+              </Typography.Paragraph>
+            ),
+          },
+          {
+            key: "codex",
+            label: "Codex",
+            children: (
+              <>
+                <Typography.Paragraph
+                  style={{ fontSize: 13, marginBottom: 0 }}
+                >
+                  Add to <Typography.Text code>~/.codex/config.toml</Typography.Text>:
+                </Typography.Paragraph>
+                <pre style={PRE_STYLE}>
+                  <code>{codexConfig}</code>
+                </pre>
+              </>
+            ),
+          },
+          {
+            key: "config",
+            label: "Config file",
+            children: (
+              <>
+                <Typography.Paragraph
+                  style={{ fontSize: 13, marginBottom: 0 }}
+                >
+                  Cursor, VS Code, Windsurf, Claude Desktop, etc. —{" "}
+                  <Typography.Text code>mcp.json</Typography.Text> /{" "}
+                  <Typography.Text code>claude_desktop_config.json</Typography.Text>:
+                </Typography.Paragraph>
+                <pre style={PRE_STYLE}>
+                  <code>{jsonConfig}</code>
+                </pre>
+              </>
+            ),
+          },
+        ]}
+      />
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
         Tools
@@ -286,20 +329,9 @@ Transport: Streamable HTTP. Read-only. No auth header — the key is in the URL.
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
         Test it
       </Typography.Title>
-      <Typography.Paragraph style={{ marginBottom: 0 }}>
-        <pre
-          style={{
-            margin: 0,
-            padding: 12,
-            borderRadius: 8,
-            fontSize: 12,
-            overflowX: "auto",
-            background: "rgba(127,127,127,0.12)",
-          }}
-        >
-          <code>{testCommand}</code>
-        </pre>
-      </Typography.Paragraph>
+      <pre style={PRE_STYLE}>
+        <code>{testCommand}</code>
+      </pre>
     </Modal>
   );
 }

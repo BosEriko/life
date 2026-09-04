@@ -1,7 +1,7 @@
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
 
-export type ApiKeyMeta = { prefix: string; createdAt: string | null };
+export type McpKeyMeta = { prefix: string; createdAt: string | null };
 
 function keyDoc(uid: string) {
   return doc(getFirebaseDb(), "users", uid, "apiKeys", "current");
@@ -24,7 +24,7 @@ async function sha256Hex(input: string): Promise<string> {
   ).join("");
 }
 
-export async function generateApiKey(uid: string): Promise<string> {
+export async function generateMcpKey(uid: string): Promise<string> {
   const key = randomKey();
   const hash = await sha256Hex(key);
   await setDoc(keyDoc(uid), {
@@ -35,9 +35,9 @@ export async function generateApiKey(uid: string): Promise<string> {
   return key;
 }
 
-export function watchApiKey(
+export function watchMcpKey(
   uid: string,
-  onChange: (meta: ApiKeyMeta | null) => void,
+  onChange: (meta: McpKeyMeta | null) => void,
   onError?: (error: unknown) => void,
 ) {
   return onSnapshot(

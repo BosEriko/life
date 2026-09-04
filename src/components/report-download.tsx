@@ -168,7 +168,7 @@ export function ReportDownload() {
       <FloatButton.Group shape="circle">
         <FloatButton
           icon={<CodeOutlined />}
-          tooltip={screens.md === false ? undefined : "Developer / API"}
+          tooltip={screens.md === false ? undefined : "Developer / MCP"}
           onClick={() => setDevOpen(true)}
         />
         <FloatButton

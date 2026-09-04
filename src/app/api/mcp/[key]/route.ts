@@ -1,4 +1,4 @@
-import { resolveUidFromKey } from "@/lib/api-key-server";
+import { resolveUidFromKey } from "@/lib/mcp-key-server";
 import { fetchExportData } from "@/lib/export-data";
 
 export const runtime = "nodejs";
@@ -191,7 +191,7 @@ export async function POST(
 ) {
   const { key } = await ctx.params;
   const uid = await resolveUidFromKey(key);
-  if (!uid) return error(null, -32001, "Invalid API key", 401);
+  if (!uid) return error(null, -32001, "Invalid MCP key", 401);
 
   let msg: JsonRpc;
   try {
