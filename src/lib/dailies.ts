@@ -25,6 +25,10 @@ export type DailyEntry = {
   bpArm: BpArm | null;
   water: number | null;
   notes: string | null;
+  junkFood: boolean | null;
+  junkDrink: boolean | null;
+  bath: boolean | null;
+  brushTeeth: boolean | null;
   updatedAt: Timestamp | null;
 };
 
@@ -37,6 +41,10 @@ export type DailyInput = {
   bpArm?: BpArm;
   water?: number;
   notes?: string;
+  junkFood?: boolean;
+  junkDrink?: boolean;
+  bath?: boolean;
+  brushTeeth?: boolean;
 };
 
 function dailiesCollection(uid: string) {
@@ -76,6 +84,10 @@ export async function saveDaily(uid: string, date: string, input: DailyInput) {
   if (input.bpArm !== undefined) payload.bpArm = input.bpArm;
   if (input.water !== undefined) payload.water = input.water;
   if (input.notes !== undefined) payload.notes = input.notes;
+  if (input.junkFood !== undefined) payload.junkFood = input.junkFood;
+  if (input.junkDrink !== undefined) payload.junkDrink = input.junkDrink;
+  if (input.bath !== undefined) payload.bath = input.bath;
+  if (input.brushTeeth !== undefined) payload.brushTeeth = input.brushTeeth;
 
   await setDoc(doc(dailiesCollection(uid), date), payload, { merge: true });
 }
@@ -107,6 +119,10 @@ export function watchDailies(
             bpArm: (data.bpArm as BpArm | undefined) ?? null,
             water: (data.water as number | undefined) ?? null,
             notes: (data.notes as string | undefined) ?? null,
+            junkFood: (data.junkFood as boolean | undefined) ?? null,
+            junkDrink: (data.junkDrink as boolean | undefined) ?? null,
+            bath: (data.bath as boolean | undefined) ?? null,
+            brushTeeth: (data.brushTeeth as boolean | undefined) ?? null,
             updatedAt: (data.updatedAt as Timestamp | undefined) ?? null,
           };
         }),
