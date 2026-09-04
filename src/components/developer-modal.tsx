@@ -57,31 +57,53 @@ export function DeveloperModal({
   const keyLabel = freshKey ?? "<YOUR_API_KEY>";
   const curlExample = `curl -s "${endpoint}?range=30d" \\\n  -H "Authorization: Bearer ${keyLabel}"`;
 
-  const chatgptInstructions = `You can read my personal health tracker through a read-only JSON API. When I ask about my weight, blood pressure, water intake, habits, averages, or trends, call this API and answer from the data.
+  const chatgptInstructions = `# Skill: Life Tracker data
 
-Request:
-  GET ${endpoint}
-  Header: Authorization: Bearer ${keyLabel}
+## Description
+Read my personal health tracker (weight, blood pressure, water intake, daily
+habits) through a read-only JSON API and answer from that data.
 
-Query parameters (all optional):
-  range  - 7d | 30d | 90d | 1y | all (default all). Keeps the last N days, UTC.
-  from   - YYYY-MM-DD, inclusive lower bound. Overrides range.
-  to     - YYYY-MM-DD, inclusive upper bound.
-  limit  - max number of days, newest first (default and max 2000).
+## When to use
+Whenever I ask about my weight, blood pressure, hydration, habits, streaks,
+averages, targets, or how any of these have changed over time.
 
-Response JSON:
-  generatedAt : ISO timestamp
-  range       : { from, to }
-  count       : number of days returned
-  dailies[]   : { date "YYYY-MM-DD", weight (kg), systolic (mmHg), diastolic (mmHg),
-                  bpTime "HH:mm", bpPosture "sitting"|"standing", bpArm "left"|"right",
-                  water (ml), notes, junkFood (bool), junkDrink (bool), bath (bool),
-                  brushTeeth (bool), updatedAt (ISO) } - any field may be null
-  ideals      : { weight, systolic, diastolic, water }, each { min, max } or null
-  presets[]   : { name, ml } - my labelled water containers
+## Endpoint
+GET ${endpoint}
+Header: Authorization: Bearer ${keyLabel}
 
-Example:
-  curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${keyLabel}"`;
+## Parameters (all optional)
+- range: 7d | 30d | 90d | 1y | all (default all). Keeps the last N days, UTC.
+- from: YYYY-MM-DD, inclusive lower bound. Overrides range.
+- to: YYYY-MM-DD, inclusive upper bound.
+- limit: max number of days, newest first (default and max 2000).
+
+## Response shape
+{
+  "generatedAt": ISO timestamp,
+  "range": { "from": string|null, "to": string|null },
+  "count": number of days,
+  "dailies": [ {
+    "date": "YYYY-MM-DD",
+    "weight": kg, "systolic": mmHg, "diastolic": mmHg,
+    "bpTime": "HH:mm", "bpPosture": "sitting"|"standing", "bpArm": "left"|"right",
+    "water": ml, "notes": string,
+    "junkFood": bool, "junkDrink": bool, "bath": bool, "brushTeeth": bool,
+    "updatedAt": ISO
+  } ],
+  "ideals": { "weight": {min,max}|null, "systolic": ..., "diastolic": ..., "water": ... },
+  "presets": [ { "name": string, "ml": number } ]
+}
+Any daily field may be null. Units: weight kg, blood pressure mmHg, water ml.
+"presets" are my labelled water containers.
+
+## How to answer
+1. Pick a range that fits the question and call the endpoint.
+2. Compute the answer from the JSON (averages, trends, streaks, counts).
+3. When I ask about targets, compare against "ideals".
+4. State the date range you used.
+
+## Example
+curl -s "${endpoint}?range=30d" -H "Authorization: Bearer ${keyLabel}"`;
 
   async function copyInstructions() {
     try {
@@ -112,7 +134,8 @@ Example:
           type="secondary"
           style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}
         >
-          Paste into ChatGPT so it knows how to call the API.
+          A skill-format block to paste into a Custom GPT&apos;s instructions or a
+          chat.
           {freshKey
             ? " Your new key is filled in."
             : " Replace the placeholder with a key from below."}
