@@ -37,6 +37,8 @@ import {
   type IdealKey,
   type Ideals,
 } from "@/models/ideals";
+import { watchWaterPresets, type WaterPreset } from "@/models/presets";
+import { WaterPresetsModal } from "@/components/water-presets-modal";
 
 const SAVE_DELAY_MS = 2000;
 
@@ -129,6 +131,8 @@ export function DailyTracker() {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
+  const [presets, setPresets] = useState<WaterPreset[]>([]);
+  const [presetsOpen, setPresetsOpen] = useState(false);
 
   const watchedWeight = Form.useWatch("weight", form);
   const watchedSystolic = Form.useWatch("systolic", form);
@@ -160,6 +164,11 @@ export function DailyTracker() {
   useEffect(() => {
     if (!user) return;
     return watchIdeals(user.uid, setIdeals, () => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    return watchWaterPresets(user.uid, setPresets, () => {});
   }, [user]);
 
   useEffect(() => {
@@ -381,6 +390,7 @@ export function DailyTracker() {
   }
 
   return (
+    <>
     <Card title={<><Icon name="logEntry" />Log entry</>}>
       <Form
         form={form}
@@ -523,16 +533,35 @@ export function DailyTracker() {
                 </Form.Item>
               </div>
             </Tooltip>
-            <Flex gap={8} wrap>
-              {WATER_PRESETS.map((amount) => (
-                <Button
-                  key={amount}
-                  size="small"
-                  onClick={() => addWater(amount)}
-                >
-                  +{amount}
-                </Button>
-              ))}
+            <Flex gap={8} wrap align="center">
+              {presets.length > 0
+                ? presets.map((preset) => (
+                    <Button
+                      key={preset.id}
+                      size="small"
+                      onClick={() => addWater(preset.ml)}
+                    >
+                      {preset.name}
+                    </Button>
+                  ))
+                : WATER_PRESETS.map((amount) => (
+                    <Button
+                      key={amount}
+                      size="small"
+                      onClick={() => addWater(amount)}
+                    >
+                      +{amount}
+                    </Button>
+                  ))}
+              <Button
+                type="link"
+                size="small"
+                style={{ padding: 0, height: "auto", marginLeft: "auto" }}
+                icon={<Icon name="presets" style={{ marginRight: -4 }} />}
+                onClick={() => setPresetsOpen(true)}
+              >
+                Presets
+              </Button>
             </Flex>
           </Flex>
         </Form.Item>
@@ -575,6 +604,12 @@ export function DailyTracker() {
         </Form.Item>
       </Form>
     </Card>
+    <WaterPresetsModal
+      open={presetsOpen}
+      onClose={() => setPresetsOpen(false)}
+      presets={presets}
+    />
+    </>
   );
 }
 
