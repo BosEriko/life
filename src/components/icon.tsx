@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBath,
   faBottleWater,
+  faBullseye,
   faBurger,
   faCalendarCheck,
   faCalendarDay,
@@ -17,6 +18,7 @@ import {
   faPenToSquare,
   faSoap,
   faTooth,
+  faTriangleExclamation,
   faWeightScale,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -36,6 +38,8 @@ const ICONS = {
   bath: faBath,
   brush: faTooth,
   notes: faNoteSticky,
+  target: faBullseye,
+  alert: faTriangleExclamation,
 } as const;
 
 export type IconName = keyof typeof ICONS;
