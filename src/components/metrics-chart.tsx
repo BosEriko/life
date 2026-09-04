@@ -19,12 +19,13 @@ import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
 
 const HISTORY_LIMIT = 1000;
 
-type Metric = "weight" | "bp";
+type Metric = "weight" | "bp" | "water";
 type Preset = "7" | "30" | "90" | "365" | "all" | "custom";
 
 const METRIC_OPTIONS = [
   { label: "Weight", value: "weight" },
   { label: "Blood pressure", value: "bp" },
+  { label: "Water", value: "water" },
 ];
 
 const PRESET_OPTIONS = [
@@ -90,6 +91,10 @@ export function MetricsChart() {
         if (entry.weight != null) {
           points.push({ date: entry.date, value: entry.weight, series: "Weight" });
         }
+      } else if (metric === "water") {
+        if (entry.water != null) {
+          points.push({ date: entry.date, value: entry.water, series: "Water" });
+        }
       } else {
         if (entry.systolic != null) {
           points.push({
@@ -114,7 +119,9 @@ export function MetricsChart() {
   const colorRange =
     metric === "weight"
       ? [token.colorPrimary]
-      : [token.colorError, token.colorInfo];
+      : metric === "water"
+        ? [token.colorInfo]
+        : [token.colorError, token.colorInfo];
 
   return (
     <div>
@@ -176,7 +183,9 @@ export function MetricsChart() {
           description={
             metric === "weight"
               ? "No weight entries in this range."
-              : "No blood pressure entries in this range."
+              : metric === "water"
+                ? "No water entries in this range."
+                : "No blood pressure entries in this range."
           }
         />
       ) : (
