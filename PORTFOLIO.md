@@ -3,11 +3,7 @@
 **A private health-tracking web app I use as my browser homepage.** Open a tab,
 log the day — weight, blood pressure, water, habits — and watch the trends.
 Designed, built, and maintained solo with Next.js, React, TypeScript, and Firebase.
-
-🔗 **Live:** [life.boseriko.com](https://life.boseriko.com) — create an account and
-it's yours; every account only ever sees its own data.
-
-![Life Tracker dashboard](COVER.png)
+Anyone can create an account; every account only ever sees its own data.
 
 ---
 

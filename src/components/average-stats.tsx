@@ -333,24 +333,34 @@ export function AverageStats() {
                   </Typography.Text>
                 </Tooltip>
                 {item.delta ? (
-                  <Flex align="center" gap={4} style={{ marginTop: 4 }}>
-                    {item.delta.dir === "up" ? (
-                      <ArrowUpOutlined
-                        style={{ fontSize: 11, color: token.colorTextTertiary }}
-                      />
-                    ) : item.delta.dir === "down" ? (
-                      <ArrowDownOutlined
-                        style={{ fontSize: 11, color: token.colorTextTertiary }}
-                      />
-                    ) : (
-                      <MinusOutlined
-                        style={{ fontSize: 11, color: token.colorTextTertiary }}
-                      />
-                    )}
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {item.delta.text}
-                    </Typography.Text>
-                  </Flex>
+                  (() => {
+                    const deltaColor =
+                      item.delta.dir === "up"
+                        ? token.colorSuccess
+                        : item.delta.dir === "down"
+                          ? token.colorError
+                          : token.colorTextTertiary;
+                    return (
+                      <Flex align="center" gap={4} style={{ marginTop: 4 }}>
+                        {item.delta.dir === "up" ? (
+                          <ArrowUpOutlined
+                            style={{ fontSize: 11, color: deltaColor }}
+                          />
+                        ) : item.delta.dir === "down" ? (
+                          <ArrowDownOutlined
+                            style={{ fontSize: 11, color: deltaColor }}
+                          />
+                        ) : (
+                          <MinusOutlined
+                            style={{ fontSize: 11, color: deltaColor }}
+                          />
+                        )}
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {item.delta.text}
+                        </Typography.Text>
+                      </Flex>
+                    );
+                  })()
                 ) : null}
               </div>
             );
