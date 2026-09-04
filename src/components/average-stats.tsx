@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { App, Button, Flex, Segmented, Spin, theme, Tooltip, Typography } from "antd";
+import { App, Button, Flex, Segmented, Spin, theme, Typography } from "antd";
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -12,6 +12,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Icon, type IconName } from "@/components/icon";
 import { IdealBadge } from "@/components/ideal-badge";
 import { IdealsModal } from "@/components/ideals-modal";
+import { Tip } from "@/components/tip";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import {
   EMPTY_IDEALS,
@@ -308,7 +309,7 @@ export function AverageStats() {
                   </Typography.Text>
                   <IdealBadge status={item.status} />
                 </Flex>
-                <Tooltip title={item.tip} placement="bottom">
+                <Tip title={item.tip} placement="bottom">
                   <Typography.Text
                     strong
                     style={{
@@ -331,7 +332,7 @@ export function AverageStats() {
                       />
                     ) : null}
                   </Typography.Text>
-                </Tooltip>
+                </Tip>
                 {item.delta ? (
                   (() => {
                     const deltaColor =

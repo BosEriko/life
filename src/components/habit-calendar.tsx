@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { App, Flex, Spin, theme, Typography } from "antd";
+import { App, Flex, Grid, Spin, theme, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
@@ -82,6 +82,8 @@ export function HabitCalendar() {
   const { token } = theme.useToken();
   const isDark = useIsDark();
   const badColor = isDark ? TERRACOTTA_DARK : TERRACOTTA;
+  const screens = Grid.useBreakpoint();
+  const hoverTips = screens.md !== false;
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -158,6 +160,7 @@ export function HabitCalendar() {
             gap={24}
             style={{ width: WEEKS * (CELL + GAP) - GAP, minWidth: "100%" }}
             onMouseOver={(event) => {
+              if (!hoverTips) return;
               const cell = (event.target as HTMLElement).closest<HTMLElement>(
                 "[data-date]",
               );

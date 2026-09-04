@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { App, FloatButton, Modal, Segmented, Typography } from "antd";
+import { App, FloatButton, Grid, Modal, Segmented, Typography } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -35,6 +35,7 @@ function mean(values: number[]): number | null {
 export function ReportDownload() {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const screens = Grid.useBreakpoint();
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [open, setOpen] = useState(false);
@@ -165,7 +166,7 @@ export function ReportDownload() {
       <FloatButton
         type="primary"
         icon={<DownloadOutlined />}
-        tooltip="Download report"
+        tooltip={screens.md === false ? undefined : "Download report"}
         onClick={() => setOpen(true)}
       />
       <Modal

@@ -12,7 +12,6 @@ import {
   Input,
   InputNumber,
   Segmented,
-  Tooltip,
   Typography,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
@@ -42,6 +41,7 @@ import { watchWaterPresets, type WaterPreset } from "@/models/presets";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
 import { IdealBadge } from "@/components/ideal-badge";
 import { useSaveStatus } from "@/components/save-status";
+import { Tip } from "@/components/tip";
 
 const SAVE_DELAY_MS = 2000;
 
@@ -425,7 +425,7 @@ export function DailyTracker() {
             </>
           }
         >
-          <Tooltip title={weightTip} placement={weightPlacement}>
+          <Tip title={weightTip} placement={weightPlacement}>
             <div>
               <Form.Item name="weight" noStyle>
                 <InputNumber
@@ -438,7 +438,7 @@ export function DailyTracker() {
                 />
               </Form.Item>
             </div>
-          </Tooltip>
+          </Tip>
         </Form.Item>
 
         <Form.Item
@@ -452,7 +452,7 @@ export function DailyTracker() {
         >
           <Flex vertical gap={10}>
             <Flex gap={8} align="flex-end" wrap>
-              <Tooltip title={systolicTip} placement={systolicPlacement}>
+              <Tip title={systolicTip} placement={systolicPlacement}>
                 <div style={{ flex: 1 }}>
                   <Typography.Text
                     type="secondary"
@@ -470,9 +470,9 @@ export function DailyTracker() {
                     />
                   </Form.Item>
                 </div>
-              </Tooltip>
+              </Tip>
               <span style={{ paddingBottom: 6 }}>/</span>
-              <Tooltip title={diastolicTip} placement={diastolicPlacement}>
+              <Tip title={diastolicTip} placement={diastolicPlacement}>
                 <div style={{ flex: 1 }}>
                   <Typography.Text
                     type="secondary"
@@ -490,7 +490,7 @@ export function DailyTracker() {
                     />
                   </Form.Item>
                 </div>
-              </Tooltip>
+              </Tip>
               <Typography.Text type="secondary" style={{ paddingBottom: 6 }}>
                 mmHg
               </Typography.Text>
@@ -522,7 +522,7 @@ export function DailyTracker() {
           }
         >
           <Flex vertical gap={8}>
-            <Tooltip title={waterTip} placement={waterPlacement}>
+            <Tip title={waterTip} placement={waterPlacement}>
               <div>
                 <Form.Item name="water" noStyle>
                   <InputNumber
@@ -535,7 +535,7 @@ export function DailyTracker() {
                   />
                 </Form.Item>
               </div>
-            </Tooltip>
+            </Tip>
             <Flex gap={8} wrap align="center">
               {presets.length > 0
                 ? presets.map((preset) => (
