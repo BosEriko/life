@@ -1,14 +1,22 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { App, ConfigProvider, theme } from "antd";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
-function prefersDark(): boolean {
-  return (
-    typeof window !== "undefined" && window.matchMedia(DARK_QUERY).matches
-  );
+function subscribe(callback: () => void) {
+  const media = window.matchMedia(DARK_QUERY);
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+
+function getSnapshot(): boolean {
+  return window.matchMedia(DARK_QUERY).matches;
+}
+
+function getServerSnapshot(): boolean {
+  return false;
 }
 
 function Background({ children }: { children: ReactNode }) {
@@ -27,14 +35,7 @@ function Background({ children }: { children: ReactNode }) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [dark, setDark] = useState(prefersDark);
-
-  useEffect(() => {
-    const media = window.matchMedia(DARK_QUERY);
-    const onChange = (event: MediaQueryListEvent) => setDark(event.matches);
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
+  const dark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   return (
     <ConfigProvider
