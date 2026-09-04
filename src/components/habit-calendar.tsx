@@ -19,48 +19,62 @@ const HISTORY_LIMIT = 220;
 
 type HabitField = "junkFood" | "junkDrink" | "bath" | "brushTeeth";
 
-const HABITS: { label: ReactNode; field: HabitField; tone: "bad" | "good" }[] = [
+type Habit = { label: ReactNode; field: HabitField; tone: "bad" | "good" };
+
+const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
   {
-    label: (
-      <>
-        <Icon name="junkFood" />
-        Junk food
-      </>
-    ),
-    field: "junkFood",
-    tone: "bad",
+    title: "Hygiene",
+    habits: [
+      {
+        label: (
+          <>
+            <Icon name="bath" />
+            Bath
+          </>
+        ),
+        field: "bath",
+        tone: "good",
+      },
+      {
+        label: (
+          <>
+            <Icon name="brush" />
+            Brush
+          </>
+        ),
+        field: "brushTeeth",
+        tone: "good",
+      },
+    ],
   },
   {
-    label: (
-      <>
-        <Icon name="junkDrink" />
-        Junk drink
-      </>
-    ),
-    field: "junkDrink",
-    tone: "bad",
-  },
-  {
-    label: (
-      <>
-        <Icon name="bath" />
-        Bath
-      </>
-    ),
-    field: "bath",
-    tone: "good",
-  },
-  {
-    label: (
-      <>
-        <Icon name="brush" />
-        Brush
-      </>
-    ),
-    field: "brushTeeth",
-    tone: "good",
+    title: "Junk",
+    habits: [
+      {
+        label: (
+          <>
+            <Icon name="junkFood" />
+            Junk food
+          </>
+        ),
+        field: "junkFood",
+        tone: "bad",
+      },
+      {
+        label: (
+          <>
+            <Icon name="junkDrink" />
+            Junk drink
+          </>
+        ),
+        field: "junkDrink",
+        tone: "bad",
+      },
+    ],
   },
 ];
+
+const ALL_HABITS: Habit[] = HABIT_GROUPS.flatMap((group) => group.habits);
 
 export function HabitCalendar() {
   const { user } = useAuth();
@@ -100,7 +114,7 @@ export function HabitCalendar() {
   const figures = useMemo(() => {
     const logged = entries.length;
     const map = new Map<HabitField, string>();
-    for (const habit of HABITS) {
+    for (const habit of ALL_HABITS) {
       const on = entries.filter((entry) => entry[habit.field] === true).length;
       if (habit.tone === "good") {
         map.set(
@@ -141,7 +155,7 @@ export function HabitCalendar() {
         <div style={{ overflowX: "auto", paddingBottom: 4 }}>
           <Flex
             vertical
-            gap={14}
+            gap={24}
             style={{ width: WEEKS * (CELL + GAP) - GAP, minWidth: "100%" }}
             onMouseOver={(event) => {
               const cell = (event.target as HTMLElement).closest<HTMLElement>(
@@ -157,53 +171,79 @@ export function HabitCalendar() {
             }}
             onMouseLeave={() => setTip(null)}
           >
-            {HABITS.map((habit) => (
-              <div key={habit.field}>
-                <Flex
-                  align="center"
-                  justify="space-between"
-                  gap={8}
-                  style={{ marginBottom: 4 }}
-                >
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {habit.label}
-                  </Typography.Text>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {figures.get(habit.field)}
-                  </Typography.Text>
-                </Flex>
-                <div
+            {HABIT_GROUPS.map((group) => (
+              <div key={group.title}>
+                <Typography.Text
                   style={{
-                    display: "grid",
-                    gridTemplateRows: `repeat(7, ${CELL}px)`,
-                    gridAutoFlow: "column",
-                    gap: GAP,
+                    display: "block",
+                    marginBottom: 10,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: token.colorTextSecondary,
                   }}
                 >
-                  {days.map((day) => {
-                    const on =
-                      !day.future && byDate.get(day.key)?.[habit.field] === true;
-                    const background = day.future
-                      ? "transparent"
-                      : on
-                        ? habit.tone === "bad"
-                          ? badColor
-                          : token.colorSuccess
-                        : token.colorFillSecondary;
-                    return (
+                  {group.title}
+                </Typography.Text>
+                <Flex vertical gap={14}>
+                  {group.habits.map((habit) => (
+                    <div key={habit.field}>
+                      <Flex
+                        align="center"
+                        justify="space-between"
+                        gap={8}
+                        style={{ marginBottom: 4 }}
+                      >
+                        <Typography.Text
+                          type="secondary"
+                          style={{ fontSize: 12 }}
+                        >
+                          {habit.label}
+                        </Typography.Text>
+                        <Typography.Text
+                          type="secondary"
+                          style={{ fontSize: 12 }}
+                        >
+                          {figures.get(habit.field)}
+                        </Typography.Text>
+                      </Flex>
                       <div
-                        key={day.key}
-                        data-date={day.future ? undefined : day.key}
                         style={{
-                          width: CELL,
-                          height: CELL,
-                          borderRadius: 2,
-                          background,
+                          display: "grid",
+                          gridTemplateRows: `repeat(7, ${CELL}px)`,
+                          gridAutoFlow: "column",
+                          gap: GAP,
                         }}
-                      />
-                    );
-                  })}
-                </div>
+                      >
+                        {days.map((day) => {
+                          const on =
+                            !day.future &&
+                            byDate.get(day.key)?.[habit.field] === true;
+                          const background = day.future
+                            ? "transparent"
+                            : on
+                              ? habit.tone === "bad"
+                                ? badColor
+                                : token.colorSuccess
+                              : token.colorFillSecondary;
+                          return (
+                            <div
+                              key={day.key}
+                              data-date={day.future ? undefined : day.key}
+                              style={{
+                                width: CELL,
+                                height: CELL,
+                                borderRadius: 2,
+                                background,
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </Flex>
               </div>
             ))}
           </Flex>

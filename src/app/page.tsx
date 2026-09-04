@@ -28,6 +28,10 @@ export default function Home() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 20px" }}>
         <DashboardHeader />
 
+        <div style={{ marginBottom: 40 }}>
+          <AverageStats />
+        </div>
+
         <div
           style={{
             display: "grid",
@@ -37,10 +41,7 @@ export default function Home() {
           }}
         >
           <DailyTracker />
-          <Flex vertical gap={40}>
-            <AverageStats />
-            <HabitCalendar />
-          </Flex>
+          <HabitCalendar />
           <Flex vertical gap={40}>
             <MetricsChart />
             <RecentEntries />

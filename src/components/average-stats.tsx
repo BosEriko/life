@@ -285,13 +285,14 @@ export function AverageStats() {
           <Spin />
         </Flex>
       ) : (
-        <Flex vertical gap={12} style={{ marginTop: 12 }}>
+        <Flex gap={12} wrap style={{ marginTop: 12 }}>
           {items.map((item) => {
             const off = item.status === "low" || item.status === "high";
             return (
               <div
                 key={item.label}
                 style={{
+                  flex: "1 1 220px",
                   padding: "12px 14px",
                   borderRadius: token.borderRadiusLG,
                   background: token.colorFillTertiary,
