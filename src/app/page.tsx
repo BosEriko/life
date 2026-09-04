@@ -34,7 +34,7 @@ export default function Home() {
       >
         <div style={{ minWidth: 0 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            Bos Eriko&apos;s Personal Life Tracker
+            Life Tracker
           </Typography.Title>
           <Typography.Text type="secondary" style={{ fontSize: 13 }}>
             {user?.email}

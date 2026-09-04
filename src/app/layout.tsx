@@ -10,7 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 const geistSans = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Bos Eriko's Personal Life Tracker",
+  title: "Life Tracker",
   description: "Personal homepage",
 };
 
