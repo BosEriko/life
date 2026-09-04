@@ -183,6 +183,7 @@ export function ReportDownload() {
 
       <Modal
         open={open}
+        centered
         title="Download report"
         okText="Download PDF"
         confirmLoading={busy}

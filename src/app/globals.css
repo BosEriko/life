@@ -55,4 +55,20 @@ body {
     max-width: 100%;
     overflow-x: auto;
   }
+
+  .ant-modal {
+    max-width: calc(100vw - 24px);
+    margin: 0 auto;
+  }
+
+  .ant-modal-content {
+    max-height: calc(100dvh - 48px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .ant-modal-body {
+    overflow-y: auto;
+  }
 }

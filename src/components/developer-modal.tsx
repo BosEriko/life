@@ -109,6 +109,7 @@ export function DeveloperModal({
   return (
     <Modal
       open={open}
+      centered
       title="Developer · MCP"
       footer={null}
       onCancel={handleClose}
@@ -120,6 +121,7 @@ export function DeveloperModal({
 
       <Modal
         open={confirmOpen}
+        centered
         title="Copy with MCP key?"
         onCancel={() => setConfirmOpen(false)}
         footer={[

@@ -51,7 +51,13 @@ export function WaterPresetsModal({
   }
 
   return (
-    <Modal open={open} title="Water presets" footer={null} onCancel={onClose}>
+    <Modal
+      open={open}
+      centered
+      title="Water presets"
+      footer={null}
+      onCancel={onClose}
+    >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         Name each bottle or glass and its size. They become the quick-add buttons
         under Water.

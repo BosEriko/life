@@ -62,6 +62,7 @@ export function IdealsModal({
   return (
     <Modal
       open={open}
+      centered
       title="Ideal ranges"
       okText="Save"
       confirmLoading={saving}
