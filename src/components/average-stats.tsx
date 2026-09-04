@@ -1,7 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { App, Button, Flex, Segmented, Spin, theme, Typography } from "antd";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import {
+  App,
+  Button,
+  Flex,
+  Grid,
+  Segmented,
+  Spin,
+  theme,
+  Typography,
+} from "antd";
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -26,6 +41,7 @@ import {
 
 const HISTORY_LIMIT = 1000;
 const RANGE_STORAGE_KEY = "averages-range";
+const RAIL_GAP = 12;
 
 const RANGE_VALUES = ["7", "30", "90", "365", "all"] as const;
 type Range = (typeof RANGE_VALUES)[number];
@@ -112,6 +128,10 @@ export function AverageStats() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const screens = Grid.useBreakpoint();
+  const compact = screens.md === false;
+  const railRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -286,19 +306,50 @@ export function AverageStats() {
           <Spin />
         </Flex>
       ) : (
-        <Flex gap={12} wrap style={{ marginTop: 12 }}>
+        <>
+        <div
+          ref={railRef}
+          className="avg-rail"
+          onScroll={
+            compact
+              ? (event) => {
+                  const el = event.currentTarget;
+                  const idx = Math.round(
+                    el.scrollLeft / (el.clientWidth + RAIL_GAP),
+                  );
+                  setActiveIdx(Math.max(0, Math.min(items.length - 1, idx)));
+                }
+              : undefined
+          }
+          style={
+            compact
+              ? {
+                  marginTop: 12,
+                  display: "flex",
+                  gap: RAIL_GAP,
+                  overflowX: "auto",
+                  scrollSnapType: "x mandatory",
+                  WebkitOverflowScrolling: "touch",
+                }
+              : { marginTop: 12, display: "flex", gap: RAIL_GAP, flexWrap: "wrap" }
+          }
+        >
           {items.map((item) => {
             const off = item.status === "low" || item.status === "high";
+            const tileStyle: CSSProperties = {
+              padding: "12px 14px",
+              borderRadius: token.borderRadiusLG,
+              background: token.colorFillTertiary,
+              ...(compact
+                ? {
+                    flex: "0 0 100%",
+                    scrollSnapAlign: "start",
+                    scrollSnapStop: "always",
+                  }
+                : { flex: "1 1 220px" }),
+            };
             return (
-              <div
-                key={item.label}
-                style={{
-                  flex: "1 1 220px",
-                  padding: "12px 14px",
-                  borderRadius: token.borderRadiusLG,
-                  background: token.colorFillTertiary,
-                }}
-              >
+              <div key={item.label} style={tileStyle}>
                 <Flex align="center" justify="space-between" gap={8}>
                   <Typography.Text
                     type="secondary"
@@ -366,7 +417,43 @@ export function AverageStats() {
               </div>
             );
           })}
-        </Flex>
+        </div>
+
+        {compact ? (
+          <Flex justify="center" gap={6} style={{ marginTop: 10 }}>
+            {items.map((item, i) => (
+              <button
+                key={item.label}
+                type="button"
+                aria-label={`Show ${item.label}`}
+                aria-current={i === activeIdx}
+                onClick={() => {
+                  const el = railRef.current;
+                  if (el) {
+                    el.scrollTo({
+                      left: i * (el.clientWidth + RAIL_GAP),
+                      behavior: "smooth",
+                    });
+                  }
+                }}
+                style={{
+                  width: i === activeIdx ? 18 : 6,
+                  height: 6,
+                  padding: 0,
+                  border: "none",
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  background:
+                    i === activeIdx
+                      ? token.colorPrimary
+                      : token.colorFillSecondary,
+                  transition: "width 0.2s, background 0.2s",
+                }}
+              />
+            ))}
+          </Flex>
+        ) : null}
+        </>
       )}
 
       <IdealsModal

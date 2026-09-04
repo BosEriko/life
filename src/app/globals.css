@@ -28,6 +28,15 @@ body {
   animation: brand-sprout 1.6s ease-in-out infinite;
 }
 
+.avg-rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.avg-rail::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand-loader-glyph {
     animation: none;
