@@ -149,6 +149,12 @@ export function DailyTracker() {
     applyDate(next);
   }
 
+  function goToToday() {
+    const today = dayjs(todayKey());
+    form.setFieldValue("date", today);
+    applyDate(today);
+  }
+
   function handleValuesChange(
     changed: Partial<FormValues>,
     all: FormValues,
@@ -197,6 +203,12 @@ export function DailyTracker() {
                 onClick={() => stepDay(1)}
                 aria-label="Next day"
               />
+              <Button
+                onClick={goToToday}
+                disabled={selectedDate === todayKey()}
+              >
+                Today
+              </Button>
             </Flex>
           </Form.Item>
 
