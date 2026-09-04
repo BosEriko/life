@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { App, Flex, Segmented, Spin, Typography } from "antd";
+import { App, Flex, Segmented, Spin, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/lib/dailies";
@@ -104,20 +104,18 @@ export function AverageStats() {
     };
   }, [entries, range]);
 
-  const items = [
+  const items: { label: string; value: string; hint?: string }[] = [
     {
       label: "Weight",
       value: stats.weight != null ? `${stats.weight.toFixed(1)} kg` : "—",
     },
     {
-      label: "Systolic",
+      label: "Blood pressure",
       value:
-        stats.systolic != null ? `${Math.round(stats.systolic)} mmHg` : "—",
-    },
-    {
-      label: "Diastolic",
-      value:
-        stats.diastolic != null ? `${Math.round(stats.diastolic)} mmHg` : "—",
+        stats.systolic != null && stats.diastolic != null
+          ? `${Math.round(stats.systolic)}/${Math.round(stats.diastolic)} mmHg`
+          : "—",
+      hint: "systolic/diastolic",
     },
     {
       label: "Water",
@@ -166,9 +164,17 @@ export function AverageStats() {
               >
                 {item.label}
               </Typography.Text>
-              <Typography.Text strong style={{ fontSize: 18 }}>
-                {item.value}
-              </Typography.Text>
+              <Tooltip title={item.hint} placement="bottom">
+                <Typography.Text
+                  strong
+                  style={{
+                    fontSize: 18,
+                    cursor: item.hint ? "help" : undefined,
+                  }}
+                >
+                  {item.value}
+                </Typography.Text>
+              </Tooltip>
             </div>
           ))}
         </Flex>
