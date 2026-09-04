@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Button, Flex, Spin, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
+import { AverageStats } from "@/components/average-stats";
 import { DailyTracker } from "@/components/daily-tracker";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
@@ -50,7 +51,10 @@ export default function Home() {
         }}
       >
         <DailyTracker />
-        <HabitCalendar />
+        <Flex vertical gap={40}>
+          <AverageStats />
+          <HabitCalendar />
+        </Flex>
         <Flex vertical gap={40}>
           <MetricsChart />
           <RecentEntries />
