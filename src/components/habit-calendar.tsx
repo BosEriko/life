@@ -27,6 +27,9 @@ export function HabitCalendar() {
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -62,15 +65,6 @@ export function HabitCalendar() {
     });
   }, []);
 
-  const monthLabels = useMemo(() => {
-    return Array.from({ length: WEEKS }, (_, week) => {
-      const firstDay = dayjs(days[week * 7].key);
-      const prevMonth =
-        week === 0 ? -1 : dayjs(days[(week - 1) * 7].key).month();
-      return firstDay.month() !== prevMonth ? firstDay.format("MMM") : "";
-    });
-  }, [days]);
-
   return (
     <div>
       <Typography.Title level={5}>Habits</Typography.Title>
@@ -85,25 +79,20 @@ export function HabitCalendar() {
             vertical
             gap={14}
             style={{ width: WEEKS * (CELL + GAP) - GAP, minWidth: "100%" }}
+            onMouseOver={(event) => {
+              const cell = (event.target as HTMLElement).closest<HTMLElement>(
+                "[data-date]",
+              );
+              if (!cell?.dataset.date) return;
+              const rect = cell.getBoundingClientRect();
+              setTip({
+                text: dayjs(cell.dataset.date).format("ddd, MMM D, YYYY"),
+                x: rect.left + rect.width / 2,
+                y: rect.top,
+              });
+            }}
+            onMouseLeave={() => setTip(null)}
           >
-            <Flex style={{ height: 12 }}>
-              {monthLabels.map((label, week) => (
-                <div
-                  key={`m${week}`}
-                  style={{
-                    width: CELL,
-                    marginRight: GAP,
-                    fontSize: 10,
-                    lineHeight: "12px",
-                    color: token.colorTextTertiary,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {label}
-                </div>
-              ))}
-            </Flex>
-
             {HABITS.map((habit) => (
               <div key={habit.field}>
                 <Typography.Text
@@ -133,9 +122,7 @@ export function HabitCalendar() {
                     return (
                       <div
                         key={day.key}
-                        title={`${dayjs(day.key).format("MMM D, YYYY")} — ${
-                          on ? "yes" : "no"
-                        }`}
+                        data-date={day.future ? undefined : day.key}
                         style={{
                           width: CELL,
                           height: CELL,
@@ -151,6 +138,28 @@ export function HabitCalendar() {
           </Flex>
         </div>
       )}
+
+      {tip ? (
+        <div
+          style={{
+            position: "fixed",
+            left: tip.x,
+            top: tip.y - 8,
+            transform: "translate(-50%, -100%)",
+            padding: "4px 8px",
+            fontSize: 12,
+            lineHeight: 1.4,
+            whiteSpace: "nowrap",
+            borderRadius: token.borderRadiusSM,
+            background: token.colorBgSpotlight,
+            color: token.colorTextLightSolid,
+            pointerEvents: "none",
+            zIndex: 1000,
+          }}
+        >
+          {tip.text}
+        </div>
+      ) : null}
     </div>
   );
 }
