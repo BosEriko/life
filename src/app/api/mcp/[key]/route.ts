@@ -44,7 +44,7 @@ const TOOLS = [
   {
     name: "get_entries",
     description:
-      "Daily health entries: weight (kg), blood pressure systolic/diastolic (mmHg), bpTime/bpPosture/bpArm, water (ml), notes, and the boolean habits junkFood/junkDrink/bath/brushTeeth. Any field may be null.",
+      "Daily health entries: weight (kg), blood pressure systolic/diastolic (mmHg), bpTime/bpPosture/bpArm, water (ml), and the boolean habits junkFood/junkDrink/bath/brushTeeth. Any field may be null.",
     inputSchema: {
       type: "object",
       properties: {

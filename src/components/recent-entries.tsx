@@ -98,14 +98,6 @@ export function RecentEntries() {
                   ) : null}
                 </Flex>
               </Flex>
-              {entry.notes ? (
-                <Typography.Text
-                  type="secondary"
-                  style={{ fontSize: 12, whiteSpace: "pre-wrap" }}
-                >
-                  {entry.notes}
-                </Typography.Text>
-              ) : null}
             </Flex>
           ))}
         </Flex>

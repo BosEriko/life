@@ -10,7 +10,6 @@ import {
   Flex,
   Form,
   Grid,
-  Input,
   InputNumber,
   Segmented,
   Typography,
@@ -55,7 +54,6 @@ type FormValues = {
   bpPosture?: BpPosture;
   bpArm?: BpArm;
   water?: number | null;
-  notes?: string | null;
   junkFood?: boolean;
   junkDrink?: boolean;
   bath?: boolean;
@@ -87,7 +85,6 @@ const ARM_OPTIONS = [
 
 type CollectOptions = {
   stampBpTime: boolean;
-  includeNotes: boolean;
   includeJunkFood: boolean;
   includeJunkDrink: boolean;
   includeBath: boolean;
@@ -137,9 +134,6 @@ function collectInput(values: FormValues, opts: CollectOptions): DailyInput {
   if (typeof values.water === "number" && values.water > 0) {
     input.water = values.water;
   }
-  if (opts.includeNotes && typeof values.notes === "string") {
-    input.notes = values.notes.trim();
-  }
   if (opts.includeJunkFood) input.junkFood = values.junkFood === true;
   if (opts.includeJunkDrink) input.junkDrink = values.junkDrink === true;
   if (opts.includeBath) input.bath = values.bath === true;
@@ -167,7 +161,6 @@ export function DailyTracker() {
   const timerRef = useRef<number | null>(null);
   const latestValues = useRef<FormValues | null>(null);
   const bpDirtyRef = useRef(false);
-  const notesDirtyRef = useRef(false);
   const junkFoodDirtyRef = useRef(false);
   const junkDrinkDirtyRef = useRef(false);
   const bathDirtyRef = useRef(false);
@@ -200,7 +193,6 @@ export function DailyTracker() {
     if (status === "pending" || status === "saving") return;
     if (
       bpDirtyRef.current ||
-      notesDirtyRef.current ||
       junkFoodDirtyRef.current ||
       junkDrinkDirtyRef.current ||
       bathDirtyRef.current ||
@@ -217,7 +209,6 @@ export function DailyTracker() {
       bpPosture: queued?.bpPosture ?? entry?.bpPosture ?? "sitting",
       bpArm: queued?.bpArm ?? entry?.bpArm ?? "left",
       water: queued?.water ?? entry?.water ?? null,
-      notes: queued?.notes ?? entry?.notes ?? "",
       junkFood: queued?.junkFood ?? entry?.junkFood ?? false,
       junkDrink: queued?.junkDrink ?? entry?.junkDrink ?? false,
       bath: queued?.bath ?? entry?.bath ?? false,
@@ -232,7 +223,6 @@ export function DailyTracker() {
 
     const input = collectInput(values, {
       stampBpTime: bpDirtyRef.current,
-      includeNotes: notesDirtyRef.current,
       includeJunkFood: junkFoodDirtyRef.current,
       includeJunkDrink: junkDrinkDirtyRef.current,
       includeBath: bathDirtyRef.current,
@@ -257,7 +247,6 @@ export function DailyTracker() {
         baselineUpdatedAtMs,
       );
       if (savedBp) bpDirtyRef.current = false;
-      notesDirtyRef.current = false;
       junkFoodDirtyRef.current = false;
       junkDrinkDirtyRef.current = false;
       bathDirtyRef.current = false;
@@ -281,7 +270,6 @@ export function DailyTracker() {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
     bpDirtyRef.current = false;
-    notesDirtyRef.current = false;
     junkFoodDirtyRef.current = false;
     junkDrinkDirtyRef.current = false;
     bathDirtyRef.current = false;
@@ -332,9 +320,6 @@ export function DailyTracker() {
 
     if (changed.systolic !== undefined || changed.diastolic !== undefined) {
       bpDirtyRef.current = true;
-    }
-    if (changed.notes !== undefined) {
-      notesDirtyRef.current = true;
     }
     if (changed.junkFood !== undefined) {
       junkFoodDirtyRef.current = true;
@@ -428,7 +413,6 @@ export function DailyTracker() {
           date: dayjs(),
           bpPosture: "sitting",
           bpArm: "left",
-          notes: "",
           junkFood: false,
           junkDrink: false,
           bath: false,
@@ -670,13 +654,6 @@ export function DailyTracker() {
             </Flex>
           </Form.Item>
         </div>
-
-        <Form.Item label={<><Icon name="notes" />Notes</>} name="notes">
-          <Input.TextArea
-            autoSize={{ minRows: 2, maxRows: 6 }}
-            placeholder="Anything worth noting about today…"
-          />
-        </Form.Item>
       </Form>
     </Card>
     <WaterPresetsModal

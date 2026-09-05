@@ -102,7 +102,6 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
         bpPosture: clean(d.bpPosture),
         bpArm: clean(d.bpArm),
         water: clean(d.water),
-        notes: clean(d.notes),
         junkFood: clean(d.junkFood),
         junkDrink: clean(d.junkDrink),
         bath: clean(d.bath),

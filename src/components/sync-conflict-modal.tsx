@@ -12,7 +12,6 @@ const FIELD_LABELS: Record<string, string> = {
   bpPosture: "BP posture",
   bpArm: "BP arm",
   water: "Water",
-  notes: "Notes",
   junkFood: "Junk food",
   junkDrink: "Junk drink",
   bath: "Bath",

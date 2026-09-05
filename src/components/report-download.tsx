@@ -140,7 +140,6 @@ export function ReportDownload() {
             "Junk D",
             "Bath",
             "Brush",
-            "Notes",
           ],
         ],
         body: rows.map((entry) => [
@@ -156,11 +155,9 @@ export function ReportDownload() {
           entry.junkDrink ? "Y" : "",
           entry.bath ? "Y" : "",
           entry.brushTeeth ? "Y" : "",
-          entry.notes ?? "",
         ]),
         styles: { fontSize: 8, cellPadding: 1.5, overflow: "linebreak" },
         headStyles: { fillColor: [46, 125, 79] },
-        columnStyles: { 8: { cellWidth: 45 } },
       });
 
       doc.save(
