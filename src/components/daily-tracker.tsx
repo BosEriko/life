@@ -553,8 +553,8 @@ export function DailyTracker() {
               </Typography.Text>
             ) : (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                No reading yet — best taken about an hour after you wake up,
-                before coffee, food, or medication.
+                No reading yet — best about an hour after waking, before food,
+                coffee, or meds.
                 {avgBpTime
                   ? ` You usually log around ${formatBpTime(
                       selectedDate,
