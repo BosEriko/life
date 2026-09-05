@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { App, Button, Modal, Popconfirm, Spin, Tabs, Typography } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
+import { CopyOutlined, KeyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/mcp-key";
 
@@ -149,31 +149,20 @@ export function DeveloperModal({
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
         MCP server URL
       </Typography.Title>
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          alignItems: "center",
-          flexWrap: "wrap",
-          marginBottom: 4,
-        }}
-      >
-        <Typography.Text code style={{ wordBreak: "break-all" }}>
-          {shownUrl}
-        </Typography.Text>
-        <Button
-          size="small"
-          icon={<CopyOutlined />}
-          onClick={() => setConfirmOpen(true)}
-        >
-          Copy
-        </Button>
-      </div>
       <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
         Streamable HTTP. The key lives in the URL, so treat the whole URL as the
         secret. On copy you&apos;ll be asked whether to use a real key or a
         placeholder.
       </Typography.Paragraph>
+      <div style={{ marginBottom: 20 }}>
+        <Button
+          type="primary"
+          icon={<CopyOutlined />}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Copy MCP URL
+        </Button>
+      </div>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
         MCP key
@@ -216,12 +205,17 @@ export function DeveloperModal({
             okText="Regenerate"
             onConfirm={handleGenerate}
           >
-            <Button type="primary" loading={busy}>
+            <Button type="primary" icon={<KeyOutlined />} loading={busy}>
               Regenerate key
             </Button>
           </Popconfirm>
         ) : (
-          <Button type="primary" loading={busy} onClick={handleGenerate}>
+          <Button
+            type="primary"
+            icon={<KeyOutlined />}
+            loading={busy}
+            onClick={handleGenerate}
+          >
             {meta || freshKey ? "Regenerate key" : "Generate MCP key"}
           </Button>
         )}
