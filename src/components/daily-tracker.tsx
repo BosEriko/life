@@ -94,6 +94,29 @@ type CollectOptions = {
   includeBrushTeeth: boolean;
 };
 
+function averageBpTime(entries: DailyEntry[], endDate: string): string | null {
+  const start = dayjs(endDate).subtract(6, "day");
+  const end = dayjs(endDate);
+  const minutes = entries
+    .filter((entry) => {
+      if (!entry.bpTime) return false;
+      const day = dayjs(entry.date);
+      return !day.isBefore(start, "day") && !day.isAfter(end, "day");
+    })
+    .map((entry) => {
+      const [h, m] = (entry.bpTime as string).split(":").map(Number);
+      return h * 60 + m;
+    })
+    .filter((value) => Number.isFinite(value));
+  if (minutes.length === 0) return null;
+  const avg = Math.round(
+    minutes.reduce((sum, value) => sum + value, 0) / minutes.length,
+  );
+  const hh = String(Math.floor(avg / 60)).padStart(2, "0");
+  const mm = String(avg % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 function collectInput(values: FormValues, opts: CollectOptions): DailyInput {
   const input: DailyInput = {};
   if (typeof values.weight === "number" && values.weight > 0) {
@@ -330,6 +353,7 @@ export function DailyTracker() {
   }
 
   const currentEntry = entries.find((item) => item.date === selectedDate);
+  const avgBpTime = averageBpTime(entries, selectedDate);
 
   const systolicEval = evaluateIdeal(
     typeof watchedSystolic === "number" ? watchedSystolic : null,
@@ -532,6 +556,9 @@ export function DailyTracker() {
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Recorded at{" "}
                 {formatBpTime(selectedDate, currentEntry.bpTime)}
+                {avgBpTime
+                  ? ` · 7d avg ${formatBpTime(selectedDate, avgBpTime)}`
+                  : null}
               </Typography.Text>
             ) : null}
           </Flex>
