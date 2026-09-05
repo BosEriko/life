@@ -30,6 +30,8 @@ export function DeveloperModal({
   const [loaded, setLoaded] = useState(false);
   const [freshKey, setFreshKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [copyBusy, setCopyBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,6 +46,7 @@ export function DeveloperModal({
   }, [user]);
 
   function handleClose() {
+    setConfirmOpen(false);
     setFreshKey(null);
     onClose();
   }
@@ -63,21 +66,44 @@ export function DeveloperModal({
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://life.boseriko.com";
 
-  const mcpUrl = `${origin}/api/mcp`;
-  const snippetKey = freshKey ?? KEY_PLACEHOLDER;
+  function mcpUrl(key: string): string {
+    return `${origin}/api/mcp/${key}`;
+  }
 
-  const testCommand = `curl -s "${mcpUrl}" \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${snippetKey}" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`;
+  const shownUrl = mcpUrl(freshKey ?? KEY_PLACEHOLDER);
 
-  const jsonConfig = `{\n  "mcpServers": {\n    "life-tracker": {\n      "url": "${mcpUrl}",\n      "headers": { "Authorization": "Bearer ${snippetKey}" }\n    }\n  }\n}`;
-  const codexConfig = `[mcp_servers.life-tracker]\nurl = "${mcpUrl}"\nhttp_headers = { "Authorization" = "Bearer ${snippetKey}" }`;
+  const testCommand = `curl -s "${shownUrl}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`;
 
-  async function copyText(text: string, label: string) {
+  const jsonConfig = `{\n  "mcpServers": {\n    "life-tracker": { "url": "${shownUrl}" }\n  }\n}`;
+  const codexConfig = `[mcp_servers.life-tracker]\nurl = "${shownUrl}"`;
+
+  async function copyText(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      message.success(`${label} copied`);
+      message.success("MCP URL copied");
     } catch {
       message.error("Could not copy.");
     }
+  }
+
+  async function copyWithNewKey() {
+    if (!user) return;
+    setCopyBusy(true);
+    try {
+      const key = await generateMcpKey(user.uid);
+      setFreshKey(key);
+      await copyText(mcpUrl(key));
+      setConfirmOpen(false);
+    } catch {
+      message.error("Could not generate a key.");
+    } finally {
+      setCopyBusy(false);
+    }
+  }
+
+  async function copyWithPlaceholder() {
+    await copyText(mcpUrl(KEY_PLACEHOLDER));
+    setConfirmOpen(false);
   }
 
   return (
@@ -93,6 +119,33 @@ export function DeveloperModal({
         MCP-capable agent so it can read your data. Read-only.
       </Typography.Paragraph>
 
+      <Modal
+        open={confirmOpen}
+        centered
+        title="Copy with MCP key?"
+        onCancel={() => setConfirmOpen(false)}
+        footer={[
+          <Button key="placeholder" onClick={copyWithPlaceholder}>
+            No — use a placeholder
+          </Button>,
+          <Button
+            key="newkey"
+            type="primary"
+            loading={copyBusy}
+            onClick={copyWithNewKey}
+          >
+            Yes — generate a new key
+          </Button>,
+        ]}
+      >
+        <Typography.Paragraph style={{ marginBottom: 0 }}>
+          <strong>Yes</strong> generates a new key and embeds it in the copied
+          URL — this invalidates any key currently in use.{" "}
+          <strong>No</strong> copies a version with a{" "}
+          <Typography.Text code>{KEY_PLACEHOLDER}</Typography.Text> placeholder.
+        </Typography.Paragraph>
+      </Modal>
+
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
         MCP server URL
       </Typography.Title>
@@ -106,20 +159,20 @@ export function DeveloperModal({
         }}
       >
         <Typography.Text code style={{ wordBreak: "break-all" }}>
-          {mcpUrl}
+          {shownUrl}
         </Typography.Text>
         <Button
           size="small"
           icon={<CopyOutlined />}
-          onClick={() => copyText(mcpUrl, "MCP URL")}
+          onClick={() => setConfirmOpen(true)}
         >
           Copy
         </Button>
       </div>
       <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-        Streamable HTTP. Authenticate with your MCP key as a bearer token —{" "}
-        <Typography.Text code>Authorization: Bearer &lt;key&gt;</Typography.Text>.
-        The URL holds no secret.
+        Streamable HTTP. The key lives in the URL, so treat the whole URL as the
+        secret. On copy you&apos;ll be asked whether to use a real key or a
+        placeholder.
       </Typography.Paragraph>
 
       <Typography.Title level={5} style={{ marginBottom: 4 }}>
@@ -147,8 +200,7 @@ export function DeveloperModal({
             ? `, created ${new Date(meta.createdAt).toLocaleDateString()}`
             : ""}
           ). Its value is never stored — regenerate to get a new one, which
-          invalidates the current key. Pass it as{" "}
-          <Typography.Text code>Authorization: Bearer &lt;key&gt;</Typography.Text>.
+          invalidates the current key.
         </Typography.Paragraph>
       ) : (
         <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
@@ -179,8 +231,8 @@ export function DeveloperModal({
         Connect it
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-        Add it as a remote MCP server. Transport is Streamable HTTP; authenticate
-        with your MCP key as a bearer token.
+        Add it as a remote MCP server. Transport is Streamable HTTP with no
+        authentication — the key is already in the URL.
       </Typography.Paragraph>
       <Tabs
         size="small"
@@ -195,8 +247,7 @@ export function DeveloperModal({
               >
                 claude.ai or Claude Desktop → Settings →{" "}
                 <strong>Connectors</strong> → Add custom connector → paste the
-                URL. If it accepts a bearer token, use your MCP key; otherwise
-                use the <strong>Config file</strong> tab.
+                URL, leave authentication as <strong>None</strong>.
               </Typography.Paragraph>
             ),
           },
@@ -208,9 +259,8 @@ export function DeveloperModal({
                 style={{ fontSize: 13, marginBottom: 0 }}
               >
                 Settings → <strong>Connectors</strong> → enable{" "}
-                <em>Developer mode</em> → Add custom connector → paste the URL and
-                set authentication to a bearer token with your MCP key. Enable it
-                in a chat.
+                <em>Developer mode</em> → Add custom connector → paste the URL,
+                choose <strong>No authentication</strong>. Enable it in a chat.
               </Typography.Paragraph>
             ),
           },

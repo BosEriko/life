@@ -8,17 +8,8 @@ const DEFAULT_PROTOCOL = "2025-06-18";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "Content-Type, Authorization, X-MCP-Key, Mcp-Session-Id, Mcp-Protocol-Version",
+  "Access-Control-Allow-Headers": "Content-Type, Mcp-Session-Id, Mcp-Protocol-Version",
 };
-
-function keyFromRequest(request: Request): string {
-  const auth = (request.headers.get("authorization") ?? "").trim();
-  const bearer = /^Bearer\s+(.+)$/i.exec(auth);
-  if (bearer) return bearer[1].trim();
-  if (auth && !/\s/.test(auth)) return auth;
-  return (request.headers.get("x-mcp-key") ?? "").trim();
-}
 
 type JsonRpc = {
   jsonrpc?: string;
@@ -215,9 +206,13 @@ async function runTool(
   throw new Error(`Unknown tool: ${name}`);
 }
 
-export async function POST(request: Request) {
-  const uid = await resolveUidFromKey(keyFromRequest(request));
-  if (!uid) return error(null, -32001, "Invalid or missing MCP key", 401);
+export async function POST(
+  request: Request,
+  ctx: { params: Promise<{ key: string }> },
+) {
+  const { key } = await ctx.params;
+  const uid = await resolveUidFromKey(key);
+  if (!uid) return error(null, -32001, "Invalid MCP key", 401);
 
   let msg: JsonRpc;
   try {
