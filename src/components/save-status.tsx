@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type SaveState = "idle" | "pending" | "saving" | "error";
+export type SaveState = "idle" | "pending" | "saving" | "offline" | "error";
 
 type SaveStatusValue = {
   state: SaveState;

@@ -51,6 +51,10 @@ function dailiesCollection(uid: string) {
   return collection(getFirebaseDb(), "users", uid, "dailies");
 }
 
+export function dailyDocRef(uid: string, date: string) {
+  return doc(dailiesCollection(uid), date);
+}
+
 export function todayKey(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -89,7 +93,7 @@ export async function saveDaily(uid: string, date: string, input: DailyInput) {
   if (input.bath !== undefined) payload.bath = input.bath;
   if (input.brushTeeth !== undefined) payload.brushTeeth = input.brushTeeth;
 
-  await setDoc(doc(dailiesCollection(uid), date), payload, { merge: true });
+  await setDoc(dailyDocRef(uid, date), payload, { merge: true });
 }
 
 export function watchDailies(

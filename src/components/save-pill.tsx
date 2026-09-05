@@ -11,6 +11,7 @@ export function SavePill() {
     idle: { text: "Auto-saving", color: token.colorSuccess },
     pending: { text: "Unsaved changes", color: token.colorWarning },
     saving: { text: "Saving…", color: token.colorInfo },
+    offline: { text: "Saved offline · will sync", color: token.colorWarning },
     error: { text: "Save failed", color: token.colorError },
   }[state];
 

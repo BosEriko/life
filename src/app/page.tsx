@@ -6,6 +6,7 @@ import { AverageStats } from "@/components/average-stats";
 import { DailyTracker } from "@/components/daily-tracker";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { HabitCalendar } from "@/components/habit-calendar";
+import { OfflineSync } from "@/components/offline-sync";
 import { RecentEntries } from "@/components/recent-entries";
 import { ReportDownload } from "@/components/report-download";
 import { SaveStatusProvider } from "@/components/save-status";
@@ -27,6 +28,8 @@ export default function Home() {
     <SaveStatusProvider>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 20px" }}>
         <DashboardHeader />
+
+        <OfflineSync />
 
         <div style={{ marginBottom: 40 }}>
           <AverageStats />

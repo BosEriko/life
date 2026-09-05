@@ -21,7 +21,6 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import {
   formatBpTime,
-  saveDaily,
   todayKey,
   watchDailies,
   type BpArm,
@@ -29,6 +28,7 @@ import {
   type DailyEntry,
   type DailyInput,
 } from "@/models/dailies";
+import { getQueuedDailyInput, queueDailySave } from "@/lib/daily-sync";
 import {
   EMPTY_IDEALS,
   evaluateIdeal,
@@ -186,20 +186,21 @@ export function DailyTracker() {
       return;
     }
     const entry = entries.find((item) => item.date === selectedDate);
+    const queued = user ? getQueuedDailyInput(user.uid, selectedDate) : null;
     form.setFieldsValue({
-      weight: entry?.weight ?? null,
-      systolic: entry?.systolic ?? null,
-      diastolic: entry?.diastolic ?? null,
-      bpPosture: entry?.bpPosture ?? "sitting",
-      bpArm: entry?.bpArm ?? "left",
-      water: entry?.water ?? null,
-      notes: entry?.notes ?? "",
-      junkFood: entry?.junkFood ?? false,
-      junkDrink: entry?.junkDrink ?? false,
-      bath: entry?.bath ?? false,
-      brushTeeth: entry?.brushTeeth ?? false,
+      weight: queued?.weight ?? entry?.weight ?? null,
+      systolic: queued?.systolic ?? entry?.systolic ?? null,
+      diastolic: queued?.diastolic ?? entry?.diastolic ?? null,
+      bpPosture: queued?.bpPosture ?? entry?.bpPosture ?? "sitting",
+      bpArm: queued?.bpArm ?? entry?.bpArm ?? "left",
+      water: queued?.water ?? entry?.water ?? null,
+      notes: queued?.notes ?? entry?.notes ?? "",
+      junkFood: queued?.junkFood ?? entry?.junkFood ?? false,
+      junkDrink: queued?.junkDrink ?? entry?.junkDrink ?? false,
+      bath: queued?.bath ?? entry?.bath ?? false,
+      brushTeeth: queued?.brushTeeth ?? entry?.brushTeeth ?? false,
     });
-  }, [entries, selectedDate, status, form]);
+  }, [entries, selectedDate, status, form, user]);
 
   const flush = useCallback(async () => {
     timerRef.current = null;
@@ -220,21 +221,29 @@ export function DailyTracker() {
     }
 
     const savedBp = input.systolic !== undefined && input.diastolic !== undefined;
+    const dateKey = values.date.format("YYYY-MM-DD");
+    const baselineUpdatedAtMs =
+      entries.find((item) => item.date === dateKey)?.updatedAt?.toMillis() ?? null;
 
     setStatus("saving");
     try {
-      await saveDaily(user.uid, values.date.format("YYYY-MM-DD"), input);
+      const queued = await queueDailySave(
+        user.uid,
+        dateKey,
+        input,
+        baselineUpdatedAtMs,
+      );
       if (savedBp) bpDirtyRef.current = false;
       notesDirtyRef.current = false;
       junkFoodDirtyRef.current = false;
       junkDrinkDirtyRef.current = false;
       bathDirtyRef.current = false;
       brushTeethDirtyRef.current = false;
-      setStatus("idle");
+      setStatus(queued ? "offline" : "idle");
     } catch {
       setStatus("error");
     }
-  }, [user, setStatus]);
+  }, [user, setStatus, entries]);
 
   useEffect(() => {
     return () => {
