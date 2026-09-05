@@ -556,9 +556,16 @@ export function DailyTracker() {
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Recorded at{" "}
                 {formatBpTime(selectedDate, currentEntry.bpTime)}
-                {avgBpTime
-                  ? ` · 7d avg ${formatBpTime(selectedDate, avgBpTime)}`
-                  : null}
+                {avgBpTime ? (
+                  <>
+                    {" "}
+                    <Tip title="Average of the last 7 days">
+                      <span style={{ cursor: "help" }}>
+                        (Average: {formatBpTime(selectedDate, avgBpTime)})
+                      </span>
+                    </Tip>
+                  </>
+                ) : null}
               </Typography.Text>
             ) : null}
           </Flex>
