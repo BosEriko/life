@@ -567,7 +567,18 @@ export function DailyTracker() {
                   </>
                 ) : null}
               </Typography.Text>
-            ) : null}
+            ) : (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                No reading yet — best taken about an hour after you wake up,
+                before coffee, food, or medication.
+                {avgBpTime
+                  ? ` You usually log around ${formatBpTime(
+                      selectedDate,
+                      avgBpTime,
+                    )}.`
+                  : null}
+              </Typography.Text>
+            )}
           </Flex>
         </Form.Item>
 
