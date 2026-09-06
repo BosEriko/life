@@ -37,11 +37,33 @@ body {
   display: none;
 }
 
+@keyframes bp-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(49, 99, 66, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(49, 99, 66, 0);
+  }
+}
+
+.bp-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: bp-pulse 2.4s ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand-loader-glyph {
     animation: none;
     clip-path: none;
     opacity: 1;
+  }
+
+  .bp-pulse::after {
+    animation: none;
   }
 }
 

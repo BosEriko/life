@@ -12,17 +12,9 @@ import {
 import dayjs from "dayjs";
 import { getFirebaseDb } from "@/lib/firebase";
 
-export type BpPosture = "sitting" | "standing";
-export type BpArm = "left" | "right";
-
 export type DailyEntry = {
   date: string;
   weight: number | null;
-  systolic: number | null;
-  diastolic: number | null;
-  bpTime: string | null;
-  bpPosture: BpPosture | null;
-  bpArm: BpArm | null;
   water: number | null;
   junkFood: boolean | null;
   junkDrink: boolean | null;
@@ -33,11 +25,6 @@ export type DailyEntry = {
 
 export type DailyInput = {
   weight?: number;
-  systolic?: number;
-  diastolic?: number;
-  bpTime?: string;
-  bpPosture?: BpPosture;
-  bpArm?: BpArm;
   water?: number;
   junkFood?: boolean;
   junkDrink?: boolean;
@@ -69,21 +56,12 @@ export function relativeDate(key: string): string {
   return dayjs(key).format("MMM D");
 }
 
-export function formatBpTime(dateKey: string, time: string): string {
-  return dayjs(`${dateKey}T${time}`).format("h:mm A");
-}
-
 export async function saveDaily(uid: string, date: string, input: DailyInput) {
   const payload: Record<string, unknown> = {
     date,
     updatedAt: serverTimestamp(),
   };
   if (input.weight !== undefined) payload.weight = input.weight;
-  if (input.systolic !== undefined) payload.systolic = input.systolic;
-  if (input.diastolic !== undefined) payload.diastolic = input.diastolic;
-  if (input.bpTime !== undefined) payload.bpTime = input.bpTime;
-  if (input.bpPosture !== undefined) payload.bpPosture = input.bpPosture;
-  if (input.bpArm !== undefined) payload.bpArm = input.bpArm;
   if (input.water !== undefined) payload.water = input.water;
   if (input.junkFood !== undefined) payload.junkFood = input.junkFood;
   if (input.junkDrink !== undefined) payload.junkDrink = input.junkDrink;
@@ -113,11 +91,6 @@ export function watchDailies(
           return {
             date: data.date as string,
             weight: (data.weight as number | undefined) ?? null,
-            systolic: (data.systolic as number | undefined) ?? null,
-            diastolic: (data.diastolic as number | undefined) ?? null,
-            bpTime: (data.bpTime as string | undefined) ?? null,
-            bpPosture: (data.bpPosture as BpPosture | undefined) ?? null,
-            bpArm: (data.bpArm as BpArm | undefined) ?? null,
             water: (data.water as number | undefined) ?? null,
             junkFood: (data.junkFood as boolean | undefined) ?? null,
             junkDrink: (data.junkDrink as boolean | undefined) ?? null,

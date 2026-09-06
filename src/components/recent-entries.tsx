@@ -10,6 +10,11 @@ import {
   watchDailies,
   type DailyEntry,
 } from "@/models/dailies";
+import {
+  dailyBpAverages,
+  watchBpReadings,
+  type BpReading,
+} from "@/models/bp";
 import { Icon } from "@/components/icon";
 
 const DAYS = 7;
@@ -19,6 +24,7 @@ export function RecentEntries() {
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
+  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -36,6 +42,13 @@ export function RecentEntries() {
       DAYS,
     );
   }, [user, message]);
+
+  useEffect(() => {
+    if (!user) return;
+    return watchBpReadings(user.uid, setBpReadings, () => {}, 200);
+  }, [user]);
+
+  const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
 
   const recent = useMemo(() => {
     const cutoff = dayjs(todayKey()).subtract(DAYS - 1, "day");
@@ -58,7 +71,9 @@ export function RecentEntries() {
         <Empty description="Nothing logged in the last 7 days." />
       ) : (
         <Flex vertical>
-          {recent.map((entry) => (
+          {recent.map((entry) => {
+            const bp = dailyBp.get(entry.date);
+            return (
             <Flex
               key={entry.date}
               vertical
@@ -80,11 +95,11 @@ export function RecentEntries() {
                       kg
                     </Typography.Text>
                   ) : null}
-                  {entry.systolic != null && entry.diastolic != null ? (
+                  {bp ? (
                     <Typography.Text type="secondary">
                       <Icon name="bp" style={{ marginRight: 4 }} />
                       <Typography.Text strong>
-                        {entry.systolic}/{entry.diastolic}
+                        {bp.systolic}/{bp.diastolic}
                       </Typography.Text>{" "}
                       mmHg
                     </Typography.Text>
@@ -99,7 +114,8 @@ export function RecentEntries() {
                 </Flex>
               </Flex>
             </Flex>
-          ))}
+            );
+          })}
         </Flex>
       )}
     </div>

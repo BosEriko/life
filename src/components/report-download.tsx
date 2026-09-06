@@ -5,7 +5,15 @@ import { App, FloatButton, Grid, Modal, Segmented, Typography } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { BpModal } from "@/components/bp-modal";
+import { Icon } from "@/components/icon";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
+import {
+  dailyBpAverages,
+  watchBpReadings,
+  type BpReading,
+  type DailyBp,
+} from "@/models/bp";
 
 const HISTORY_LIMIT = 1000;
 
@@ -38,7 +46,9 @@ export function ReportDownload() {
   const screens = Grid.useBreakpoint();
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
+  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [open, setOpen] = useState(false);
+  const [bpOpen, setBpOpen] = useState(false);
   const [range, setRange] = useState<Range>("30");
   const [busy, setBusy] = useState(false);
 
@@ -52,12 +62,30 @@ export function ReportDownload() {
     );
   }, [user, message]);
 
+  useEffect(() => {
+    if (!user) return;
+    return watchBpReadings(user.uid, setBpReadings, () => {});
+  }, [user]);
+
+  const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
+  const hasBpToday = useMemo(
+    () => bpReadings.some((reading) => reading.date === todayKey()),
+    [bpReadings],
+  );
+
   const rows = useMemo(() => {
     const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
     if (range === "all") return sorted;
     const cutoff = dayjs(todayKey()).subtract(Number(range) - 1, "day");
     return sorted.filter((entry) => !dayjs(entry.date).isBefore(cutoff, "day"));
   }, [entries, range]);
+
+  const bpRows = useMemo<DailyBp[]>(() => {
+    const all = Array.from(dailyBp.values());
+    if (range === "all") return all;
+    const cutoff = dayjs(todayKey()).subtract(Number(range) - 1, "day");
+    return all.filter((day) => !dayjs(day.date).isBefore(cutoff, "day"));
+  }, [dailyBp, range]);
 
   async function handleDownload() {
     setBusy(true);
@@ -76,14 +104,14 @@ export function ReportDownload() {
       doc.text(`${RANGE_LABEL[range]} · generated ${generatedAt}`, 14, 30);
       doc.setTextColor(0);
 
-      const pickNums = (key: "weight" | "systolic" | "diastolic" | "water") =>
+      const pickNums = (key: "weight" | "water") =>
         rows
           .map((entry) => entry[key])
           .filter((value): value is number => value != null);
 
       const avgWeight = mean(pickNums("weight"));
-      const avgSystolic = mean(pickNums("systolic"));
-      const avgDiastolic = mean(pickNums("diastolic"));
+      const avgSystolic = mean(bpRows.map((day) => day.systolic));
+      const avgDiastolic = mean(bpRows.map((day) => day.diastolic));
       const avgWater = mean(pickNums("water"));
       const count = (predicate: (entry: DailyEntry) => boolean | null) =>
         String(rows.filter((entry) => predicate(entry)).length);
@@ -127,20 +155,19 @@ export function ReportDownload() {
             "Brush",
           ],
         ],
-        body: rows.map((entry) => [
-          entry.date,
-          entry.weight != null ? String(entry.weight) : "",
-          entry.systolic != null && entry.diastolic != null
-            ? `${entry.systolic}/${entry.diastolic}${
-                entry.bpTime ? ` ${entry.bpTime}` : ""
-              }`
-            : "",
-          entry.water != null ? String(entry.water) : "",
-          entry.junkFood ? "Y" : "",
-          entry.junkDrink ? "Y" : "",
-          entry.bath ? "Y" : "",
-          entry.brushTeeth ? "Y" : "",
-        ]),
+        body: rows.map((entry) => {
+          const bp = dailyBp.get(entry.date);
+          return [
+            entry.date,
+            entry.weight != null ? String(entry.weight) : "",
+            bp ? `${bp.systolic}/${bp.diastolic}` : "",
+            entry.water != null ? String(entry.water) : "",
+            entry.junkFood ? "Y" : "",
+            entry.junkDrink ? "Y" : "",
+            entry.bath ? "Y" : "",
+            entry.brushTeeth ? "Y" : "",
+          ];
+        }),
         styles: { fontSize: 8, cellPadding: 1.5, overflow: "linebreak" },
         headStyles: { fillColor: [46, 125, 79] },
       });
@@ -160,12 +187,28 @@ export function ReportDownload() {
 
   return (
     <>
-      <FloatButton
-        type="primary"
-        icon={<DownloadOutlined />}
-        tooltip={screens.md === false ? undefined : "Download report"}
-        onClick={() => setOpen(true)}
+      <FloatButton.Group
+        shape="circle"
         style={screens.md === false ? { insetBlockEnd: 88 } : undefined}
+      >
+        <FloatButton
+          icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={screens.md === false ? undefined : "Blood pressure"}
+          onClick={() => setBpOpen(true)}
+          className={hasBpToday ? undefined : "bp-pulse"}
+        />
+        <FloatButton
+          type="primary"
+          icon={<DownloadOutlined />}
+          tooltip={screens.md === false ? undefined : "Download report"}
+          onClick={() => setOpen(true)}
+        />
+      </FloatButton.Group>
+
+      <BpModal
+        open={bpOpen}
+        onClose={() => setBpOpen(false)}
+        readings={bpReadings}
       />
 
       <Modal

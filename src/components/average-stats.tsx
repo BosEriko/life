@@ -30,6 +30,12 @@ import { IdealsModal } from "@/components/ideals-modal";
 import { Tip } from "@/components/tip";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import {
+  dailyBpAverages,
+  watchBpReadings,
+  type BpReading,
+  type DailyBp,
+} from "@/models/bp";
+import {
   EMPTY_IDEALS,
   evaluateIdeal,
   rangeText,
@@ -109,8 +115,14 @@ type WindowStats = {
   water: number | null;
 };
 
-function meanStats(entries: DailyEntry[]): WindowStats {
-  const pick = (key: "weight" | "systolic" | "diastolic" | "water") =>
+function withinRange<T extends { date: string }>(items: T[], range: Range): T[] {
+  if (range === "all") return items;
+  const cutoff = dayjs(todayKey()).subtract(Number(range) - 1, "day");
+  return items.filter((item) => !dayjs(item.date).isBefore(cutoff, "day"));
+}
+
+function meanStats(entries: DailyEntry[], bp: DailyBp[]): WindowStats {
+  const pick = (key: "weight" | "water") =>
     mean(
       entries
         .map((entry) => entry[key])
@@ -118,8 +130,8 @@ function meanStats(entries: DailyEntry[]): WindowStats {
     );
   return {
     weight: pick("weight"),
-    systolic: pick("systolic"),
-    diastolic: pick("diastolic"),
+    systolic: mean(bp.map((day) => day.systolic)),
+    diastolic: mean(bp.map((day) => day.diastolic)),
     water: pick("water"),
   };
 }
@@ -134,6 +146,7 @@ export function AverageStats() {
   const [activeIdx, setActiveIdx] = useState(0);
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
+  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [range, setRange] = useState<Range>(loadRange);
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
@@ -157,34 +170,36 @@ export function AverageStats() {
 
   useEffect(() => {
     if (!user) return;
+    return watchBpReadings(user.uid, setBpReadings, () => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
     return watchIdeals(user.uid, setIdeals, () => {});
   }, [user]);
 
-  const stats = useMemo(() => {
-    const inRange =
-      range === "all"
-        ? entries
-        : entries.filter(
-            (entry) =>
-              !dayjs(entry.date).isBefore(
-                dayjs(todayKey()).subtract(Number(range) - 1, "day"),
-                "day",
-              ),
-          );
-    return meanStats(inRange);
-  }, [entries, range]);
+  const dailyBp = useMemo(
+    () => Array.from(dailyBpAverages(bpReadings).values()),
+    [bpReadings],
+  );
+
+  const stats = useMemo(
+    () => meanStats(withinRange(entries, range), withinRange(dailyBp, range)),
+    [entries, dailyBp, range],
+  );
 
   const prevStats = useMemo<WindowStats | null>(() => {
     if (range === "all") return null;
     const span = Number(range);
     const end = dayjs(todayKey()).subtract(span, "day");
     const start = dayjs(todayKey()).subtract(span * 2 - 1, "day");
-    const inRange = entries.filter((entry) => {
-      const day = dayjs(entry.date);
-      return !day.isBefore(start, "day") && !day.isAfter(end, "day");
-    });
-    return meanStats(inRange);
-  }, [entries, range]);
+    const inWindow = <T extends { date: string }>(items: T[]) =>
+      items.filter((item) => {
+        const day = dayjs(item.date);
+        return !day.isBefore(start, "day") && !day.isAfter(end, "day");
+      });
+    return meanStats(inWindow(entries), inWindow(dailyBp));
+  }, [entries, dailyBp, range]);
 
   const items: StatItem[] = useMemo(() => {
     const weightStatus = evaluateIdeal(stats.weight, ideals.weight);

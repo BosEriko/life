@@ -44,7 +44,31 @@ const TOOLS = [
   {
     name: "get_entries",
     description:
-      "Daily health entries: weight (kg), blood pressure systolic/diastolic (mmHg), bpTime/bpPosture/bpArm, water (ml), and the boolean habits junkFood/junkDrink/bath/brushTeeth. Any field may be null.",
+      "Daily health entries: weight (kg), water (ml), and the boolean habits junkFood/junkDrink/bath/brushTeeth. Each day also carries that day's mean blood pressure (systolic/diastolic mmHg, bpTime, bpReadingCount) computed from the individual readings. The response also includes bpReadings — every individual reading in range. Any field may be null.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        range: {
+          type: "string",
+          enum: ["7d", "30d", "90d", "1y", "all"],
+          description: "Last N days, counted in UTC. Default all.",
+        },
+        from: {
+          type: "string",
+          description: "YYYY-MM-DD inclusive lower bound. Overrides range.",
+        },
+        to: { type: "string", description: "YYYY-MM-DD inclusive upper bound." },
+        limit: {
+          type: "number",
+          description: "Max number of days, newest first (1-2000).",
+        },
+      },
+    },
+  },
+  {
+    name: "get_bp",
+    description:
+      "Every individual blood-pressure reading: date, systolic, diastolic (mmHg), time (HH:mm), posture (sitting/standing), arm (left/right). Multiple readings per day are kept separate; get_entries returns the daily mean.",
     inputSchema: {
       type: "object",
       properties: {
@@ -129,6 +153,11 @@ async function runTool(
         url: `mcp://life-tracker/entries-${r}`,
       })),
       {
+        id: "bp",
+        title: "Blood pressure readings (all)",
+        url: "mcp://life-tracker/bp",
+      },
+      {
         id: "ideals",
         title: "Target ranges (ideals)",
         url: "mcp://life-tracker/ideals",
@@ -149,6 +178,18 @@ async function runTool(
 
   if (name === "fetch") {
     const id = String(args.id ?? "");
+    if (id === "bp") {
+      const data = await fetchExportData(uid, { range: "all" });
+      return {
+        id,
+        title: "Blood pressure readings",
+        text: JSON.stringify({
+          count: data.bpReadings.length,
+          bpReadings: data.bpReadings,
+        }),
+        url: "mcp://life-tracker/bp",
+      };
+    }
     if (id === "ideals" || id === "presets" || id === "profile") {
       const data = await fetchExportData(uid, { limit: 1 });
       const byId = { ideals: data.ideals, presets: data.presets, profile: data.profile };
@@ -174,6 +215,7 @@ async function runTool(
           range: data.range,
           count: data.count,
           dailies: data.dailies,
+          bpReadings: data.bpReadings,
         }),
         url: `mcp://life-tracker/${id}`,
       };
@@ -188,7 +230,26 @@ async function runTool(
       to: typeof args.to === "string" ? args.to : null,
       limit: typeof args.limit === "number" ? args.limit : null,
     });
-    return { range: data.range, count: data.count, dailies: data.dailies };
+    return {
+      range: data.range,
+      count: data.count,
+      dailies: data.dailies,
+      bpReadings: data.bpReadings,
+    };
+  }
+
+  if (name === "get_bp") {
+    const data = await fetchExportData(uid, {
+      range: typeof args.range === "string" ? args.range : null,
+      from: typeof args.from === "string" ? args.from : null,
+      to: typeof args.to === "string" ? args.to : null,
+      limit: typeof args.limit === "number" ? args.limit : null,
+    });
+    return {
+      range: data.range,
+      count: data.bpReadings.length,
+      bpReadings: data.bpReadings,
+    };
   }
 
   if (name === "get_ideals") {
@@ -231,7 +292,7 @@ export async function POST(
       capabilities: { tools: {} },
       serverInfo: { name: "life-tracker", version: "1.0.0" },
       instructions:
-        "Read the user's personal health tracker. Use get_entries for daily weight / blood pressure / water / habit data, get_ideals for their target ranges, get_presets for their water containers, and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
+        "Read the user's personal health tracker. Use get_entries for daily weight / water / habit data with each day's mean blood pressure, get_bp for every individual blood-pressure reading, get_ideals for their target ranges, get_presets for their water containers, and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
     });
   }
 

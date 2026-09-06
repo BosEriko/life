@@ -11,19 +11,14 @@ import {
   Form,
   Grid,
   InputNumber,
-  Segmented,
-  Typography,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { Icon } from "@/components/icon";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import {
-  formatBpTime,
   todayKey,
   watchDailies,
-  type BpArm,
-  type BpPosture,
   type DailyEntry,
   type DailyInput,
 } from "@/models/dailies";
@@ -33,7 +28,6 @@ import {
   evaluateIdeal,
   rangeText,
   watchIdeals,
-  worstStatus,
   type IdealKey,
   type Ideals,
 } from "@/models/ideals";
@@ -49,10 +43,6 @@ const SAVE_DELAY_MS = 2000;
 type FormValues = {
   date: Dayjs;
   weight?: number | null;
-  systolic?: number | null;
-  diastolic?: number | null;
-  bpPosture?: BpPosture;
-  bpArm?: BpArm;
   water?: number | null;
   junkFood?: boolean;
   junkDrink?: boolean;
@@ -62,74 +52,17 @@ type FormValues = {
 
 const WATER_PRESETS = [500, 1000];
 
-const BP_TIPS = {
-  systolicLow:
-    "Below your ideal systolic. To nudge it up: drink more water, add a little salt, eat smaller and more frequent meals, and stand up slowly. See a doctor if you feel faint or dizzy.",
-  systolicHigh:
-    "Above your ideal systolic. To bring it down: cut back on salt and processed food, move daily (a brisk walk helps), limit alcohol and caffeine, sleep well, and lower stress. See a doctor if it stays high.",
-  diastolicLow:
-    "Below your ideal diastolic. To raise it: keep fluids up, don't skip meals, ease off alcohol, and rise slowly from sitting or lying down. See a doctor if it comes with fatigue or dizziness.",
-  diastolicHigh:
-    "Above your ideal diastolic. To lower it: reduce salt, add potassium-rich foods (leafy greens, banana), exercise regularly, cut alcohol, and wind down before bed. See a doctor if it stays high.",
-} as const;
-
-const POSTURE_OPTIONS = [
-  { label: "Sitting", value: "sitting" },
-  { label: "Standing", value: "standing" },
-];
-
-const ARM_OPTIONS = [
-  { label: "Left arm", value: "left" },
-  { label: "Right arm", value: "right" },
-];
-
 type CollectOptions = {
-  stampBpTime: boolean;
   includeJunkFood: boolean;
   includeJunkDrink: boolean;
   includeBath: boolean;
   includeBrushTeeth: boolean;
 };
 
-function averageBpTime(entries: DailyEntry[], endDate: string): string | null {
-  const start = dayjs(endDate).subtract(6, "day");
-  const end = dayjs(endDate);
-  const minutes = entries
-    .filter((entry) => {
-      if (!entry.bpTime) return false;
-      const day = dayjs(entry.date);
-      return !day.isBefore(start, "day") && !day.isAfter(end, "day");
-    })
-    .map((entry) => {
-      const [h, m] = (entry.bpTime as string).split(":").map(Number);
-      return h * 60 + m;
-    })
-    .filter((value) => Number.isFinite(value));
-  if (minutes.length === 0) return null;
-  const avg = Math.round(
-    minutes.reduce((sum, value) => sum + value, 0) / minutes.length,
-  );
-  const hh = String(Math.floor(avg / 60)).padStart(2, "0");
-  const mm = String(avg % 60).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
 function collectInput(values: FormValues, opts: CollectOptions): DailyInput {
   const input: DailyInput = {};
   if (typeof values.weight === "number" && values.weight > 0) {
     input.weight = values.weight;
-  }
-  if (
-    typeof values.systolic === "number" &&
-    typeof values.diastolic === "number" &&
-    values.systolic > 0 &&
-    values.diastolic > 0
-  ) {
-    input.systolic = values.systolic;
-    input.diastolic = values.diastolic;
-    if (values.bpPosture) input.bpPosture = values.bpPosture;
-    if (values.bpArm) input.bpArm = values.bpArm;
-    if (opts.stampBpTime) input.bpTime = dayjs().format("HH:mm");
   }
   if (typeof values.water === "number" && values.water > 0) {
     input.water = values.water;
@@ -154,13 +87,10 @@ export function DailyTracker() {
   const [presetsOpen, setPresetsOpen] = useState(false);
 
   const watchedWeight = Form.useWatch("weight", form);
-  const watchedSystolic = Form.useWatch("systolic", form);
-  const watchedDiastolic = Form.useWatch("diastolic", form);
   const watchedWater = Form.useWatch("water", form);
 
   const timerRef = useRef<number | null>(null);
   const latestValues = useRef<FormValues | null>(null);
-  const bpDirtyRef = useRef(false);
   const junkFoodDirtyRef = useRef(false);
   const junkDrinkDirtyRef = useRef(false);
   const bathDirtyRef = useRef(false);
@@ -192,7 +122,6 @@ export function DailyTracker() {
   useEffect(() => {
     if (status === "pending" || status === "saving") return;
     if (
-      bpDirtyRef.current ||
       junkFoodDirtyRef.current ||
       junkDrinkDirtyRef.current ||
       bathDirtyRef.current ||
@@ -204,10 +133,6 @@ export function DailyTracker() {
     const queued = user ? getQueuedDailyInput(user.uid, selectedDate) : null;
     form.setFieldsValue({
       weight: queued?.weight ?? entry?.weight ?? null,
-      systolic: queued?.systolic ?? entry?.systolic ?? null,
-      diastolic: queued?.diastolic ?? entry?.diastolic ?? null,
-      bpPosture: queued?.bpPosture ?? entry?.bpPosture ?? "sitting",
-      bpArm: queued?.bpArm ?? entry?.bpArm ?? "left",
       water: queued?.water ?? entry?.water ?? null,
       junkFood: queued?.junkFood ?? entry?.junkFood ?? false,
       junkDrink: queued?.junkDrink ?? entry?.junkDrink ?? false,
@@ -222,7 +147,6 @@ export function DailyTracker() {
     if (!user || !values) return;
 
     const input = collectInput(values, {
-      stampBpTime: bpDirtyRef.current,
       includeJunkFood: junkFoodDirtyRef.current,
       includeJunkDrink: junkDrinkDirtyRef.current,
       includeBath: bathDirtyRef.current,
@@ -233,10 +157,10 @@ export function DailyTracker() {
       return;
     }
 
-    const savedBp = input.systolic !== undefined && input.diastolic !== undefined;
     const dateKey = values.date.format("YYYY-MM-DD");
     const baselineUpdatedAtMs =
-      entries.find((item) => item.date === dateKey)?.updatedAt?.toMillis() ?? null;
+      entries.find((item) => item.date === dateKey)?.updatedAt?.toMillis() ??
+      null;
 
     setStatus("saving");
     try {
@@ -246,7 +170,6 @@ export function DailyTracker() {
         input,
         baselineUpdatedAtMs,
       );
-      if (savedBp) bpDirtyRef.current = false;
       junkFoodDirtyRef.current = false;
       junkDrinkDirtyRef.current = false;
       bathDirtyRef.current = false;
@@ -269,7 +192,6 @@ export function DailyTracker() {
   function applyDate(next: Dayjs) {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
-    bpDirtyRef.current = false;
     junkFoodDirtyRef.current = false;
     junkDrinkDirtyRef.current = false;
     bathDirtyRef.current = false;
@@ -307,10 +229,7 @@ export function DailyTracker() {
     }, SAVE_DELAY_MS);
   }
 
-  function handleValuesChange(
-    changed: Partial<FormValues>,
-    all: FormValues,
-  ) {
+  function handleValuesChange(changed: Partial<FormValues>, all: FormValues) {
     latestValues.current = all;
 
     if (changed.date !== undefined) {
@@ -318,9 +237,6 @@ export function DailyTracker() {
       return;
     }
 
-    if (changed.systolic !== undefined || changed.diastolic !== undefined) {
-      bpDirtyRef.current = true;
-    }
     if (changed.junkFood !== undefined) {
       junkFoodDirtyRef.current = true;
     }
@@ -336,32 +252,6 @@ export function DailyTracker() {
 
     markPending();
   }
-
-  const currentEntry = entries.find((item) => item.date === selectedDate);
-  const avgBpTime = averageBpTime(entries, selectedDate);
-
-  const systolicEval = evaluateIdeal(
-    typeof watchedSystolic === "number" ? watchedSystolic : null,
-    ideals.systolic,
-  );
-  const diastolicEval = evaluateIdeal(
-    typeof watchedDiastolic === "number" ? watchedDiastolic : null,
-    ideals.diastolic,
-  );
-  const systolicTip =
-    systolicEval === "low"
-      ? BP_TIPS.systolicLow
-      : systolicEval === "high"
-        ? BP_TIPS.systolicHigh
-        : undefined;
-  const diastolicTip =
-    diastolicEval === "low"
-      ? BP_TIPS.diastolicLow
-      : diastolicEval === "high"
-        ? BP_TIPS.diastolicHigh
-        : undefined;
-  const systolicPlacement = systolicEval === "low" ? "bottom" : "top";
-  const diastolicPlacement = diastolicEval === "low" ? "bottom" : "top";
 
   const weightEval = evaluateIdeal(
     typeof watchedWeight === "number" ? watchedWeight : null,
@@ -386,10 +276,7 @@ export function DailyTracker() {
   const weightPlacement = weightEval === "low" ? "bottom" : "top";
   const waterPlacement = waterEval === "low" ? "bottom" : "top";
 
-  function idealStatus(
-    value: unknown,
-    key: IdealKey,
-  ): "error" | undefined {
+  function idealStatus(value: unknown, key: IdealKey): "error" | undefined {
     const numeric = typeof value === "number" ? value : null;
     const result = evaluateIdeal(numeric, ideals[key]);
     return result === "low" || result === "high" ? "error" : undefined;
@@ -397,271 +284,199 @@ export function DailyTracker() {
 
   return (
     <>
-    <Card
-      title={<><Icon name="logEntry" />Log entry</>}
-      extra={<SavePill />}
-      style={{
-        boxShadow:
-          "0 12px 32px -6px rgba(20, 40, 30, 0.10), 0 3px 10px -2px rgba(20, 40, 30, 0.05)",
-      }}
-    >
-      <Form
-        form={form}
-        layout="vertical"
-        requiredMark={false}
-        initialValues={{
-          date: dayjs(),
-          bpPosture: "sitting",
-          bpArm: "left",
-          junkFood: false,
-          junkDrink: false,
-          bath: false,
-          brushTeeth: false,
+      <Card
+        title={
+          <>
+            <Icon name="logEntry" />
+            Log entry
+          </>
+        }
+        extra={<SavePill />}
+        style={{
+          boxShadow:
+            "0 12px 32px -6px rgba(20, 40, 30, 0.10), 0 3px 10px -2px rgba(20, 40, 30, 0.05)",
         }}
-        onValuesChange={handleValuesChange}
       >
-        <Form.Item label={<><Icon name="date" />Date</>}>
-          <Flex align="center" gap={8} wrap>
-            <Button
-              icon={<LeftOutlined />}
-              onClick={() => stepDay(-1)}
-              aria-label="Previous day"
-            />
-            <Form.Item name="date" noStyle>
-              <DatePicker
-                style={{ flex: 1, minWidth: 132 }}
-                format="YYYY-MM-DD"
-                allowClear={false}
-                inputReadOnly
-              />
-            </Form.Item>
-            <Button
-              icon={<RightOutlined />}
-              onClick={() => stepDay(1)}
-              aria-label="Next day"
-            />
-            <Button
-              onClick={goToToday}
-              disabled={selectedDate === todayKey()}
-            >
-              Today
-            </Button>
-          </Flex>
-        </Form.Item>
-
-        <Form.Item
-          label={
-            <>
-              <Icon name="weight" />
-              Weight
-              <IdealBadge status={weightEval} />
-            </>
-          }
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          initialValues={{
+            date: dayjs(),
+            junkFood: false,
+            junkDrink: false,
+            bath: false,
+            brushTeeth: false,
+          }}
+          onValuesChange={handleValuesChange}
         >
-          <Tip title={weightTip} placement={weightPlacement}>
-            <div>
-              <Form.Item name="weight" noStyle>
-                <InputNumber
-                  style={{ width: "100%" }}
-                  min={1}
-                  step={0.1}
-                  suffix="kg"
-                  placeholder="72.5"
-                  status={idealStatus(watchedWeight, "weight")}
+          <Form.Item
+            label={
+              <>
+                <Icon name="date" />
+                Date
+              </>
+            }
+          >
+            <Flex align="center" gap={8} wrap>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={() => stepDay(-1)}
+                aria-label="Previous day"
+              />
+              <Form.Item name="date" noStyle>
+                <DatePicker
+                  style={{ flex: 1, minWidth: 132 }}
+                  format="YYYY-MM-DD"
+                  allowClear={false}
+                  inputReadOnly
                 />
               </Form.Item>
-            </div>
-          </Tip>
-        </Form.Item>
-
-        <Form.Item
-          label={
-            <>
-              <Icon name="bp" />
-              Blood pressure
-              <IdealBadge status={worstStatus(systolicEval, diastolicEval)} />
-            </>
-          }
-        >
-          <Flex vertical gap={10}>
-            <Flex gap={8} align="flex-end" wrap>
-              <Tip title={systolicTip} placement={systolicPlacement}>
-                <div style={{ flex: 1 }}>
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 12, display: "block", marginBottom: 2 }}
-                  >
-                    Systolic
-                  </Typography.Text>
-                  <Form.Item name="systolic" noStyle>
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={1}
-                      precision={0}
-                      placeholder="120"
-                      status={idealStatus(watchedSystolic, "systolic")}
-                    />
-                  </Form.Item>
-                </div>
-              </Tip>
-              <span style={{ paddingBottom: 6 }}>/</span>
-              <Tip title={diastolicTip} placement={diastolicPlacement}>
-                <div style={{ flex: 1 }}>
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 12, display: "block", marginBottom: 2 }}
-                  >
-                    Diastolic
-                  </Typography.Text>
-                  <Form.Item name="diastolic" noStyle>
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={1}
-                      precision={0}
-                      placeholder="80"
-                      status={idealStatus(watchedDiastolic, "diastolic")}
-                    />
-                  </Form.Item>
-                </div>
-              </Tip>
-              <Typography.Text type="secondary" style={{ paddingBottom: 6 }}>
-                mmHg
-              </Typography.Text>
+              <Button
+                icon={<RightOutlined />}
+                onClick={() => stepDay(1)}
+                aria-label="Next day"
+              />
+              <Button onClick={goToToday} disabled={selectedDate === todayKey()}>
+                Today
+              </Button>
             </Flex>
-            <Flex gap={8} wrap>
-              <Form.Item name="bpPosture" noStyle>
-                <Segmented size="small" options={POSTURE_OPTIONS} />
-              </Form.Item>
-              <Form.Item name="bpArm" noStyle>
-                <Segmented size="small" options={ARM_OPTIONS} />
-              </Form.Item>
-            </Flex>
-            {currentEntry?.bpTime ? (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Recorded at{" "}
-                {formatBpTime(selectedDate, currentEntry.bpTime)}
-                {avgBpTime ? (
-                  <>
-                    {" "}
-                    <Tip title="Average of the last 7 days">
-                      <span style={{ cursor: "help" }}>
-                        (Average: {formatBpTime(selectedDate, avgBpTime)})
-                      </span>
-                    </Tip>
-                  </>
-                ) : null}
-              </Typography.Text>
-            ) : (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                No reading yet — best about an hour after waking, before food,
-                coffee, or meds.
-                {avgBpTime
-                  ? ` You usually log around ${formatBpTime(
-                      selectedDate,
-                      avgBpTime,
-                    )}.`
-                  : null}
-              </Typography.Text>
-            )}
-          </Flex>
-        </Form.Item>
+          </Form.Item>
 
-        <Form.Item
-          label={
-            <>
-              <Icon name="water" />
-              Water
-              <IdealBadge status={waterEval} />
-            </>
-          }
-        >
-          <Flex vertical gap={8}>
-            <Tip title={waterTip} placement={waterPlacement}>
+          <Form.Item
+            label={
+              <>
+                <Icon name="weight" />
+                Weight
+                <IdealBadge status={weightEval} />
+              </>
+            }
+          >
+            <Tip title={weightTip} placement={weightPlacement}>
               <div>
-                <Form.Item name="water" noStyle>
+                <Form.Item name="weight" noStyle>
                   <InputNumber
                     style={{ width: "100%" }}
-                    min={0}
-                    step={250}
-                    suffix="ml"
-                    placeholder="2000"
-                    status={idealStatus(watchedWater, "water")}
+                    min={1}
+                    step={0.1}
+                    suffix="kg"
+                    placeholder="72.5"
+                    status={idealStatus(watchedWeight, "weight")}
                   />
                 </Form.Item>
               </div>
             </Tip>
-            <Flex gap={8} wrap align="center">
-              {presets.length > 0
-                ? presets.map((preset) => (
-                    <Tip
-                      key={preset.id}
-                      title={`${preset.ml} ml`}
-                      placement="bottom"
-                    >
-                      <Button size="small" onClick={() => addWater(preset.ml)}>
-                        {preset.name}
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <>
+                <Icon name="water" />
+                Water
+                <IdealBadge status={waterEval} />
+              </>
+            }
+          >
+            <Flex vertical gap={8}>
+              <Tip title={waterTip} placement={waterPlacement}>
+                <div>
+                  <Form.Item name="water" noStyle>
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      step={250}
+                      suffix="ml"
+                      placeholder="2000"
+                      status={idealStatus(watchedWater, "water")}
+                    />
+                  </Form.Item>
+                </div>
+              </Tip>
+              <Flex gap={8} wrap align="center">
+                {presets.length > 0
+                  ? presets.map((preset) => (
+                      <Tip
+                        key={preset.id}
+                        title={`${preset.ml} ml`}
+                        placement="bottom"
+                      >
+                        <Button size="small" onClick={() => addWater(preset.ml)}>
+                          {preset.name}
+                        </Button>
+                      </Tip>
+                    ))
+                  : WATER_PRESETS.map((amount) => (
+                      <Button
+                        key={amount}
+                        size="small"
+                        onClick={() => addWater(amount)}
+                      >
+                        +{amount}
                       </Button>
-                    </Tip>
-                  ))
-                : WATER_PRESETS.map((amount) => (
-                    <Button
-                      key={amount}
-                      size="small"
-                      onClick={() => addWater(amount)}
-                    >
-                      +{amount}
-                    </Button>
-                  ))}
-              <Button
-                type="link"
-                size="small"
-                style={{ padding: 0, height: "auto", marginLeft: "auto" }}
-                icon={<Icon name="presets" style={{ marginRight: -4 }} />}
-                onClick={() => setPresetsOpen(true)}
-              >
-                Presets
-              </Button>
-            </Flex>
-          </Flex>
-        </Form.Item>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: screens.md ? "1fr 1fr" : "1fr",
-            columnGap: 16,
-          }}
-        >
-          <Form.Item label={<><Icon name="hygiene" />Hygiene</>}>
-            <Flex gap={16} wrap>
-              <Form.Item name="bath" valuePropName="checked" noStyle>
-                <Checkbox>Bath</Checkbox>
-              </Form.Item>
-              <Form.Item name="brushTeeth" valuePropName="checked" noStyle>
-                <Checkbox>Brush</Checkbox>
-              </Form.Item>
+                    ))}
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: "auto", marginLeft: "auto" }}
+                  icon={<Icon name="presets" style={{ marginRight: -4 }} />}
+                  onClick={() => setPresetsOpen(true)}
+                >
+                  Presets
+                </Button>
+              </Flex>
             </Flex>
           </Form.Item>
 
-          <Form.Item label={<><Icon name="junkFood" />Junk</>}>
-            <Flex gap={16} wrap>
-              <Form.Item name="junkFood" valuePropName="checked" noStyle>
-                <Checkbox>Food</Checkbox>
-              </Form.Item>
-              <Form.Item name="junkDrink" valuePropName="checked" noStyle>
-                <Checkbox>Drink</Checkbox>
-              </Form.Item>
-            </Flex>
-          </Form.Item>
-        </div>
-      </Form>
-    </Card>
-    <WaterPresetsModal
-      open={presetsOpen}
-      onClose={() => setPresetsOpen(false)}
-      presets={presets}
-    />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: screens.md ? "1fr 1fr" : "1fr",
+              columnGap: 16,
+            }}
+          >
+            <Form.Item
+              label={
+                <>
+                  <Icon name="hygiene" />
+                  Hygiene
+                </>
+              }
+            >
+              <Flex gap={16} wrap>
+                <Form.Item name="bath" valuePropName="checked" noStyle>
+                  <Checkbox>Bath</Checkbox>
+                </Form.Item>
+                <Form.Item name="brushTeeth" valuePropName="checked" noStyle>
+                  <Checkbox>Brush</Checkbox>
+                </Form.Item>
+              </Flex>
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <>
+                  <Icon name="junkFood" />
+                  Junk
+                </>
+              }
+            >
+              <Flex gap={16} wrap>
+                <Form.Item name="junkFood" valuePropName="checked" noStyle>
+                  <Checkbox>Food</Checkbox>
+                </Form.Item>
+                <Form.Item name="junkDrink" valuePropName="checked" noStyle>
+                  <Checkbox>Drink</Checkbox>
+                </Form.Item>
+              </Flex>
+            </Form.Item>
+          </div>
+        </Form>
+      </Card>
+      <WaterPresetsModal
+        open={presetsOpen}
+        onClose={() => setPresetsOpen(false)}
+        presets={presets}
+      />
     </>
   );
 }
-

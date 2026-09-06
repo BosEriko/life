@@ -21,6 +21,11 @@ import {
   useIsDark,
 } from "@/components/theme-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
+import {
+  dailyBpAverages,
+  watchBpReadings,
+  type BpReading,
+} from "@/models/bp";
 
 const HISTORY_LIMIT = 1000;
 
@@ -73,6 +78,7 @@ export function MetricsChart() {
   const isDark = useIsDark();
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
+  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [metric, setMetric] = useState<Metric>(loadMetric);
   const [preset, setPreset] = useState<Preset>("30");
@@ -94,6 +100,11 @@ export function MetricsChart() {
     );
   }, [user, message]);
 
+  useEffect(() => {
+    if (!user) return;
+    return watchBpReadings(user.uid, setBpReadings, () => {});
+  }, [user]);
+
   const [start, end] = useMemo<[Dayjs | null, Dayjs]>(() => {
     const today = dayjs(todayKey());
     if (preset === "custom") {
@@ -106,9 +117,27 @@ export function MetricsChart() {
   }, [preset, customRange]);
 
   const data = useMemo<Point[]>(() => {
-    const ascending = [...entries].sort((a, b) => a.date.localeCompare(b.date));
     const points: Point[] = [];
 
+    if (metric === "bp") {
+      const days = Array.from(dailyBpAverages(bpReadings).values()).sort((a, b) =>
+        a.date.localeCompare(b.date),
+      );
+      for (const day of days) {
+        const at = dayjs(day.date);
+        if (start && at.isBefore(start, "day")) continue;
+        if (at.isAfter(end, "day")) continue;
+        points.push({ date: day.date, value: day.systolic, series: "Systolic" });
+        points.push({
+          date: day.date,
+          value: day.diastolic,
+          series: "Diastolic",
+        });
+      }
+      return points;
+    }
+
+    const ascending = [...entries].sort((a, b) => a.date.localeCompare(b.date));
     for (const entry of ascending) {
       const day = dayjs(entry.date);
       if (start && day.isBefore(start, "day")) continue;
@@ -116,32 +145,19 @@ export function MetricsChart() {
 
       if (metric === "weight") {
         if (entry.weight != null) {
-          points.push({ date: entry.date, value: entry.weight, series: "Weight" });
-        }
-      } else if (metric === "water") {
-        if (entry.water != null) {
-          points.push({ date: entry.date, value: entry.water, series: "Water" });
-        }
-      } else {
-        if (entry.systolic != null) {
           points.push({
             date: entry.date,
-            value: entry.systolic,
-            series: "Systolic",
+            value: entry.weight,
+            series: "Weight",
           });
         }
-        if (entry.diastolic != null) {
-          points.push({
-            date: entry.date,
-            value: entry.diastolic,
-            series: "Diastolic",
-          });
-        }
+      } else if (entry.water != null) {
+        points.push({ date: entry.date, value: entry.water, series: "Water" });
       }
     }
 
     return points;
-  }, [entries, metric, start, end]);
+  }, [entries, bpReadings, metric, start, end]);
 
   const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const colorRange =

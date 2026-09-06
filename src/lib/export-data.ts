@@ -1,4 +1,5 @@
 import { getAdminDb } from "@/lib/firebase-admin";
+import { dailyBpAverages } from "@/lib/bp-average";
 
 const MAX_DAYS = 2000;
 
@@ -83,24 +84,58 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   if (from) dailiesQuery = dailiesQuery.where("date", ">=", from);
   if (to) dailiesQuery = dailiesQuery.where("date", "<=", to);
 
-  const [dailiesSnap, idealsSnap, presetsSnap, profileSnap] = await Promise.all([
-    dailiesQuery.get(),
-    userRef.collection("ideals").doc("current").get(),
-    userRef.collection("presets").orderBy("ml", "asc").get(),
-    userRef.collection("profile").doc("current").get(),
-  ]);
+  let bpQuery = userRef
+    .collection("bpReadings")
+    .orderBy("date", "desc")
+    .limit(limit);
+  if (from) bpQuery = bpQuery.where("date", ">=", from);
+  if (to) bpQuery = bpQuery.where("date", "<=", to);
+
+  const [dailiesSnap, bpSnap, idealsSnap, presetsSnap, profileSnap] =
+    await Promise.all([
+      dailiesQuery.get(),
+      bpQuery.get(),
+      userRef.collection("ideals").doc("current").get(),
+      userRef.collection("presets").orderBy("ml", "asc").get(),
+      userRef.collection("profile").doc("current").get(),
+    ]);
+
+  const bpReadings = bpSnap.docs
+    .map((doc) => {
+      const b = doc.data();
+      return {
+        id: doc.id,
+        date: String(b.date ?? ""),
+        systolic: clean(b.systolic),
+        diastolic: clean(b.diastolic),
+        time: clean(b.time),
+        posture: clean(b.posture),
+        arm: clean(b.arm),
+        createdAt: toIso(b.createdAt),
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const bpByDate = dailyBpAverages(
+    bpReadings.map((reading) => ({
+      date: reading.date,
+      systolic: Number(reading.systolic),
+      diastolic: Number(reading.diastolic),
+      time: typeof reading.time === "string" ? reading.time : null,
+    })),
+  );
 
   const dailies = dailiesSnap.docs
     .map((doc) => {
       const d = doc.data();
+      const bp = bpByDate.get(doc.id);
       return {
         date: doc.id,
         weight: clean(d.weight),
-        systolic: clean(d.systolic),
-        diastolic: clean(d.diastolic),
-        bpTime: clean(d.bpTime),
-        bpPosture: clean(d.bpPosture),
-        bpArm: clean(d.bpArm),
+        systolic: bp ? bp.systolic : null,
+        diastolic: bp ? bp.diastolic : null,
+        bpTime: bp ? bp.time : null,
+        bpReadingCount: bp ? bp.count : 0,
         water: clean(d.water),
         junkFood: clean(d.junkFood),
         junkDrink: clean(d.junkDrink),
@@ -149,6 +184,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     range: { from, to },
     count: dailies.length,
     dailies,
+    bpReadings,
     ideals,
     presets,
     profile,
