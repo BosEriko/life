@@ -284,7 +284,8 @@ export function DeveloperPanel() {
       <ul style={{ paddingInlineStart: 18, fontSize: 13, margin: "0 0 12px" }}>
         <li>
           <Typography.Text code>get_entries</Typography.Text> /{" "}
-          <Typography.Text code>get_bp</Typography.Text> —{" "}
+          <Typography.Text code>get_bp</Typography.Text> /{" "}
+          <Typography.Text code>get_water</Typography.Text> —{" "}
           <Typography.Text code>range</Typography.Text> (
           <Typography.Text code>7d</Typography.Text>/
           <Typography.Text code>30d</Typography.Text>/
@@ -296,8 +297,9 @@ export function DeveloperPanel() {
           <Typography.Text code>YYYY-MM-DD</Typography.Text>),{" "}
           <Typography.Text code>limit</Typography.Text> (≤ 2000).{" "}
           <Typography.Text code>get_entries</Typography.Text> gives each day&apos;s
-          mean BP; <Typography.Text code>get_bp</Typography.Text> gives every
-          individual reading.
+          mean BP and total water; <Typography.Text code>get_bp</Typography.Text> /{" "}
+          <Typography.Text code>get_water</Typography.Text> give every individual
+          entry.
         </li>
         <li>
           <Typography.Text code>get_ideals</Typography.Text>,{" "}

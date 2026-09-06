@@ -7,7 +7,6 @@ import type { DailyConflict } from "@/lib/daily-sync";
 
 const FIELD_LABELS: Record<string, string> = {
   weight: "Weight",
-  water: "Water",
   junkFood: "Junk food",
   junkDrink: "Junk drink",
   bath: "Bath",

@@ -15,6 +15,11 @@ import {
   watchBpReadings,
   type BpReading,
 } from "@/models/bp";
+import {
+  dailyWaterTotals,
+  watchWaterLogs,
+  type WaterLog,
+} from "@/models/water";
 import { Icon } from "@/components/icon";
 
 const DAYS = 7;
@@ -25,6 +30,7 @@ export function RecentEntries() {
   const { token } = theme.useToken();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
+  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -48,7 +54,13 @@ export function RecentEntries() {
     return watchBpReadings(user.uid, setBpReadings, () => {}, 200);
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+    return watchWaterLogs(user.uid, setWaterLogs, () => {}, 400);
+  }, [user]);
+
   const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
+  const dailyWater = useMemo(() => dailyWaterTotals(waterLogs), [waterLogs]);
 
   const recent = useMemo(() => {
     const cutoff = dayjs(todayKey()).subtract(DAYS - 1, "day");
@@ -73,6 +85,7 @@ export function RecentEntries() {
         <Flex vertical>
           {recent.map((entry) => {
             const bp = dailyBp.get(entry.date);
+            const water = dailyWater.get(entry.date);
             return (
             <Flex
               key={entry.date}
@@ -104,11 +117,10 @@ export function RecentEntries() {
                       mmHg
                     </Typography.Text>
                   ) : null}
-                  {entry.water != null ? (
+                  {water ? (
                     <Typography.Text type="secondary">
                       <Icon name="water" style={{ marginRight: 4 }} />
-                      <Typography.Text strong>{entry.water}</Typography.Text>{" "}
-                      ml
+                      <Typography.Text strong>{water.ml}</Typography.Text> ml
                     </Typography.Text>
                   ) : null}
                 </Flex>

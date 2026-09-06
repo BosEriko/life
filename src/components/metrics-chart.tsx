@@ -26,6 +26,11 @@ import {
   watchBpReadings,
   type BpReading,
 } from "@/models/bp";
+import {
+  dailyWaterTotals,
+  watchWaterLogs,
+  type WaterLog,
+} from "@/models/water";
 
 const HISTORY_LIMIT = 1000;
 
@@ -79,6 +84,7 @@ export function MetricsChart() {
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
+  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [metric, setMetric] = useState<Metric>(loadMetric);
   const [preset, setPreset] = useState<Preset>("30");
@@ -103,6 +109,11 @@ export function MetricsChart() {
   useEffect(() => {
     if (!user) return;
     return watchBpReadings(user.uid, setBpReadings, () => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    return watchWaterLogs(user.uid, setWaterLogs, () => {});
   }, [user]);
 
   const [start, end] = useMemo<[Dayjs | null, Dayjs]>(() => {
@@ -137,27 +148,31 @@ export function MetricsChart() {
       return points;
     }
 
+    if (metric === "water") {
+      const days = Array.from(dailyWaterTotals(waterLogs).values()).sort((a, b) =>
+        a.date.localeCompare(b.date),
+      );
+      for (const day of days) {
+        const at = dayjs(day.date);
+        if (start && at.isBefore(start, "day")) continue;
+        if (at.isAfter(end, "day")) continue;
+        points.push({ date: day.date, value: day.ml, series: "Water" });
+      }
+      return points;
+    }
+
     const ascending = [...entries].sort((a, b) => a.date.localeCompare(b.date));
     for (const entry of ascending) {
       const day = dayjs(entry.date);
       if (start && day.isBefore(start, "day")) continue;
       if (day.isAfter(end, "day")) continue;
-
-      if (metric === "weight") {
-        if (entry.weight != null) {
-          points.push({
-            date: entry.date,
-            value: entry.weight,
-            series: "Weight",
-          });
-        }
-      } else if (entry.water != null) {
-        points.push({ date: entry.date, value: entry.water, series: "Water" });
+      if (entry.weight != null) {
+        points.push({ date: entry.date, value: entry.weight, series: "Weight" });
       }
     }
 
     return points;
-  }, [entries, bpReadings, metric, start, end]);
+  }, [entries, bpReadings, waterLogs, metric, start, end]);
 
   const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const colorRange =

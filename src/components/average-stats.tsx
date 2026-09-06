@@ -36,6 +36,12 @@ import {
   type DailyBp,
 } from "@/models/bp";
 import {
+  dailyWaterTotals,
+  watchWaterLogs,
+  type DailyWater,
+  type WaterLog,
+} from "@/models/water";
+import {
   EMPTY_IDEALS,
   evaluateIdeal,
   rangeText,
@@ -121,18 +127,20 @@ function withinRange<T extends { date: string }>(items: T[], range: Range): T[] 
   return items.filter((item) => !dayjs(item.date).isBefore(cutoff, "day"));
 }
 
-function meanStats(entries: DailyEntry[], bp: DailyBp[]): WindowStats {
-  const pick = (key: "weight" | "water") =>
-    mean(
-      entries
-        .map((entry) => entry[key])
-        .filter((value): value is number => value != null),
-    );
+function meanStats(
+  entries: DailyEntry[],
+  bp: DailyBp[],
+  water: DailyWater[],
+): WindowStats {
   return {
-    weight: pick("weight"),
+    weight: mean(
+      entries
+        .map((entry) => entry.weight)
+        .filter((value): value is number => value != null),
+    ),
     systolic: mean(bp.map((day) => day.systolic)),
     diastolic: mean(bp.map((day) => day.diastolic)),
-    water: pick("water"),
+    water: mean(water.map((day) => day.ml)),
   };
 }
 
@@ -147,6 +155,7 @@ export function AverageStats() {
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
+  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [range, setRange] = useState<Range>(loadRange);
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
@@ -175,6 +184,11 @@ export function AverageStats() {
 
   useEffect(() => {
     if (!user) return;
+    return watchWaterLogs(user.uid, setWaterLogs, () => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
     return watchIdeals(user.uid, setIdeals, () => {});
   }, [user]);
 
@@ -183,9 +197,19 @@ export function AverageStats() {
     [bpReadings],
   );
 
+  const dailyWater = useMemo(
+    () => Array.from(dailyWaterTotals(waterLogs).values()),
+    [waterLogs],
+  );
+
   const stats = useMemo(
-    () => meanStats(withinRange(entries, range), withinRange(dailyBp, range)),
-    [entries, dailyBp, range],
+    () =>
+      meanStats(
+        withinRange(entries, range),
+        withinRange(dailyBp, range),
+        withinRange(dailyWater, range),
+      ),
+    [entries, dailyBp, dailyWater, range],
   );
 
   const prevStats = useMemo<WindowStats | null>(() => {
@@ -198,8 +222,8 @@ export function AverageStats() {
         const day = dayjs(item.date);
         return !day.isBefore(start, "day") && !day.isAfter(end, "day");
       });
-    return meanStats(inWindow(entries), inWindow(dailyBp));
-  }, [entries, dailyBp, range]);
+    return meanStats(inWindow(entries), inWindow(dailyBp), inWindow(dailyWater));
+  }, [entries, dailyBp, dailyWater, range]);
 
   const items: StatItem[] = useMemo(() => {
     const weightStatus = evaluateIdeal(stats.weight, ideals.weight);

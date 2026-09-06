@@ -1,5 +1,6 @@
 import { getAdminDb } from "@/lib/firebase-admin";
 import { dailyBpAverages } from "@/lib/bp-average";
+import { dailyWaterTotals } from "@/lib/water-total";
 
 const MAX_DAYS = 2000;
 
@@ -91,10 +92,18 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   if (from) bpQuery = bpQuery.where("date", ">=", from);
   if (to) bpQuery = bpQuery.where("date", "<=", to);
 
-  const [dailiesSnap, bpSnap, idealsSnap, presetsSnap, profileSnap] =
+  let waterQuery = userRef
+    .collection("waterLogs")
+    .orderBy("date", "desc")
+    .limit(limit);
+  if (from) waterQuery = waterQuery.where("date", ">=", from);
+  if (to) waterQuery = waterQuery.where("date", "<=", to);
+
+  const [dailiesSnap, bpSnap, waterSnap, idealsSnap, presetsSnap, profileSnap] =
     await Promise.all([
       dailiesQuery.get(),
       bpQuery.get(),
+      waterQuery.get(),
       userRef.collection("ideals").doc("current").get(),
       userRef.collection("presets").orderBy("ml", "asc").get(),
       userRef.collection("profile").doc("current").get(),
@@ -125,10 +134,33 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     })),
   );
 
+  const waterLogs = waterSnap.docs
+    .map((doc) => {
+      const w = doc.data();
+      return {
+        id: doc.id,
+        date: String(w.date ?? ""),
+        ml: clean(w.ml),
+        time: clean(w.time),
+        label: clean(w.label),
+        createdAt: toIso(w.createdAt),
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const waterByDate = dailyWaterTotals(
+    waterLogs.map((log) => ({
+      date: log.date,
+      ml: Number(log.ml),
+      time: typeof log.time === "string" ? log.time : null,
+    })),
+  );
+
   const dailies = dailiesSnap.docs
     .map((doc) => {
       const d = doc.data();
       const bp = bpByDate.get(doc.id);
+      const water = waterByDate.get(doc.id);
       return {
         date: doc.id,
         weight: clean(d.weight),
@@ -136,7 +168,8 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
         diastolic: bp ? bp.diastolic : null,
         bpTime: bp ? bp.time : null,
         bpReadingCount: bp ? bp.count : 0,
-        water: clean(d.water),
+        water: water ? water.ml : null,
+        waterLogCount: water ? water.count : 0,
         junkFood: clean(d.junkFood),
         junkDrink: clean(d.junkDrink),
         bath: clean(d.bath),
@@ -185,6 +218,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     count: dailies.length,
     dailies,
     bpReadings,
+    waterLogs,
     ideals,
     presets,
     profile,

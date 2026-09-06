@@ -6,6 +6,7 @@ import { DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { BpModal } from "@/components/bp-modal";
+import { WaterModal } from "@/components/water-modal";
 import { Icon } from "@/components/icon";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import {
@@ -14,6 +15,13 @@ import {
   type BpReading,
   type DailyBp,
 } from "@/models/bp";
+import {
+  dailyWaterTotals,
+  watchWaterLogs,
+  type DailyWater,
+  type WaterLog,
+} from "@/models/water";
+import { watchWaterPresets, type WaterPreset } from "@/models/presets";
 
 const HISTORY_LIMIT = 1000;
 
@@ -47,8 +55,11 @@ export function ReportDownload() {
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
+  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
+  const [presets, setPresets] = useState<WaterPreset[]>([]);
   const [open, setOpen] = useState(false);
   const [bpOpen, setBpOpen] = useState(false);
+  const [waterOpen, setWaterOpen] = useState(false);
   const [range, setRange] = useState<Range>("30");
   const [busy, setBusy] = useState(false);
 
@@ -67,10 +78,26 @@ export function ReportDownload() {
     return watchBpReadings(user.uid, setBpReadings, () => {});
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+    return watchWaterLogs(user.uid, setWaterLogs, () => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    return watchWaterPresets(user.uid, setPresets, () => {});
+  }, [user]);
+
   const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
+  const dailyWater = useMemo(() => dailyWaterTotals(waterLogs), [waterLogs]);
+
   const hasBpToday = useMemo(
     () => bpReadings.some((reading) => reading.date === todayKey()),
     [bpReadings],
+  );
+  const hasWaterToday = useMemo(
+    () => waterLogs.some((log) => log.date === todayKey()),
+    [waterLogs],
   );
 
   const rows = useMemo(() => {
@@ -86,6 +113,13 @@ export function ReportDownload() {
     const cutoff = dayjs(todayKey()).subtract(Number(range) - 1, "day");
     return all.filter((day) => !dayjs(day.date).isBefore(cutoff, "day"));
   }, [dailyBp, range]);
+
+  const waterRows = useMemo<DailyWater[]>(() => {
+    const all = Array.from(dailyWater.values());
+    if (range === "all") return all;
+    const cutoff = dayjs(todayKey()).subtract(Number(range) - 1, "day");
+    return all.filter((day) => !dayjs(day.date).isBefore(cutoff, "day"));
+  }, [dailyWater, range]);
 
   async function handleDownload() {
     setBusy(true);
@@ -104,15 +138,14 @@ export function ReportDownload() {
       doc.text(`${RANGE_LABEL[range]} · generated ${generatedAt}`, 14, 30);
       doc.setTextColor(0);
 
-      const pickNums = (key: "weight" | "water") =>
+      const avgWeight = mean(
         rows
-          .map((entry) => entry[key])
-          .filter((value): value is number => value != null);
-
-      const avgWeight = mean(pickNums("weight"));
+          .map((entry) => entry.weight)
+          .filter((value): value is number => value != null),
+      );
       const avgSystolic = mean(bpRows.map((day) => day.systolic));
       const avgDiastolic = mean(bpRows.map((day) => day.diastolic));
-      const avgWater = mean(pickNums("water"));
+      const avgWater = mean(waterRows.map((day) => day.ml));
       const count = (predicate: (entry: DailyEntry) => boolean | null) =>
         String(rows.filter((entry) => predicate(entry)).length);
 
@@ -157,11 +190,12 @@ export function ReportDownload() {
         ],
         body: rows.map((entry) => {
           const bp = dailyBp.get(entry.date);
+          const water = dailyWater.get(entry.date);
           return [
             entry.date,
             entry.weight != null ? String(entry.weight) : "",
             bp ? `${bp.systolic}/${bp.diastolic}` : "",
-            entry.water != null ? String(entry.water) : "",
+            water ? String(water.ml) : "",
             entry.junkFood ? "Y" : "",
             entry.junkDrink ? "Y" : "",
             entry.bath ? "Y" : "",
@@ -192,6 +226,12 @@ export function ReportDownload() {
         style={screens.md === false ? { insetBlockEnd: 88 } : undefined}
       >
         <FloatButton
+          icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={screens.md === false ? undefined : "Water"}
+          onClick={() => setWaterOpen(true)}
+          className={hasWaterToday ? undefined : "bp-pulse"}
+        />
+        <FloatButton
           icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
           tooltip={screens.md === false ? undefined : "Blood pressure"}
           onClick={() => setBpOpen(true)}
@@ -204,6 +244,13 @@ export function ReportDownload() {
           onClick={() => setOpen(true)}
         />
       </FloatButton.Group>
+
+      <WaterModal
+        open={waterOpen}
+        onClose={() => setWaterOpen(false)}
+        logs={waterLogs}
+        presets={presets}
+      />
 
       <BpModal
         open={bpOpen}
