@@ -136,7 +136,12 @@ export function WaterModal({
     <Modal
       open={open}
       centered
-      title="Water"
+      title={
+        <>
+          <Icon name="water" />
+          Water
+        </>
+      }
       footer={null}
       onCancel={handleClose}
     >
@@ -202,6 +207,9 @@ export function WaterModal({
             min={volumeDecimals(units.volume) > 0 ? 0.01 : 1}
             step={volumeStep(units.volume)}
             precision={volumeDecimals(units.volume)}
+            prefix={
+              <Icon name="water" style={{ marginRight: 0, opacity: 0.45 }} />
+            }
             value={amount}
             onChange={setAmount}
             style={{ flex: 1 }}

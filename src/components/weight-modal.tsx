@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { App, DatePicker, Flex, InputNumber, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { useUnits } from "@/components/units-provider";
 import {
@@ -13,12 +14,7 @@ import {
   weightStep,
   weightSuffix,
 } from "@/lib/units";
-import {
-  relativeDate,
-  saveDaily,
-  todayKey,
-  type DailyEntry,
-} from "@/models/dailies";
+import { saveDaily, todayKey, type DailyEntry } from "@/models/dailies";
 import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
 
 export function WeightModal({
@@ -94,7 +90,12 @@ export function WeightModal({
     <Modal
       open={open}
       centered
-      title="Weight"
+      title={
+        <>
+          <Icon name="weight" />
+          Weight
+        </>
+      }
       okText="Save"
       okButtonProps={{ disabled: typeof shown !== "number" || shown <= 0 }}
       onOk={handleSave}
@@ -120,6 +121,12 @@ export function WeightModal({
               style={{ width: "100%" }}
               min={1}
               step={weightStep(units.weight)}
+              prefix={
+                <Icon
+                  name="weight"
+                  style={{ marginRight: 0, opacity: 0.45 }}
+                />
+              }
               suffix={weightSuffix(units.weight)}
               placeholder={units.weight === "lb" ? "160" : "72.5"}
               status={off ? "error" : undefined}
@@ -131,11 +138,6 @@ export function WeightModal({
             />
           </div>
         </Tip>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {savedDisplay != null
-            ? `${relativeDate(dateKey)}: ${savedDisplay} ${weightSuffix(units.weight)} recorded`
-            : `${relativeDate(dateKey)}: nothing recorded yet`}
-        </Typography.Text>
       </Flex>
     </Modal>
   );

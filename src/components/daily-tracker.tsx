@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { App, Button, Card, Checkbox, DatePicker, Flex, Form, Grid } from "antd";
+import { App, Button, Card, Checkbox, DatePicker, Flex, Form } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { Icon } from "@/components/icon";
 import dayjs, { type Dayjs } from "dayjs";
@@ -46,7 +46,6 @@ export function DailyTracker() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { state: status, setState: setStatus } = useSaveStatus();
-  const screens = Grid.useBreakpoint();
   const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayKey());
@@ -248,49 +247,42 @@ export function DailyTracker() {
           </Flex>
         </Form.Item>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: screens.md ? "1fr 1fr" : "1fr",
-            columnGap: 16,
-          }}
+        <Form.Item
+          label={
+            <>
+              <Icon name="hygiene" />
+              Hygiene
+            </>
+          }
         >
-          <Form.Item
-            label={
-              <>
-                <Icon name="hygiene" />
-                Hygiene
-              </>
-            }
-          >
-            <Flex gap={16} wrap>
-              <Form.Item name="bath" valuePropName="checked" noStyle>
-                <Checkbox>Bath</Checkbox>
-              </Form.Item>
-              <Form.Item name="brushTeeth" valuePropName="checked" noStyle>
-                <Checkbox>Brush</Checkbox>
-              </Form.Item>
-            </Flex>
-          </Form.Item>
+          <Flex gap={16} wrap>
+            <Form.Item name="bath" valuePropName="checked" noStyle>
+              <Checkbox>Bath</Checkbox>
+            </Form.Item>
+            <Form.Item name="brushTeeth" valuePropName="checked" noStyle>
+              <Checkbox>Brush</Checkbox>
+            </Form.Item>
+          </Flex>
+        </Form.Item>
 
-          <Form.Item
-            label={
-              <>
-                <Icon name="junkFood" />
-                Junk
-              </>
-            }
-          >
-            <Flex gap={16} wrap>
-              <Form.Item name="junkFood" valuePropName="checked" noStyle>
-                <Checkbox>Food</Checkbox>
-              </Form.Item>
-              <Form.Item name="junkDrink" valuePropName="checked" noStyle>
-                <Checkbox>Drink</Checkbox>
-              </Form.Item>
-            </Flex>
-          </Form.Item>
-        </div>
+        <Form.Item
+          label={
+            <>
+              <Icon name="junkFood" />
+              Junk
+            </>
+          }
+          style={{ marginBottom: 0 }}
+        >
+          <Flex gap={16} wrap>
+            <Form.Item name="junkFood" valuePropName="checked" noStyle>
+              <Checkbox>Food</Checkbox>
+            </Form.Item>
+            <Form.Item name="junkDrink" valuePropName="checked" noStyle>
+              <Checkbox>Drink</Checkbox>
+            </Form.Item>
+          </Flex>
+        </Form.Item>
       </Form>
     </Card>
   );

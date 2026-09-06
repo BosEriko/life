@@ -17,9 +17,15 @@ import {
 import { DeleteOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { relativeDate, todayKey } from "@/models/dailies";
-import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
+import {
+  evaluateIdeal,
+  rangeText,
+  type IdealRange,
+  type Ideals,
+} from "@/models/ideals";
 import {
   addBpReading,
   dailyBpAverages,
@@ -51,25 +57,17 @@ const BP_TIPS = {
     "To lower it: reduce salt, add potassium-rich foods (leafy greens, banana), exercise regularly, cut alcohol, and wind down before bed. See a doctor if it stays high.",
 } as const;
 
-function rowTip(reading: BpReading, ideals: Ideals): string | undefined {
-  const sys = evaluateIdeal(reading.systolic, ideals.systolic);
-  const dia = evaluateIdeal(reading.diastolic, ideals.diastolic);
-  const lines: string[] = [];
-  if (sys === "low" || sys === "high") {
-    lines.push(
-      `Systolic ${sys === "high" ? "above" : "below"} your ideal (${rangeText(
-        ideals.systolic,
-      )} mmHg). ${sys === "high" ? BP_TIPS.systolicHigh : BP_TIPS.systolicLow}`,
-    );
-  }
-  if (dia === "low" || dia === "high") {
-    lines.push(
-      `Diastolic ${dia === "high" ? "above" : "below"} your ideal (${rangeText(
-        ideals.diastolic,
-      )} mmHg). ${dia === "high" ? BP_TIPS.diastolicHigh : BP_TIPS.diastolicLow}`,
-    );
-  }
-  return lines.length > 0 ? lines.join(" ") : undefined;
+function metricTip(
+  value: number,
+  range: IdealRange,
+  label: "Systolic" | "Diastolic",
+  tips: { low: string; high: string },
+): string | undefined {
+  const status = evaluateIdeal(value, range);
+  if (status !== "low" && status !== "high") return undefined;
+  return `${label} ${status === "high" ? "above" : "below"} your ideal (${rangeText(
+    range,
+  )} mmHg). ${status === "high" ? tips.high : tips.low}`;
 }
 
 export function BpModal({
@@ -153,7 +151,12 @@ export function BpModal({
     <Modal
       open={open}
       centered
-      title="Blood pressure"
+      title={
+        <>
+          <Icon name="bp" />
+          Blood pressure
+        </>
+      }
       footer={null}
       onCancel={handleClose}
     >
@@ -239,7 +242,16 @@ export function BpModal({
       ) : (
         <Flex vertical>
           {dayReadings.map((reading) => {
-            const tip = rowTip(reading, ideals);
+            const sysTip = metricTip(reading.systolic, ideals.systolic, "Systolic", {
+              low: BP_TIPS.systolicLow,
+              high: BP_TIPS.systolicHigh,
+            });
+            const diaTip = metricTip(
+              reading.diastolic,
+              ideals.diastolic,
+              "Diastolic",
+              { low: BP_TIPS.diastolicLow, high: BP_TIPS.diastolicHigh },
+            );
             return (
               <Flex
                 key={reading.id}
@@ -248,18 +260,37 @@ export function BpModal({
                 gap={8}
                 style={{ padding: "8px 0" }}
               >
-                <Tip title={tip}>
-                  <Typography.Text style={{ cursor: tip ? "help" : undefined }}>
-                    <Typography.Text
-                      strong
-                      style={{ color: tip ? token.colorError : undefined }}
-                    >
-                      {reading.systolic}/{reading.diastolic}
-                    </Typography.Text>{" "}
-                    mmHg · {formatBpTime(reading.date, reading.time)} ·{" "}
-                    {reading.posture}, {reading.arm} arm
+                <Flex vertical gap={2}>
+                  <Typography.Text>
+                    <Tip title={sysTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: sysTip ? token.colorError : undefined,
+                          cursor: sysTip ? "help" : undefined,
+                        }}
+                      >
+                        {reading.systolic}
+                      </Typography.Text>
+                    </Tip>
+                    /
+                    <Tip title={diaTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: diaTip ? token.colorError : undefined,
+                          cursor: diaTip ? "help" : undefined,
+                        }}
+                      >
+                        {reading.diastolic}
+                      </Typography.Text>
+                    </Tip>{" "}
+                    mmHg · {formatBpTime(reading.date, reading.time)}
                   </Typography.Text>
-                </Tip>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    Taken while {reading.posture}, on the {reading.arm} arm
+                  </Typography.Text>
+                </Flex>
                 <Popconfirm
                   title="Delete this reading?"
                   okText="Delete"

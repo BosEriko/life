@@ -36,12 +36,12 @@ export default function HealthPage() {
           alignItems: "start",
         }}
       >
-        <DailyTracker />
-        <HabitCalendar />
         <Flex vertical gap={40}>
-          <MetricsChart />
+          <DailyTracker />
           <RecentEntries />
         </Flex>
+        <HabitCalendar />
+        <MetricsChart />
       </div>
 
       <ReportDownload />
