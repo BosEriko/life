@@ -9,5 +9,5 @@ export type NavItem = {
 
 export const NAV: NavItem[] = [
   { key: "/", label: "Health", Icon: HeartOutlined },
-  { key: "/notes", label: "Daily Notes", Icon: FileTextOutlined },
+  { key: "/notes", label: "Notes", Icon: FileTextOutlined },
 ];

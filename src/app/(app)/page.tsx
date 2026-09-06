@@ -6,7 +6,6 @@ import { AverageStats } from "@/components/average-stats";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
 import { ReportDownload } from "@/components/report-download";
-import { SaveStatusProvider } from "@/components/save-status";
 
 const MetricsChart = dynamic(
   () => import("@/components/metrics-chart").then((mod) => mod.MetricsChart),
@@ -22,7 +21,7 @@ const MetricsChart = dynamic(
 
 export default function HealthPage() {
   return (
-    <SaveStatusProvider>
+    <>
       <div style={{ marginBottom: 40 }}>
         <AverageStats />
       </div>
@@ -41,6 +40,6 @@ export default function HealthPage() {
       </div>
 
       <ReportDownload />
-    </SaveStatusProvider>
+    </>
   );
 }

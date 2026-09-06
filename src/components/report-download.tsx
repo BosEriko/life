@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { BpModal } from "@/components/bp-modal";
 import { HabitModal } from "@/components/habit-modal";
 import { IntakeModal } from "@/components/intake-modal";
+import { NotesModal } from "@/components/notes-modal";
 import { WaterModal } from "@/components/water-modal";
 import { WeightModal } from "@/components/weight-modal";
 import { Icon } from "@/components/icon";
@@ -34,6 +35,7 @@ export function ReportDownload() {
   const [waterOpen, setWaterOpen] = useState(false);
   const [weightOpen, setWeightOpen] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -128,6 +130,12 @@ export function ReportDownload() {
           onClick={() => setBpOpen(true)}
           className={hasBpToday ? undefined : "bp-pulse"}
         />
+        <FloatButton
+          type="primary"
+          icon={<Icon name="logEntry" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Notes")}
+          onClick={() => setNotesOpen(true)}
+        />
       </FloatButton.Group>
 
       <HabitModal
@@ -163,6 +171,8 @@ export function ReportDownload() {
         readings={bpReadings}
         ideals={ideals}
       />
+
+      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} />
     </>
   );
 }
