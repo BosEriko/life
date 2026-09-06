@@ -3,6 +3,8 @@
 import type { CSSProperties } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faArrowLeftLong,
+  faArrowRightLong,
   faBath,
   faBottleWater,
   faBullseye,
@@ -26,6 +28,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const ICONS = {
+  menuLeft: faArrowLeftLong,
+  menuRight: faArrowRightLong,
   logEntry: faPenToSquare,
   averages: faChartColumn,
   habits: faCalendarCheck,

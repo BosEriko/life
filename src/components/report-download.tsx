@@ -18,6 +18,9 @@ import { watchWaterPresets, type WaterPreset } from "@/models/presets";
 import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/ideals";
 
 const HISTORY_LIMIT = 1000;
+const MENU_SIDE_KEY = "quick-action-menu-side";
+
+type MenuSide = "left" | "right";
 
 export function ReportDownload() {
   const { user } = useAuth();
@@ -36,6 +39,18 @@ export function ReportDownload() {
   const [weightOpen, setWeightOpen] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [menuSide, setMenuSide] = useState<MenuSide>("right");
+
+  useEffect(() => {
+    let restoreTimer: number | undefined;
+    try {
+      const saved = window.localStorage.getItem(MENU_SIDE_KEY);
+      if (saved === "left" || saved === "right") {
+        restoreTimer = window.setTimeout(() => setMenuSide(saved), 0);
+      }
+    } catch {}
+    return () => window.clearTimeout(restoreTimer);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -93,14 +108,46 @@ export function ReportDownload() {
   );
 
   const tip = (title: string) =>
-    screens.md === false ? undefined : { title, placement: "left" as const };
+    screens.md === false
+      ? undefined
+      : {
+          title,
+          placement:
+            menuSide === "left" ? ("right" as const) : ("left" as const),
+        };
+
+  function toggleMenuSide() {
+    setMenuSide((current) => {
+      const next = current === "right" ? "left" : "right";
+      try {
+        window.localStorage.setItem(MENU_SIDE_KEY, next);
+      } catch {}
+      return next;
+    });
+  }
 
   return (
     <>
       <FloatButton.Group
         shape="circle"
-        style={screens.md === false ? { insetBlockEnd: 88 } : undefined}
+        style={{
+          ...(screens.md === false ? { insetBlockEnd: 88 } : {}),
+          ...(menuSide === "left"
+            ? { insetInlineStart: 24, insetInlineEnd: "auto" }
+            : {}),
+        }}
       >
+        <FloatButton
+          aria-label={`Move menu to ${menuSide === "right" ? "left" : "right"}`}
+          icon={
+            <Icon
+              name={menuSide === "right" ? "menuLeft" : "menuRight"}
+              style={{ marginRight: 0, opacity: 1 }}
+            />
+          }
+          tooltip={tip(`Move menu to ${menuSide === "right" ? "left" : "right"}`)}
+          onClick={toggleMenuSide}
+        />
         <FloatButton
           icon={<Icon name="habits" style={{ marginRight: 0, opacity: 1 }} />}
           tooltip={tip("Habits")}

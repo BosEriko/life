@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   App,
   Button,
+  Card,
   DatePicker,
   Empty,
   Flex,
@@ -14,12 +15,14 @@ import {
   Typography,
 } from "antd";
 import {
+  ClockCircleOutlined,
   DeleteOutlined,
   LeftOutlined,
   RightOutlined,
 } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
 import { relativeDate, todayKey } from "@/models/dailies";
 import {
   deleteNote,
@@ -81,6 +84,7 @@ export default function NotesPage() {
   return (
     <div>
       <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
+        <Icon name="logEntry" />
         Notes
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
@@ -98,7 +102,10 @@ export default function NotesPage() {
         }}
       >
         <Flex vertical gap={8}>
-          <Typography.Text strong>Dates with notes</Typography.Text>
+          <Typography.Text strong>
+            <Icon name="date" />
+            Dates with notes
+          </Typography.Text>
           {!loaded ? (
             <Flex justify="center" style={{ padding: 24 }}>
               <Spin size="small" />
@@ -163,6 +170,12 @@ export default function NotesPage() {
               onClick={() => changeDay(1)}
             />
             <Button
+              icon={
+                <Icon
+                  name="date"
+                  style={{ marginRight: 0, opacity: 1 }}
+                />
+              }
               disabled={date.isSame(dayjs(todayKey()), "day")}
               onClick={() => setDate(dayjs(todayKey()))}
             >
@@ -184,42 +197,43 @@ export default function NotesPage() {
           ) : shown.length === 0 ? (
             <Empty description="No notes on this day." />
           ) : (
-            <Flex vertical>
+            <Flex vertical gap={12}>
               {shown.map((note) => (
-                <Flex
-                  key={note.id}
-                  align="flex-start"
-                  justify="space-between"
-                  gap={12}
-                  style={{
-                    padding: "14px 0",
-                    borderTop: `1px solid ${token.colorBorderSecondary}`,
-                  }}
-                >
-                  <Flex vertical gap={4}>
-                    <Typography.Text style={{ whiteSpace: "pre-wrap" }}>
-                      {note.text}
-                    </Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {relativeDate(note.date)} ·{" "}
-                      {formatNoteTime(note.date, note.time)}
-                    </Typography.Text>
-                  </Flex>
-                  <Popconfirm
-                    title="Delete this note?"
-                    okText="Delete"
-                    okButtonProps={{ danger: true }}
-                    onConfirm={() => handleDelete(note.id)}
+                <Card key={note.id} size="small">
+                  <Flex
+                    align="flex-start"
+                    justify="space-between"
+                    gap={12}
                   >
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      aria-label="Delete note"
-                      icon={<DeleteOutlined />}
-                    />
-                  </Popconfirm>
-                </Flex>
+                    <Flex vertical gap={4}>
+                      <Typography.Text style={{ whiteSpace: "pre-wrap" }}>
+                        {note.text}
+                      </Typography.Text>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12 }}
+                      >
+                        <ClockCircleOutlined style={{ marginRight: 5 }} />
+                        {relativeDate(note.date)} ·{" "}
+                        {formatNoteTime(note.date, note.time)}
+                      </Typography.Text>
+                    </Flex>
+                    <Popconfirm
+                      title="Delete this note?"
+                      okText="Delete"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => handleDelete(note.id)}
+                    >
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        aria-label="Delete note"
+                        icon={<DeleteOutlined />}
+                      />
+                    </Popconfirm>
+                  </Flex>
+                </Card>
               ))}
             </Flex>
           )}

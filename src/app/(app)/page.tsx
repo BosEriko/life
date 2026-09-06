@@ -5,7 +5,6 @@ import { Flex, Spin } from "antd";
 import { AverageStats } from "@/components/average-stats";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
-import { ReportDownload } from "@/components/report-download";
 
 const MetricsChart = dynamic(
   () => import("@/components/metrics-chart").then((mod) => mod.MetricsChart),
@@ -38,8 +37,6 @@ export default function HealthPage() {
         <MetricsChart />
         <RecentEntries />
       </div>
-
-      <ReportDownload />
     </>
   );
 }

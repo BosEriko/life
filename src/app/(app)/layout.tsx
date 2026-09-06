@@ -1,6 +1,7 @@
 import { AppFooter } from "@/components/app-footer";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { MobileNav } from "@/components/mobile-nav";
+import { ReportDownload } from "@/components/report-download";
 import { UnitsProvider } from "@/components/units-provider";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
@@ -22,6 +23,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         >
           {children}
         </main>
+        <ReportDownload />
         <AppFooter />
         <MobileNav />
       </div>
