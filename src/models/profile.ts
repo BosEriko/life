@@ -1,5 +1,13 @@
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
+import {
+  isHeightUnit,
+  isVolumeUnit,
+  isWeightUnit,
+  type HeightUnit,
+  type VolumeUnit,
+  type WeightUnit,
+} from "@/lib/units";
 
 export type Sex = "male" | "female" | "unspecified";
 
@@ -10,6 +18,9 @@ export type Profile = {
   heightInches: number | null;
   sex: Sex | null;
   timezone: string | null;
+  weightUnit: WeightUnit | null;
+  volumeUnit: VolumeUnit | null;
+  heightUnit: HeightUnit | null;
 };
 
 export type ProfileInput = Partial<Profile>;
@@ -21,7 +32,18 @@ export const EMPTY_PROFILE: Profile = {
   heightInches: null,
   sex: null,
   timezone: null,
+  weightUnit: null,
+  volumeUnit: null,
+  heightUnit: null,
 };
+
+export function hasUnits(profile: Profile): boolean {
+  return (
+    profile.weightUnit != null &&
+    profile.volumeUnit != null &&
+    profile.heightUnit != null
+  );
+}
 
 function profileDoc(uid: string) {
   return doc(getFirebaseDb(), "users", uid, "profile", "current");
@@ -57,6 +79,9 @@ export function watchProfile(
         heightInches: readNumber(data.heightInches),
         sex: readSex(data.sex),
         timezone: readString(data.timezone),
+        weightUnit: isWeightUnit(data.weightUnit) ? data.weightUnit : null,
+        volumeUnit: isVolumeUnit(data.volumeUnit) ? data.volumeUnit : null,
+        heightUnit: isHeightUnit(data.heightUnit) ? data.heightUnit : null,
       });
     },
     onError,

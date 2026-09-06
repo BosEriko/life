@@ -31,6 +31,8 @@ import {
   watchWaterLogs,
   type WaterLog,
 } from "@/models/water";
+import { useUnits } from "@/components/units-provider";
+import { fromKg, fromMl } from "@/lib/units";
 
 const HISTORY_LIMIT = 1000;
 
@@ -77,6 +79,7 @@ function saveMetric(metric: Metric) {
 }
 
 export function MetricsChart() {
+  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
@@ -156,7 +159,11 @@ export function MetricsChart() {
         const at = dayjs(day.date);
         if (start && at.isBefore(start, "day")) continue;
         if (at.isAfter(end, "day")) continue;
-        points.push({ date: day.date, value: day.ml, series: "Water" });
+        points.push({
+          date: day.date,
+          value: fromMl(day.ml, units.volume),
+          series: "Water",
+        });
       }
       return points;
     }
@@ -167,12 +174,16 @@ export function MetricsChart() {
       if (start && day.isBefore(start, "day")) continue;
       if (day.isAfter(end, "day")) continue;
       if (entry.weight != null) {
-        points.push({ date: entry.date, value: entry.weight, series: "Weight" });
+        points.push({
+          date: entry.date,
+          value: fromKg(entry.weight, units.weight),
+          series: "Weight",
+        });
       }
     }
 
     return points;
-  }, [entries, bpReadings, waterLogs, metric, start, end]);
+  }, [entries, bpReadings, waterLogs, metric, start, end, units]);
 
   const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const colorRange =

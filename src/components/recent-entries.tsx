@@ -21,10 +21,13 @@ import {
   type WaterLog,
 } from "@/models/water";
 import { Icon } from "@/components/icon";
+import { useUnits } from "@/components/units-provider";
+import { formatVolume, formatWeight } from "@/lib/units";
 
 const DAYS = 7;
 
 export function RecentEntries() {
+  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
@@ -104,8 +107,9 @@ export function RecentEntries() {
                   {entry.weight != null ? (
                     <Typography.Text type="secondary">
                       <Icon name="weight" style={{ marginRight: 4 }} />
-                      <Typography.Text strong>{entry.weight}</Typography.Text>{" "}
-                      kg
+                      <Typography.Text strong>
+                        {formatWeight(entry.weight, units.weight)}
+                      </Typography.Text>
                     </Typography.Text>
                   ) : null}
                   {bp ? (
@@ -120,7 +124,9 @@ export function RecentEntries() {
                   {water ? (
                     <Typography.Text type="secondary">
                       <Icon name="water" style={{ marginRight: 4 }} />
-                      <Typography.Text strong>{water.ml}</Typography.Text> ml
+                      <Typography.Text strong>
+                        {formatVolume(water.ml, units.volume)}
+                      </Typography.Text>
                     </Typography.Text>
                   ) : null}
                 </Flex>

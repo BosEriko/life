@@ -9,6 +9,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Segmented,
   Select,
   Typography,
 } from "antd";
@@ -21,20 +22,48 @@ import {
   type Profile,
   type Sex,
 } from "@/models/profile";
+import {
+  DEFAULT_UNITS,
+  cmToFeetInches,
+  feetInchesToCm,
+  type HeightUnit,
+  type VolumeUnit,
+  type WeightUnit,
+} from "@/lib/units";
 
 type FormShape = {
   name?: string;
   birthday?: Dayjs;
   heightFeet?: number;
   heightInches?: number;
+  heightCm?: number;
   sex?: Sex;
   timezone?: string;
+  weightUnit?: WeightUnit;
+  volumeUnit?: VolumeUnit;
+  heightUnit?: HeightUnit;
 };
 
 const SEX_OPTIONS: { label: string; value: Sex }[] = [
   { label: "Male", value: "male" },
   { label: "Female", value: "female" },
   { label: "Prefer not to say", value: "unspecified" },
+];
+
+const WEIGHT_UNIT_OPTIONS = [
+  { label: "kg", value: "kg" },
+  { label: "lb", value: "lb" },
+];
+
+const VOLUME_UNIT_OPTIONS = [
+  { label: "ml", value: "ml" },
+  { label: "L", value: "l" },
+  { label: "fl oz", value: "floz" },
+];
+
+const HEIGHT_UNIT_OPTIONS = [
+  { label: "ft / in", value: "ftin" },
+  { label: "cm", value: "cm" },
 ];
 
 function timezoneOptions(): string[] {
@@ -60,6 +89,7 @@ export function ProfileForm() {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [saving, setSaving] = useState(false);
   const tzOptions = useMemo(() => timezoneOptions(), []);
+  const heightUnit = Form.useWatch("heightUnit", form) ?? DEFAULT_UNITS.height;
 
   useEffect(() => {
     if (!user) return;
@@ -67,30 +97,78 @@ export function ProfileForm() {
   }, [user]);
 
   useEffect(() => {
+    const hUnit = profile.heightUnit ?? DEFAULT_UNITS.height;
+    const hasHeight =
+      profile.heightFeet != null || profile.heightInches != null;
     form.setFieldsValue({
       name: profile.name ?? undefined,
       birthday: profile.birthday ? dayjs(profile.birthday) : undefined,
       heightFeet: profile.heightFeet ?? undefined,
       heightInches: profile.heightInches ?? undefined,
+      heightCm:
+        hUnit === "cm" && hasHeight
+          ? feetInchesToCm(profile.heightFeet ?? 0, profile.heightInches ?? 0)
+          : undefined,
       sex: profile.sex ?? undefined,
       timezone: profile.timezone ?? detectedTimezone(),
+      weightUnit: profile.weightUnit ?? DEFAULT_UNITS.weight,
+      volumeUnit: profile.volumeUnit ?? DEFAULT_UNITS.volume,
+      heightUnit: hUnit,
     });
   }, [profile, form]);
+
+  function switchHeightUnit(next: HeightUnit) {
+    const values = form.getFieldsValue();
+    if (next === "cm") {
+      const feet = typeof values.heightFeet === "number" ? values.heightFeet : 0;
+      const inches =
+        typeof values.heightInches === "number" ? values.heightInches : 0;
+      form.setFieldsValue({
+        heightUnit: next,
+        heightCm: feet || inches ? feetInchesToCm(feet, inches) : undefined,
+      });
+    } else {
+      const cm = typeof values.heightCm === "number" ? values.heightCm : 0;
+      const { feet, inches } = cm ? cmToFeetInches(cm) : { feet: 0, inches: 0 };
+      form.setFieldsValue({
+        heightUnit: next,
+        heightFeet: cm ? feet : undefined,
+        heightInches: cm ? inches : undefined,
+      });
+    }
+  }
 
   async function handleSave() {
     if (!user) return;
     setSaving(true);
     try {
       const values = form.getFieldsValue();
+
+      let heightFeet =
+        typeof values.heightFeet === "number" ? values.heightFeet : null;
+      let heightInches =
+        typeof values.heightInches === "number" ? values.heightInches : null;
+      if (values.heightUnit === "cm") {
+        if (typeof values.heightCm === "number" && values.heightCm > 0) {
+          const converted = cmToFeetInches(values.heightCm);
+          heightFeet = converted.feet;
+          heightInches = converted.inches;
+        } else {
+          heightFeet = null;
+          heightInches = null;
+        }
+      }
+
       await saveProfile(user.uid, {
         name: values.name?.trim() ? values.name.trim() : null,
         birthday: values.birthday ? values.birthday.format("YYYY-MM-DD") : null,
-        heightFeet:
-          typeof values.heightFeet === "number" ? values.heightFeet : null,
-        heightInches:
-          typeof values.heightInches === "number" ? values.heightInches : null,
+        heightFeet,
+        heightInches,
         sex: values.sex ?? null,
         timezone: values.timezone ?? null,
+        weightUnit: values.weightUnit ?? null,
+        volumeUnit: values.volumeUnit ?? null,
+        heightUnit: values.heightUnit ?? null,
       });
       message.success("Profile saved");
     } catch {
@@ -109,7 +187,16 @@ export function ProfileForm() {
         Personal details used in reports and by anything reading your data
         through MCP.
       </Typography.Paragraph>
-      <Form form={form} layout="vertical" onFinish={handleSave}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSave}
+        onValuesChange={(changed) => {
+          if (changed.heightUnit) {
+            switchHeightUnit(changed.heightUnit as HeightUnit);
+          }
+        }}
+      >
         <Form.Item name="name" label="Name">
           <Input placeholder="Your name" />
         </Form.Item>
@@ -119,24 +206,36 @@ export function ProfileForm() {
         </Form.Item>
 
         <Form.Item label="Height">
-          <Flex gap={8} align="center">
-            <Form.Item name="heightFeet" noStyle>
+          {heightUnit === "cm" ? (
+            <Form.Item name="heightCm" noStyle>
               <InputNumber
-                placeholder="Feet"
+                placeholder="Centimetres"
                 min={0}
-                max={9}
-                style={{ flex: 1 }}
+                max={280}
+                suffix="cm"
+                style={{ width: "100%" }}
               />
             </Form.Item>
-            <Form.Item name="heightInches" noStyle>
-              <InputNumber
-                placeholder="Inches"
-                min={0}
-                max={11}
-                style={{ flex: 1 }}
-              />
-            </Form.Item>
-          </Flex>
+          ) : (
+            <Flex gap={8} align="center">
+              <Form.Item name="heightFeet" noStyle>
+                <InputNumber
+                  placeholder="Feet"
+                  min={0}
+                  max={9}
+                  style={{ flex: 1 }}
+                />
+              </Form.Item>
+              <Form.Item name="heightInches" noStyle>
+                <InputNumber
+                  placeholder="Inches"
+                  min={0}
+                  max={11}
+                  style={{ flex: 1 }}
+                />
+              </Form.Item>
+            </Flex>
+          )}
         </Form.Item>
 
         <Form.Item name="sex" label="Biological sex">
@@ -154,6 +253,22 @@ export function ProfileForm() {
           ) : (
             <Input placeholder="e.g. Asia/Manila" />
           )}
+        </Form.Item>
+
+        <Typography.Title level={5} style={{ marginBottom: 8 }}>
+          Units
+        </Typography.Title>
+
+        <Form.Item name="weightUnit" label="Weight">
+          <Segmented options={WEIGHT_UNIT_OPTIONS} />
+        </Form.Item>
+
+        <Form.Item name="volumeUnit" label="Water">
+          <Segmented options={VOLUME_UNIT_OPTIONS} />
+        </Form.Item>
+
+        <Form.Item name="heightUnit" label="Height">
+          <Segmented options={HEIGHT_UNIT_OPTIONS} />
         </Form.Item>
 
         <Form.Item style={{ marginBottom: 0 }}>

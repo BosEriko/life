@@ -4,17 +4,23 @@ import { useEffect, useState } from "react";
 import { App, Flex, Form, InputNumber, Modal, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { saveIdeals, type IdealKey, type Ideals } from "@/models/ideals";
+import { useUnits } from "@/components/units-provider";
+import {
+  fromKg,
+  fromMl,
+  toKg,
+  toMl,
+  volumeStep,
+  volumeSuffix,
+  weightStep,
+  weightSuffix,
+} from "@/lib/units";
 
-const ROWS: {
-  key: IdealKey;
-  label: string;
-  unit: string;
-  step?: number;
-}[] = [
-  { key: "weight", label: "Weight", unit: "kg", step: 0.1 },
-  { key: "systolic", label: "BP systolic", unit: "mmHg" },
-  { key: "diastolic", label: "BP diastolic", unit: "mmHg" },
-  { key: "water", label: "Water", unit: "ml", step: 100 },
+const ROWS: { key: IdealKey; label: string }[] = [
+  { key: "weight", label: "Weight" },
+  { key: "systolic", label: "BP systolic" },
+  { key: "diastolic", label: "BP diastolic" },
+  { key: "water", label: "Water" },
 ];
 
 type FormShape = Record<IdealKey, { min: number | null; max: number | null }>;
@@ -28,14 +34,54 @@ export function IdealsModal({
   onClose: () => void;
   ideals: Ideals;
 }) {
+  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const [form] = Form.useForm<FormShape>();
   const [saving, setSaving] = useState(false);
 
+  const toDisplay = (key: IdealKey, value: number | null): number | null => {
+    if (value == null) return null;
+    if (key === "weight") {
+      return Math.round(fromKg(value, units.weight) * 10) / 10;
+    }
+    if (key === "water") {
+      return Math.round(fromMl(value, units.volume) * 100) / 100;
+    }
+    return value;
+  };
+
+  const toStored = (key: IdealKey, value: number | null): number | null => {
+    if (value == null) return null;
+    if (key === "weight") return Math.round(toKg(value, units.weight) * 100) / 100;
+    if (key === "water") return Math.round(toMl(value, units.volume));
+    return value;
+  };
+
+  const unitLabel = (key: IdealKey): string => {
+    if (key === "weight") return weightSuffix(units.weight);
+    if (key === "water") return volumeSuffix(units.volume);
+    return "mmHg";
+  };
+
+  const stepFor = (key: IdealKey): number | undefined => {
+    if (key === "weight") return weightStep(units.weight);
+    if (key === "water") return volumeStep(units.volume);
+    return undefined;
+  };
+
   useEffect(() => {
-    if (open) form.setFieldsValue(ideals);
-  }, [open, ideals, form]);
+    if (!open) return;
+    const shaped = {} as FormShape;
+    for (const { key } of ROWS) {
+      shaped[key] = {
+        min: toDisplay(key, ideals[key].min),
+        max: toDisplay(key, ideals[key].max),
+      };
+    }
+    form.setFieldsValue(shaped);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, ideals, form, units]);
 
   async function handleSave() {
     if (!user) return;
@@ -45,8 +91,14 @@ export function IdealsModal({
       const next = {} as Ideals;
       for (const { key } of ROWS) {
         next[key] = {
-          min: typeof values[key]?.min === "number" ? values[key].min : null,
-          max: typeof values[key]?.max === "number" ? values[key].max : null,
+          min: toStored(
+            key,
+            typeof values[key]?.min === "number" ? values[key].min : null,
+          ),
+          max: toStored(
+            key,
+            typeof values[key]?.max === "number" ? values[key].max : null,
+          ),
         };
       }
       await saveIdeals(user.uid, next);
@@ -85,7 +137,7 @@ export function IdealsModal({
                 <InputNumber
                   placeholder="min"
                   min={0}
-                  step={row.step}
+                  step={stepFor(row.key)}
                   style={{ flex: 1 }}
                 />
               </Form.Item>
@@ -94,12 +146,12 @@ export function IdealsModal({
                 <InputNumber
                   placeholder="max"
                   min={0}
-                  step={row.step}
+                  step={stepFor(row.key)}
                   style={{ flex: 1 }}
                 />
               </Form.Item>
               <Typography.Text type="secondary" style={{ width: 44 }}>
-                {row.unit}
+                {unitLabel(row.key)}
               </Typography.Text>
             </Flex>
           </Form.Item>

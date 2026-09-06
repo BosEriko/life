@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { BpModal } from "@/components/bp-modal";
 import { WaterModal } from "@/components/water-modal";
 import { Icon } from "@/components/icon";
+import { useUnits } from "@/components/units-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import {
   dailyBpAverages,
@@ -22,6 +23,8 @@ import {
   type WaterLog,
 } from "@/models/water";
 import { watchWaterPresets, type WaterPreset } from "@/models/presets";
+import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/ideals";
+import { fromKg, volumeSuffix, volumeValue, weightSuffix } from "@/lib/units";
 
 const HISTORY_LIMIT = 1000;
 
@@ -49,6 +52,7 @@ function mean(values: number[]): number | null {
 }
 
 export function ReportDownload() {
+  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const screens = Grid.useBreakpoint();
@@ -57,6 +61,7 @@ export function ReportDownload() {
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
   const [presets, setPresets] = useState<WaterPreset[]>([]);
+  const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
   const [open, setOpen] = useState(false);
   const [bpOpen, setBpOpen] = useState(false);
   const [waterOpen, setWaterOpen] = useState(false);
@@ -86,6 +91,11 @@ export function ReportDownload() {
   useEffect(() => {
     if (!user) return;
     return watchWaterPresets(user.uid, setPresets, () => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    return watchIdeals(user.uid, setIdeals, () => {});
   }, [user]);
 
   const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
@@ -129,6 +139,8 @@ export function ReportDownload() {
 
       const doc = new jsPDF();
       const generatedAt = dayjs().format("YYYY-MM-DD HH:mm");
+      const weightUnit = weightSuffix(units.weight);
+      const volumeUnit = volumeSuffix(units.volume);
 
       doc.setFontSize(16);
       doc.text("Life Tracker Report", 14, 18);
@@ -138,14 +150,14 @@ export function ReportDownload() {
       doc.text(`${RANGE_LABEL[range]} · generated ${generatedAt}`, 14, 30);
       doc.setTextColor(0);
 
-      const avgWeight = mean(
+      const avgWeightKg = mean(
         rows
           .map((entry) => entry.weight)
           .filter((value): value is number => value != null),
       );
       const avgSystolic = mean(bpRows.map((day) => day.systolic));
       const avgDiastolic = mean(bpRows.map((day) => day.diastolic));
-      const avgWater = mean(waterRows.map((day) => day.ml));
+      const avgWaterMl = mean(waterRows.map((day) => day.ml));
       const count = (predicate: (entry: DailyEntry) => boolean | null) =>
         String(rows.filter((entry) => predicate(entry)).length);
 
@@ -155,14 +167,24 @@ export function ReportDownload() {
         styles: { fontSize: 9 },
         body: [
           ["Days logged", String(rows.length)],
-          ["Avg weight", avgWeight != null ? `${avgWeight.toFixed(1)} kg` : "—"],
+          [
+            "Avg weight",
+            avgWeightKg != null
+              ? `${fromKg(avgWeightKg, units.weight).toFixed(1)} ${weightUnit}`
+              : "—",
+          ],
           [
             "Avg blood pressure",
             avgSystolic != null && avgDiastolic != null
               ? `${Math.round(avgSystolic)}/${Math.round(avgDiastolic)} mmHg`
               : "—",
           ],
-          ["Avg water", avgWater != null ? `${Math.round(avgWater)} ml` : "—"],
+          [
+            "Avg water",
+            avgWaterMl != null
+              ? `${volumeValue(avgWaterMl, units.volume)} ${volumeUnit}`
+              : "—",
+          ],
           ["Junk food days", count((entry) => entry.junkFood)],
           ["Junk drink days", count((entry) => entry.junkDrink)],
           ["Bath days", count((entry) => entry.bath)],
@@ -179,9 +201,9 @@ export function ReportDownload() {
         head: [
           [
             "Date",
-            "Weight",
+            `Weight (${weightUnit})`,
             "BP",
-            "Water",
+            `Water (${volumeUnit})`,
             "Junk F",
             "Junk D",
             "Bath",
@@ -193,9 +215,11 @@ export function ReportDownload() {
           const water = dailyWater.get(entry.date);
           return [
             entry.date,
-            entry.weight != null ? String(entry.weight) : "",
+            entry.weight != null
+              ? String(fromKg(entry.weight, units.weight).toFixed(1))
+              : "",
             bp ? `${bp.systolic}/${bp.diastolic}` : "",
-            water ? String(water.ml) : "",
+            water ? String(volumeValue(water.ml, units.volume)) : "",
             entry.junkFood ? "Y" : "",
             entry.junkDrink ? "Y" : "",
             entry.bath ? "Y" : "",
@@ -219,6 +243,9 @@ export function ReportDownload() {
     }
   }
 
+  const tip = (title: string) =>
+    screens.md === false ? undefined : { title, placement: "left" as const };
+
   return (
     <>
       <FloatButton.Group
@@ -227,20 +254,20 @@ export function ReportDownload() {
       >
         <FloatButton
           icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={screens.md === false ? undefined : "Water"}
+          tooltip={tip("Water")}
           onClick={() => setWaterOpen(true)}
           className={hasWaterToday ? undefined : "bp-pulse"}
         />
         <FloatButton
           icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={screens.md === false ? undefined : "Blood pressure"}
+          tooltip={tip("Blood pressure")}
           onClick={() => setBpOpen(true)}
           className={hasBpToday ? undefined : "bp-pulse"}
         />
         <FloatButton
           type="primary"
           icon={<DownloadOutlined />}
-          tooltip={screens.md === false ? undefined : "Download report"}
+          tooltip={tip("Download report")}
           onClick={() => setOpen(true)}
         />
       </FloatButton.Group>
@@ -250,12 +277,14 @@ export function ReportDownload() {
         onClose={() => setWaterOpen(false)}
         logs={waterLogs}
         presets={presets}
+        ideals={ideals}
       />
 
       <BpModal
         open={bpOpen}
         onClose={() => setBpOpen(false)}
         readings={bpReadings}
+        ideals={ideals}
       />
 
       <Modal

@@ -41,6 +41,17 @@ import {
   type DailyWater,
   type WaterLog,
 } from "@/models/water";
+import { useUnits } from "@/components/units-provider";
+import {
+  convertRange,
+  formatVolume,
+  formatWeight,
+  fromKg,
+  fromMl,
+  volumeDecimals,
+  volumeSuffix,
+  weightSuffix,
+} from "@/lib/units";
 import {
   EMPTY_IDEALS,
   evaluateIdeal,
@@ -145,6 +156,7 @@ function meanStats(
 }
 
 export function AverageStats() {
+  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
@@ -261,17 +273,28 @@ export function AverageStats() {
       );
     }
 
+    const toWeight = (value: number) => fromKg(value, units.weight);
+    const toVolume = (value: number) => fromMl(value, units.volume);
+
     return [
       {
         label: "Weight",
         icon: "weight",
-        value: stats.weight != null ? `${stats.weight.toFixed(1)} kg` : "—",
+        value:
+          stats.weight != null ? formatWeight(stats.weight, units.weight) : "—",
         status: weightStatus,
         tip:
           weightStatus === "low" || weightStatus === "high"
-            ? `${weightStatus === "high" ? "Above" : "Below"} ideal (${rangeText(ideals.weight)} kg)`
+            ? `${weightStatus === "high" ? "Above" : "Below"} ideal (${rangeText(
+                convertRange(ideals.weight, toWeight),
+              )} ${weightSuffix(units.weight)})`
             : undefined,
-        delta: deltaFor(stats.weight, prevStats?.weight, "kg", 1),
+        delta: deltaFor(
+          stats.weight != null ? toWeight(stats.weight) : null,
+          prevStats?.weight != null ? toWeight(prevStats.weight) : null,
+          weightSuffix(units.weight),
+          1,
+        ),
       },
       {
         label: "Blood pressure",
@@ -289,16 +312,24 @@ export function AverageStats() {
       {
         label: "Water",
         icon: "water",
-        value: stats.water != null ? `${Math.round(stats.water)} ml` : "—",
+        value:
+          stats.water != null ? formatVolume(stats.water, units.volume) : "—",
         status: waterStatus,
         tip:
           waterStatus === "low" || waterStatus === "high"
-            ? `${waterStatus === "high" ? "Above" : "Below"} ideal (${rangeText(ideals.water)} ml)`
+            ? `${waterStatus === "high" ? "Above" : "Below"} ideal (${rangeText(
+                convertRange(ideals.water, toVolume),
+              )} ${volumeSuffix(units.volume)})`
             : undefined,
-        delta: deltaFor(stats.water, prevStats?.water, "ml", 0),
+        delta: deltaFor(
+          stats.water != null ? toVolume(stats.water) : null,
+          prevStats?.water != null ? toVolume(prevStats.water) : null,
+          volumeSuffix(units.volume),
+          volumeDecimals(units.volume),
+        ),
       },
     ];
-  }, [stats, prevStats, ideals, range]);
+  }, [stats, prevStats, ideals, range, units]);
 
   return (
     <div>

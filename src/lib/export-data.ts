@@ -208,6 +208,9 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     heightInches: clean(profileData.heightInches),
     sex: clean(profileData.sex),
     timezone: clean(profileData.timezone),
+    weightUnit: clean(profileData.weightUnit),
+    volumeUnit: clean(profileData.volumeUnit),
+    heightUnit: clean(profileData.heightUnit),
     ageYears: computeAge(birthday),
     heightTotalInches: computeHeightTotalInches(heightFeet, heightInches),
   };

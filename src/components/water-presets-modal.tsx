@@ -4,6 +4,14 @@ import { useState } from "react";
 import { App, Button, Flex, Input, InputNumber, Modal, Typography } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
+import { useUnits } from "@/components/units-provider";
+import {
+  formatVolume,
+  toMl,
+  volumeDecimals,
+  volumeStep,
+  volumeSuffix,
+} from "@/lib/units";
 import {
   addWaterPreset,
   deleteWaterPreset,
@@ -19,21 +27,27 @@ export function WaterPresetsModal({
   onClose: () => void;
   presets: WaterPreset[];
 }) {
+  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const [name, setName] = useState("");
-  const [ml, setMl] = useState<number | null>(null);
+  const [amount, setAmount] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const canAdd = name.trim().length > 0 && typeof ml === "number" && ml > 0;
+  const canAdd =
+    name.trim().length > 0 && typeof amount === "number" && amount > 0;
 
   async function handleAdd() {
     if (!user || !canAdd) return;
     setBusy(true);
     try {
-      await addWaterPreset(user.uid, name.trim(), ml);
+      await addWaterPreset(
+        user.uid,
+        name.trim(),
+        Math.round(toMl(amount, units.volume)),
+      );
       setName("");
-      setMl(null);
+      setAmount(null);
     } catch {
       message.error("Could not add preset.");
     } finally {
@@ -72,11 +86,13 @@ export function WaterPresetsModal({
           style={{ flex: 1 }}
         />
         <InputNumber
-          placeholder="ml"
-          min={1}
-          value={ml}
-          onChange={(value) => setMl(value)}
-          style={{ width: 88 }}
+          placeholder={volumeSuffix(units.volume)}
+          min={volumeDecimals(units.volume) > 0 ? 0.01 : 1}
+          step={volumeStep(units.volume)}
+          precision={volumeDecimals(units.volume)}
+          value={amount}
+          onChange={(value) => setAmount(value)}
+          style={{ width: 110 }}
         />
         <Button
           type="primary"
@@ -101,7 +117,7 @@ export function WaterPresetsModal({
             >
               <Typography.Text>
                 <Typography.Text strong>{preset.name}</Typography.Text> ·{" "}
-                {preset.ml} ml
+                {formatVolume(preset.ml, units.volume)}
               </Typography.Text>
               <Button
                 type="text"

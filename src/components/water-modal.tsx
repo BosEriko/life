@@ -8,6 +8,7 @@ import {
   Flex,
   InputNumber,
   Modal,
+  theme,
   TimePicker,
   Typography,
 } from "antd";
@@ -17,7 +18,16 @@ import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
+import { useUnits } from "@/components/units-provider";
+import {
+  formatVolume,
+  toMl,
+  volumeDecimals,
+  volumeStep,
+  volumeSuffix,
+} from "@/lib/units";
 import { relativeDate, todayKey } from "@/models/dailies";
+import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
 import { type WaterPreset } from "@/models/presets";
 import {
   addWaterLog,
@@ -29,34 +39,43 @@ import {
 
 const FALLBACK_AMOUNTS = [500, 1000];
 
+const WATER_TIPS = {
+  low: "Sip steadily through the day rather than in big gulps, keep a bottle in sight, and add water-rich foods. A dry mouth, dark urine, or a dull headache means catch up now.",
+  high: "Well above your target — no need to force more. Drinking a lot in a short window can dilute your sodium, so spread it out and ease off if you feel bloated or headachy.",
+};
+
 export function WaterModal({
   open,
   onClose,
   logs,
   presets,
+  ideals,
 }: {
   open: boolean;
   onClose: () => void;
   logs: WaterLog[];
   presets: WaterPreset[];
+  ideals: Ideals;
 }) {
+  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
-  const [ml, setMl] = useState<number | null>(null);
+  const [amount, setAmount] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
 
   function handleClose() {
     setDate(dayjs());
     setTime(dayjs());
-    setMl(null);
+    setAmount(null);
     onClose();
   }
 
   const dateKey = date.format("YYYY-MM-DD");
-  const canAdd = typeof ml === "number" && ml > 0;
+  const canAdd = typeof amount === "number" && amount > 0;
 
   const dayLogs = useMemo(
     () =>
@@ -66,18 +85,29 @@ export function WaterModal({
     [logs, dateKey],
   );
 
-  const dailyTotal = useMemo(
+  const dailyTotalMl = useMemo(
     () => dailyWaterTotals(dayLogs).get(dateKey)?.ml ?? 0,
     [dayLogs, dateKey],
   );
 
-  async function logAmount(amount: number, label?: string) {
+  const totalEval = evaluateIdeal(
+    dayLogs.length > 0 ? dailyTotalMl : null,
+    ideals.water,
+  );
+  const totalTip =
+    totalEval === "low" || totalEval === "high"
+      ? `Daily total ${totalEval === "high" ? "above" : "below"} your ideal (${rangeText(
+          ideals.water,
+        )} ml). ${totalEval === "high" ? WATER_TIPS.high : WATER_TIPS.low}`
+      : undefined;
+
+  async function logAmount(ml: number, label?: string) {
     if (!user) return;
     setBusy(true);
     try {
       await addWaterLog(user.uid, {
         date: dateKey,
-        ml: amount,
+        ml,
         time: dayjs().format("HH:mm"),
         label: label ?? null,
       });
@@ -94,10 +124,10 @@ export function WaterModal({
     try {
       await addWaterLog(user.uid, {
         date: dateKey,
-        ml,
+        ml: Math.round(toMl(amount, units.volume)),
         time: time.format("HH:mm"),
       });
-      setMl(null);
+      setAmount(null);
       setTime(dayjs());
     } catch {
       message.error("Could not add water.");
@@ -130,7 +160,11 @@ export function WaterModal({
       <Flex gap={8} wrap align="center" style={{ marginBottom: 12 }}>
         {presets.length > 0
           ? presets.map((preset) => (
-              <Tip key={preset.id} title={`${preset.ml} ml`} placement="bottom">
+              <Tip
+                key={preset.id}
+                title={formatVolume(preset.ml, units.volume)}
+                placement="bottom"
+              >
                 <Button
                   size="small"
                   disabled={busy}
@@ -140,14 +174,14 @@ export function WaterModal({
                 </Button>
               </Tip>
             ))
-          : FALLBACK_AMOUNTS.map((amount) => (
+          : FALLBACK_AMOUNTS.map((ml) => (
               <Button
-                key={amount}
+                key={ml}
                 size="small"
                 disabled={busy}
-                onClick={() => logAmount(amount)}
+                onClick={() => logAmount(ml)}
               >
-                +{amount}
+                {formatVolume(ml, units.volume)}
               </Button>
             ))}
         <Button
@@ -184,14 +218,16 @@ export function WaterModal({
         <Flex gap={8} align="center">
           <InputNumber
             placeholder="Amount"
-            min={1}
-            step={50}
-            precision={0}
-            value={ml}
-            onChange={setMl}
+            min={volumeDecimals(units.volume) > 0 ? 0.01 : 1}
+            step={volumeStep(units.volume)}
+            precision={volumeDecimals(units.volume)}
+            value={amount}
+            onChange={setAmount}
             style={{ flex: 1 }}
           />
-          <Typography.Text type="secondary">ml</Typography.Text>
+          <Typography.Text type="secondary">
+            {volumeSuffix(units.volume)}
+          </Typography.Text>
         </Flex>
         <Button
           type="primary"
@@ -208,10 +244,19 @@ export function WaterModal({
           {relativeDate(dateKey)}
         </Typography.Title>
         {dayLogs.length > 0 ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Total {dailyTotal} ml · {dayLogs.length} drink
-            {dayLogs.length === 1 ? "" : "s"}
-          </Typography.Text>
+          <Tip title={totalTip}>
+            <Typography.Text
+              type={totalTip ? undefined : "secondary"}
+              style={{
+                fontSize: 12,
+                cursor: totalTip ? "help" : undefined,
+                color: totalTip ? token.colorError : undefined,
+              }}
+            >
+              Total {formatVolume(dailyTotalMl, units.volume)} · {dayLogs.length}{" "}
+              drink{dayLogs.length === 1 ? "" : "s"}
+            </Typography.Text>
+          </Tip>
         ) : null}
       </Flex>
 
@@ -230,8 +275,10 @@ export function WaterModal({
               style={{ padding: "8px 0" }}
             >
               <Typography.Text>
-                <Typography.Text strong>{log.ml}</Typography.Text> ml ·{" "}
-                {formatWaterTime(log.date, log.time)}
+                <Typography.Text strong>
+                  {formatVolume(log.ml, units.volume)}
+                </Typography.Text>{" "}
+                · {formatWaterTime(log.date, log.time)}
                 {log.label ? ` · ${log.label}` : ""}
               </Typography.Text>
               <Button

@@ -50,7 +50,7 @@ export function SyncConflictModal({
       open
       centered
       closable={false}
-      maskClosable={false}
+      mask={{ closable: false }}
       title={`This entry changed while you were offline — ${relativeDate(current.date)}`}
       footer={
         <Space>

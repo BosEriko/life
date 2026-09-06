@@ -128,7 +128,7 @@ const TOOLS = [
   {
     name: "get_profile",
     description:
-      "The user's personal profile: name, birthday, height (feet/inches), biological sex, timezone, plus derived ageYears and heightTotalInches. Any field may be null if not set.",
+      "The user's personal profile: name, birthday, height (feet/inches), biological sex, timezone, their display-unit preferences (weightUnit kg/lb, volumeUnit ml/l/floz, heightUnit ftin/cm), plus derived ageYears and heightTotalInches. Numeric data elsewhere is always canonical (weight kg, water ml, height inches). Any field may be null if not set.",
     inputSchema: { type: "object", properties: {} },
   },
 ];
