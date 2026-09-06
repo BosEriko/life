@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { Flex, Spin } from "antd";
 import { AverageStats } from "@/components/average-stats";
-import { DailyTracker } from "@/components/daily-tracker";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
 import { ReportDownload } from "@/components/report-download";
@@ -36,12 +35,9 @@ export default function HealthPage() {
           alignItems: "start",
         }}
       >
-        <Flex vertical gap={40}>
-          <DailyTracker />
-          <RecentEntries />
-        </Flex>
         <HabitCalendar />
         <MetricsChart />
+        <RecentEntries />
       </div>
 
       <ReportDownload />

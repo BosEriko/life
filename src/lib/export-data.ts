@@ -1,6 +1,7 @@
 import { getAdminDb } from "@/lib/firebase-admin";
 import { dailyBpAverages } from "@/lib/bp-average";
 import { dailyWaterTotals } from "@/lib/water-total";
+import { dailyIntake } from "@/lib/intake-summary";
 
 const MAX_DAYS = 2000;
 
@@ -99,15 +100,30 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   if (from) waterQuery = waterQuery.where("date", ">=", from);
   if (to) waterQuery = waterQuery.where("date", "<=", to);
 
-  const [dailiesSnap, bpSnap, waterSnap, idealsSnap, presetsSnap, profileSnap] =
-    await Promise.all([
-      dailiesQuery.get(),
-      bpQuery.get(),
-      waterQuery.get(),
-      userRef.collection("ideals").doc("current").get(),
-      userRef.collection("presets").orderBy("ml", "asc").get(),
-      userRef.collection("profile").doc("current").get(),
-    ]);
+  let intakeQuery = userRef
+    .collection("intake")
+    .orderBy("date", "desc")
+    .limit(limit);
+  if (from) intakeQuery = intakeQuery.where("date", ">=", from);
+  if (to) intakeQuery = intakeQuery.where("date", "<=", to);
+
+  const [
+    dailiesSnap,
+    bpSnap,
+    waterSnap,
+    intakeSnap,
+    idealsSnap,
+    presetsSnap,
+    profileSnap,
+  ] = await Promise.all([
+    dailiesQuery.get(),
+    bpQuery.get(),
+    waterQuery.get(),
+    intakeQuery.get(),
+    userRef.collection("ideals").doc("current").get(),
+    userRef.collection("presets").orderBy("ml", "asc").get(),
+    userRef.collection("profile").doc("current").get(),
+  ]);
 
   const bpReadings = bpSnap.docs
     .map((doc) => {
@@ -156,11 +172,41 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     })),
   );
 
+  const intake = intakeSnap.docs
+    .map((doc) => {
+      const i = doc.data();
+      return {
+        id: doc.id,
+        date: String(i.date ?? ""),
+        time: clean(i.time),
+        kind: clean(i.kind),
+        category: clean(i.category),
+        junk: clean(i.junk),
+        calories: clean(i.calories),
+        sodium: clean(i.sodium),
+        amount: clean(i.amount),
+        note: clean(i.note),
+        createdAt: toIso(i.createdAt),
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const intakeByDate = dailyIntake(
+    intake.map((entry) => ({
+      date: entry.date,
+      kind: entry.kind === "drink" ? "drink" : "food",
+      junk: entry.junk === true,
+      calories: typeof entry.calories === "number" ? entry.calories : null,
+      sodium: typeof entry.sodium === "number" ? entry.sodium : null,
+    })),
+  );
+
   const dailies = dailiesSnap.docs
     .map((doc) => {
       const d = doc.data();
       const bp = bpByDate.get(doc.id);
       const water = waterByDate.get(doc.id);
+      const meals = intakeByDate.get(doc.id);
       return {
         date: doc.id,
         weight: clean(d.weight),
@@ -170,8 +216,11 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
         bpReadingCount: bp ? bp.count : 0,
         water: water ? water.ml : null,
         waterLogCount: water ? water.count : 0,
-        junkFood: clean(d.junkFood),
-        junkDrink: clean(d.junkDrink),
+        junkFood: meals ? meals.junkFood : false,
+        junkDrink: meals ? meals.junkDrink : false,
+        calories: meals ? meals.calories : 0,
+        sodium: meals ? meals.sodium : 0,
+        intakeCount: meals ? meals.count : 0,
         bath: clean(d.bath),
         brushTeeth: clean(d.brushTeeth),
         updatedAt: toIso(d.updatedAt),
@@ -222,6 +271,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     dailies,
     bpReadings,
     waterLogs,
+    intake,
     ideals,
     presets,
     profile,

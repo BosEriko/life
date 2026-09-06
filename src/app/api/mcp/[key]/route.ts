@@ -44,7 +44,7 @@ const TOOLS = [
   {
     name: "get_entries",
     description:
-      "Daily health entries: weight (kg) and the boolean habits junkFood/junkDrink/bath/brushTeeth. Each day also carries that day's mean blood pressure (systolic/diastolic mmHg, bpTime, bpReadingCount) and that day's total water (ml, waterLogCount), both computed from the individual readings/logs. The response also includes bpReadings and waterLogs — every individual entry in range. Any field may be null.",
+      "Daily health entries: weight (kg) and the boolean hygiene habits bath/brushTeeth. Each day also carries that day's mean blood pressure (systolic/diastolic mmHg, bpTime, bpReadingCount), total water (ml, waterLogCount), and food/drink summary — junkFood/junkDrink booleans, total calories (kcal), total sodium (mg), intakeCount — all computed from the individual readings/logs. The response also includes bpReadings, waterLogs, and intake — every individual entry in range. Any field may be null.",
     inputSchema: {
       type: "object",
       properties: {
@@ -93,6 +93,30 @@ const TOOLS = [
     name: "get_water",
     description:
       "Every individual water log: date, ml, time (HH:mm), and label (the container name, if logged from a preset). Multiple logs per day are kept separate; get_entries returns the daily total.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        range: {
+          type: "string",
+          enum: ["7d", "30d", "90d", "1y", "all"],
+          description: "Last N days, counted in UTC. Default all.",
+        },
+        from: {
+          type: "string",
+          description: "YYYY-MM-DD inclusive lower bound. Overrides range.",
+        },
+        to: { type: "string", description: "YYYY-MM-DD inclusive upper bound." },
+        limit: {
+          type: "number",
+          description: "Max number of days, newest first (1-2000).",
+        },
+      },
+    },
+  },
+  {
+    name: "get_intake",
+    description:
+      "Every individual food/drink log: date, time (HH:mm), kind (food/drink), category, junk (boolean), calories (kcal), sodium (mg), amount, note. calories/sodium/amount/note may be null. get_entries returns the per-day roll-up.",
     inputSchema: {
       type: "object",
       properties: {
@@ -187,6 +211,11 @@ async function runTool(
         url: "mcp://life-tracker/water",
       },
       {
+        id: "intake",
+        title: "Food & drink logs (all)",
+        url: "mcp://life-tracker/intake",
+      },
+      {
         id: "ideals",
         title: "Target ranges (ideals)",
         url: "mcp://life-tracker/ideals",
@@ -231,6 +260,18 @@ async function runTool(
         url: "mcp://life-tracker/water",
       };
     }
+    if (id === "intake") {
+      const data = await fetchExportData(uid, { range: "all" });
+      return {
+        id,
+        title: "Food & drink logs",
+        text: JSON.stringify({
+          count: data.intake.length,
+          intake: data.intake,
+        }),
+        url: "mcp://life-tracker/intake",
+      };
+    }
     if (id === "ideals" || id === "presets" || id === "profile") {
       const data = await fetchExportData(uid, { limit: 1 });
       const byId = { ideals: data.ideals, presets: data.presets, profile: data.profile };
@@ -258,6 +299,7 @@ async function runTool(
           dailies: data.dailies,
           bpReadings: data.bpReadings,
           waterLogs: data.waterLogs,
+          intake: data.intake,
         }),
         url: `mcp://life-tracker/${id}`,
       };
@@ -278,6 +320,7 @@ async function runTool(
       dailies: data.dailies,
       bpReadings: data.bpReadings,
       waterLogs: data.waterLogs,
+      intake: data.intake,
     };
   }
 
@@ -306,6 +349,20 @@ async function runTool(
       range: data.range,
       count: data.waterLogs.length,
       waterLogs: data.waterLogs,
+    };
+  }
+
+  if (name === "get_intake") {
+    const data = await fetchExportData(uid, {
+      range: typeof args.range === "string" ? args.range : null,
+      from: typeof args.from === "string" ? args.from : null,
+      to: typeof args.to === "string" ? args.to : null,
+      limit: typeof args.limit === "number" ? args.limit : null,
+    });
+    return {
+      range: data.range,
+      count: data.intake.length,
+      intake: data.intake,
     };
   }
 
@@ -349,7 +406,7 @@ export async function POST(
       capabilities: { tools: {} },
       serverInfo: { name: "life-tracker", version: "1.0.0" },
       instructions:
-        "Read the user's personal health tracker. Use get_entries for daily weight / habit data with each day's mean blood pressure and total water, get_bp for every individual blood-pressure reading, get_water for every individual water log, get_ideals for their target ranges, get_presets for their water containers, and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
+        "Read the user's personal health tracker. Use get_entries for daily weight / hygiene data with each day's mean blood pressure, total water, and food/drink roll-up (junk flags, calories, sodium); get_bp for every individual blood-pressure reading; get_water for every individual water log; get_intake for every individual food/drink log; get_ideals for their target ranges; get_presets for their water containers; and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
     });
   }
 

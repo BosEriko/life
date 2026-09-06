@@ -285,7 +285,8 @@ export function DeveloperPanel() {
         <li>
           <Typography.Text code>get_entries</Typography.Text> /{" "}
           <Typography.Text code>get_bp</Typography.Text> /{" "}
-          <Typography.Text code>get_water</Typography.Text> —{" "}
+          <Typography.Text code>get_water</Typography.Text> /{" "}
+          <Typography.Text code>get_intake</Typography.Text> —{" "}
           <Typography.Text code>range</Typography.Text> (
           <Typography.Text code>7d</Typography.Text>/
           <Typography.Text code>30d</Typography.Text>/
@@ -297,8 +298,9 @@ export function DeveloperPanel() {
           <Typography.Text code>YYYY-MM-DD</Typography.Text>),{" "}
           <Typography.Text code>limit</Typography.Text> (≤ 2000).{" "}
           <Typography.Text code>get_entries</Typography.Text> gives each day&apos;s
-          mean BP and total water; <Typography.Text code>get_bp</Typography.Text> /{" "}
-          <Typography.Text code>get_water</Typography.Text> give every individual
+          roll-up; <Typography.Text code>get_bp</Typography.Text> /{" "}
+          <Typography.Text code>get_water</Typography.Text> /{" "}
+          <Typography.Text code>get_intake</Typography.Text> give every individual
           entry.
         </li>
         <li>

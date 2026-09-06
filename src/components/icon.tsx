@@ -20,6 +20,8 @@ import {
   faSoap,
   faTooth,
   faTriangleExclamation,
+  faUser,
+  faUtensils,
   faWeightScale,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -35,12 +37,14 @@ const ICONS = {
   water: faDroplet,
   junkFood: faBurger,
   junkDrink: faBottleWater,
+  intake: faUtensils,
   hygiene: faSoap,
   bath: faBath,
   brush: faTooth,
   target: faBullseye,
   alert: faTriangleExclamation,
   presets: faSliders,
+  person: faUser,
   brand: faSeedling,
 } as const;
 

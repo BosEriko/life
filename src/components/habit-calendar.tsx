@@ -11,39 +11,51 @@ import {
   useIsDark,
 } from "@/components/theme-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
+import {
+  dailyIntake,
+  watchIntake,
+  type DailyIntake,
+  type IntakeEntry,
+} from "@/models/intake";
 
 const WEEKS = 26;
 const CELL = 11;
 const GAP = 3;
 const HISTORY_LIMIT = 220;
+const INTAKE_LIMIT = 4000;
 
-type HabitField = "junkFood" | "junkDrink" | "bath" | "brushTeeth";
+type DailyHabit = "bath" | "brushTeeth";
+type IntakeHabit = "junkFood" | "junkDrink";
 
-type Habit = { label: ReactNode; field: HabitField; tone: "bad" | "good" };
+type Habit =
+  | { key: DailyHabit; label: ReactNode; tone: "good"; source: "daily" }
+  | { key: IntakeHabit; label: ReactNode; tone: "bad"; source: "intake" };
 
 const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
   {
     title: "Hygiene",
     habits: [
       {
+        key: "bath",
         label: (
           <>
             <Icon name="bath" />
             Bath
           </>
         ),
-        field: "bath",
         tone: "good",
+        source: "daily",
       },
       {
+        key: "brushTeeth",
         label: (
           <>
             <Icon name="brush" />
             Brush
           </>
         ),
-        field: "brushTeeth",
         tone: "good",
+        source: "daily",
       },
     ],
   },
@@ -51,24 +63,26 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
     title: "Junk",
     habits: [
       {
+        key: "junkFood",
         label: (
           <>
             <Icon name="junkFood" />
             Junk food
           </>
         ),
-        field: "junkFood",
         tone: "bad",
+        source: "intake",
       },
       {
+        key: "junkDrink",
         label: (
           <>
             <Icon name="junkDrink" />
             Junk drink
           </>
         ),
-        field: "junkDrink",
         tone: "bad",
+        source: "intake",
       },
     ],
   },
@@ -86,6 +100,7 @@ export function HabitCalendar() {
   const hoverTips = screens.md !== false;
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
+  const [intake, setIntake] = useState<IntakeEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(
     null,
@@ -107,28 +122,51 @@ export function HabitCalendar() {
     );
   }, [user, message]);
 
+  useEffect(() => {
+    if (!user) return;
+    return watchIntake(user.uid, setIntake, () => {}, INTAKE_LIMIT);
+  }, [user]);
+
   const byDate = useMemo(() => {
     const map = new Map<string, DailyEntry>();
     for (const entry of entries) map.set(entry.date, entry);
     return map;
   }, [entries]);
 
+  const intakeByDate = useMemo<Map<string, DailyIntake>>(
+    () => dailyIntake(intake),
+    [intake],
+  );
+
+  const isOn = useMemo(() => {
+    return (habit: Habit, dateKey: string): boolean => {
+      if (habit.source === "daily") {
+        return byDate.get(dateKey)?.[habit.key] === true;
+      }
+      return intakeByDate.get(dateKey)?.[habit.key] === true;
+    };
+  }, [byDate, intakeByDate]);
+
   const figures = useMemo(() => {
     const logged = entries.length;
-    const map = new Map<HabitField, string>();
+    const map = new Map<string, string>();
+    const intakeDays = Array.from(intakeByDate.values());
     for (const habit of ALL_HABITS) {
-      const on = entries.filter((entry) => entry[habit.field] === true).length;
-      if (habit.tone === "good") {
+      if (habit.source === "daily") {
+        const on = entries.filter(
+          (entry) => entry[habit.key] === true,
+        ).length;
         map.set(
-          habit.field,
+          habit.key,
           logged ? `${Math.round((on / logged) * 100)}% consistency` : "—",
         );
       } else {
-        map.set(habit.field, `${on} ${on === 1 ? "day" : "days"} logged`);
+        const on = intakeDays.filter((day) => day[habit.key]).length;
+        map.set(habit.key, `${on} ${on === 1 ? "day" : "days"} logged`);
       }
     }
     return map;
-  }, [entries]);
+  }, [entries, intakeByDate]);
 
   const days = useMemo(() => {
     const today = dayjs(todayKey());
@@ -191,7 +229,7 @@ export function HabitCalendar() {
                 </Typography.Text>
                 <Flex vertical gap={14}>
                   {group.habits.map((habit) => (
-                    <div key={habit.field}>
+                    <div key={habit.key}>
                       <Flex
                         align="center"
                         justify="space-between"
@@ -208,7 +246,7 @@ export function HabitCalendar() {
                           type="secondary"
                           style={{ fontSize: 12 }}
                         >
-                          {figures.get(habit.field)}
+                          {figures.get(habit.key)}
                         </Typography.Text>
                       </Flex>
                       <div
@@ -220,9 +258,7 @@ export function HabitCalendar() {
                         }}
                       >
                         {days.map((day) => {
-                          const on =
-                            !day.future &&
-                            byDate.get(day.key)?.[habit.field] === true;
+                          const on = !day.future && isOn(habit, day.key);
                           const background = day.future
                             ? "transparent"
                             : on

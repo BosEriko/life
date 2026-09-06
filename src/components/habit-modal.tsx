@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { App, Button, Card, Checkbox, DatePicker, Flex, Form } from "antd";
+import { Button, Checkbox, DatePicker, Flex, Form, Modal } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { Icon } from "@/components/icon";
 import dayjs, { type Dayjs } from "dayjs";
@@ -9,7 +9,6 @@ import { useAuth } from "@/components/auth-provider";
 import {
   saveDaily,
   todayKey,
-  watchDailies,
   type DailyEntry,
   type DailyInput,
 } from "@/models/dailies";
@@ -20,72 +19,48 @@ const SAVE_DELAY_MS = 2000;
 
 type FormValues = {
   date: Dayjs;
-  junkFood?: boolean;
-  junkDrink?: boolean;
   bath?: boolean;
   brushTeeth?: boolean;
 };
 
 type CollectOptions = {
-  includeJunkFood: boolean;
-  includeJunkDrink: boolean;
   includeBath: boolean;
   includeBrushTeeth: boolean;
 };
 
 function collectInput(values: FormValues, opts: CollectOptions): DailyInput {
   const input: DailyInput = {};
-  if (opts.includeJunkFood) input.junkFood = values.junkFood === true;
-  if (opts.includeJunkDrink) input.junkDrink = values.junkDrink === true;
   if (opts.includeBath) input.bath = values.bath === true;
   if (opts.includeBrushTeeth) input.brushTeeth = values.brushTeeth === true;
   return input;
 }
 
-export function DailyTracker() {
+export function HabitModal({
+  open,
+  onClose,
+  entries,
+}: {
+  open: boolean;
+  onClose: () => void;
+  entries: DailyEntry[];
+}) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const { state: status, setState: setStatus } = useSaveStatus();
   const [form] = Form.useForm<FormValues>();
-  const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayKey());
 
   const timerRef = useRef<number | null>(null);
   const latestValues = useRef<FormValues | null>(null);
-  const junkFoodDirtyRef = useRef(false);
-  const junkDrinkDirtyRef = useRef(false);
   const bathDirtyRef = useRef(false);
   const brushTeethDirtyRef = useRef(false);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchDailies(
-      user.uid,
-      (next) => {
-        setEntries(next);
-      },
-      () => {
-        message.error("Could not load your entries.");
-      },
-    );
-  }, [user, message]);
 
   useEffect(() => {
     if (status === "pending" || status === "saving" || status === "offline") {
       return;
     }
-    if (
-      junkFoodDirtyRef.current ||
-      junkDrinkDirtyRef.current ||
-      bathDirtyRef.current ||
-      brushTeethDirtyRef.current
-    ) {
-      return;
-    }
+    if (bathDirtyRef.current || brushTeethDirtyRef.current) return;
     const entry = entries.find((item) => item.date === selectedDate);
     form.setFieldsValue({
-      junkFood: entry?.junkFood ?? false,
-      junkDrink: entry?.junkDrink ?? false,
       bath: entry?.bath ?? false,
       brushTeeth: entry?.brushTeeth ?? false,
     });
@@ -97,8 +72,6 @@ export function DailyTracker() {
     if (!user || !values) return;
 
     const dirty = {
-      includeJunkFood: junkFoodDirtyRef.current,
-      includeJunkDrink: junkDrinkDirtyRef.current,
       includeBath: bathDirtyRef.current,
       includeBrushTeeth: brushTeethDirtyRef.current,
     };
@@ -113,8 +86,6 @@ export function DailyTracker() {
 
     try {
       await saveDaily(user.uid, dateKey, input);
-      if (dirty.includeJunkFood) junkFoodDirtyRef.current = false;
-      if (dirty.includeJunkDrink) junkDrinkDirtyRef.current = false;
       if (dirty.includeBath) bathDirtyRef.current = false;
       if (dirty.includeBrushTeeth) brushTeethDirtyRef.current = false;
       setStatus("idle");
@@ -135,8 +106,6 @@ export function DailyTracker() {
   function applyDate(next: Dayjs) {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
-    junkFoodDirtyRef.current = false;
-    junkDrinkDirtyRef.current = false;
     bathDirtyRef.current = false;
     brushTeethDirtyRef.current = false;
     setStatus("idle");
@@ -171,47 +140,45 @@ export function DailyTracker() {
       return;
     }
 
-    if (changed.junkFood !== undefined) {
-      junkFoodDirtyRef.current = true;
-    }
-    if (changed.junkDrink !== undefined) {
-      junkDrinkDirtyRef.current = true;
-    }
-    if (changed.bath !== undefined) {
-      bathDirtyRef.current = true;
-    }
-    if (changed.brushTeeth !== undefined) {
-      brushTeethDirtyRef.current = true;
-    }
+    if (changed.bath !== undefined) bathDirtyRef.current = true;
+    if (changed.brushTeeth !== undefined) brushTeethDirtyRef.current = true;
 
     markPending();
   }
 
+  function handleClose() {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      void flush();
+    }
+    applyDate(dayjs());
+    form.setFieldValue("date", dayjs());
+    onClose();
+  }
+
   return (
-    <Card
+    <Modal
+      open={open}
+      centered
+      forceRender
       title={
         <>
-          <Icon name="logEntry" />
-          Log entry
+          <Icon name="habits" />
+          Habits
         </>
       }
-      extra={<SavePill />}
-      style={{
-        boxShadow:
-          "0 12px 32px -6px rgba(20, 40, 30, 0.10), 0 3px 10px -2px rgba(20, 40, 30, 0.05)",
-      }}
+      footer={null}
+      onCancel={handleClose}
     >
+      <Flex justify="flex-end" style={{ marginBottom: 12 }}>
+        <SavePill />
+      </Flex>
+
       <Form
         form={form}
         layout="vertical"
         requiredMark={false}
-        initialValues={{
-          date: dayjs(),
-          junkFood: false,
-          junkDrink: false,
-          bath: false,
-          brushTeeth: false,
-        }}
+        initialValues={{ date: dayjs(), bath: false, brushTeeth: false }}
         onValuesChange={handleValuesChange}
       >
         <Form.Item
@@ -234,6 +201,7 @@ export function DailyTracker() {
                 format="YYYY-MM-DD"
                 allowClear={false}
                 inputReadOnly
+                maxDate={dayjs(todayKey())}
               />
             </Form.Item>
             <Button
@@ -254,6 +222,7 @@ export function DailyTracker() {
               Hygiene
             </>
           }
+          style={{ marginBottom: 0 }}
         >
           <Flex gap={16} wrap>
             <Form.Item name="bath" valuePropName="checked" noStyle>
@@ -264,26 +233,7 @@ export function DailyTracker() {
             </Form.Item>
           </Flex>
         </Form.Item>
-
-        <Form.Item
-          label={
-            <>
-              <Icon name="junkFood" />
-              Junk
-            </>
-          }
-          style={{ marginBottom: 0 }}
-        >
-          <Flex gap={16} wrap>
-            <Form.Item name="junkFood" valuePropName="checked" noStyle>
-              <Checkbox>Food</Checkbox>
-            </Form.Item>
-            <Form.Item name="junkDrink" valuePropName="checked" noStyle>
-              <Checkbox>Drink</Checkbox>
-            </Form.Item>
-          </Flex>
-        </Form.Item>
       </Form>
-    </Card>
+    </Modal>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   App,
   Button,
+  Card,
   DatePicker,
   Flex,
   Form,
@@ -13,8 +14,11 @@ import {
   Select,
   Typography,
 } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon } from "@/components/icon";
+import { ReportModal } from "@/components/report-modal";
 import {
   EMPTY_PROFILE,
   saveProfile,
@@ -66,6 +70,8 @@ const HEIGHT_UNIT_OPTIONS = [
   { label: "cm", value: "cm" },
 ];
 
+const ITEM_STYLE = { marginBottom: 14 };
+
 function timezoneOptions(): string[] {
   try {
     return Intl.supportedValuesOf("timeZone");
@@ -88,6 +94,7 @@ export function ProfileForm() {
   const [form] = Form.useForm<FormShape>();
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [saving, setSaving] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const tzOptions = useMemo(() => timezoneOptions(), []);
   const heightUnit = Form.useWatch("heightUnit", form) ?? DEFAULT_UNITS.height;
 
@@ -179,14 +186,15 @@ export function ProfileForm() {
   }
 
   return (
-    <div style={{ maxWidth: 480 }}>
-      <Typography.Title level={4} style={{ marginTop: 0 }}>
+    <div style={{ maxWidth: 900 }}>
+      <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
         Profile
       </Typography.Title>
-      <Typography.Paragraph type="secondary">
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
         Personal details used in reports and by anything reading your data
         through MCP.
       </Typography.Paragraph>
+
       <Form
         form={form}
         layout="vertical"
@@ -197,86 +205,135 @@ export function ProfileForm() {
           }
         }}
       >
-        <Form.Item name="name" label="Name">
-          <Input placeholder="Your name" />
-        </Form.Item>
-
-        <Form.Item name="birthday" label="Birthday">
-          <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
-        </Form.Item>
-
-        <Form.Item label="Height">
-          {heightUnit === "cm" ? (
-            <Form.Item name="heightCm" noStyle>
-              <InputNumber
-                placeholder="Centimetres"
-                min={0}
-                max={280}
-                suffix="cm"
-                style={{ width: "100%" }}
-              />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+            gap: 20,
+            alignItems: "start",
+          }}
+        >
+          <Card
+            size="small"
+            title={
+              <>
+                <Icon name="person" />
+                Personal
+              </>
+            }
+          >
+            <Form.Item name="name" label="Name" style={ITEM_STYLE}>
+              <Input placeholder="Your name" />
             </Form.Item>
-          ) : (
-            <Flex gap={8} align="center">
-              <Form.Item name="heightFeet" noStyle>
-                <InputNumber
-                  placeholder="Feet"
-                  min={0}
-                  max={9}
-                  style={{ flex: 1 }}
+
+            <Form.Item name="birthday" label="Birthday" style={ITEM_STYLE}>
+              <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+            </Form.Item>
+
+            <Form.Item label="Height" style={ITEM_STYLE}>
+              {heightUnit === "cm" ? (
+                <Form.Item name="heightCm" noStyle>
+                  <InputNumber
+                    placeholder="Centimetres"
+                    min={0}
+                    max={280}
+                    suffix="cm"
+                    style={{ width: "100%" }}
+                  />
+                </Form.Item>
+              ) : (
+                <Flex gap={8} align="center">
+                  <Form.Item name="heightFeet" noStyle>
+                    <InputNumber
+                      placeholder="Feet"
+                      min={0}
+                      max={9}
+                      style={{ flex: 1 }}
+                    />
+                  </Form.Item>
+                  <Form.Item name="heightInches" noStyle>
+                    <InputNumber
+                      placeholder="Inches"
+                      min={0}
+                      max={11}
+                      style={{ flex: 1 }}
+                    />
+                  </Form.Item>
+                </Flex>
+              )}
+            </Form.Item>
+
+            <Form.Item name="sex" label="Biological sex" style={ITEM_STYLE}>
+              <Select placeholder="Select" options={SEX_OPTIONS} allowClear />
+            </Form.Item>
+
+            <Form.Item
+              name="timezone"
+              label="Timezone"
+              style={{ marginBottom: 0 }}
+            >
+              {tzOptions.length > 0 ? (
+                <Select
+                  showSearch
+                  placeholder="Select timezone"
+                  options={tzOptions.map((tz) => ({ label: tz, value: tz }))}
+                  allowClear
                 />
-              </Form.Item>
-              <Form.Item name="heightInches" noStyle>
-                <InputNumber
-                  placeholder="Inches"
-                  min={0}
-                  max={11}
-                  style={{ flex: 1 }}
-                />
-              </Form.Item>
-            </Flex>
-          )}
-        </Form.Item>
+              ) : (
+                <Input placeholder="e.g. Asia/Manila" />
+              )}
+            </Form.Item>
+          </Card>
 
-        <Form.Item name="sex" label="Biological sex">
-          <Select placeholder="Select" options={SEX_OPTIONS} allowClear />
-        </Form.Item>
+          <Card
+            size="small"
+            title={
+              <>
+                <Icon name="presets" />
+                Units
+              </>
+            }
+          >
+            <Typography.Paragraph
+              type="secondary"
+              style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
+            >
+              Applied everywhere weight, water, and height are shown.
+            </Typography.Paragraph>
 
-        <Form.Item name="timezone" label="Timezone">
-          {tzOptions.length > 0 ? (
-            <Select
-              showSearch
-              placeholder="Select timezone"
-              options={tzOptions.map((tz) => ({ label: tz, value: tz }))}
-              allowClear
-            />
-          ) : (
-            <Input placeholder="e.g. Asia/Manila" />
-          )}
-        </Form.Item>
+            <Form.Item name="weightUnit" label="Weight" style={ITEM_STYLE}>
+              <Segmented options={WEIGHT_UNIT_OPTIONS} />
+            </Form.Item>
 
-        <Typography.Title level={5} style={{ marginBottom: 8 }}>
-          Units
-        </Typography.Title>
+            <Form.Item name="volumeUnit" label="Water" style={ITEM_STYLE}>
+              <Segmented options={VOLUME_UNIT_OPTIONS} />
+            </Form.Item>
 
-        <Form.Item name="weightUnit" label="Weight">
-          <Segmented options={WEIGHT_UNIT_OPTIONS} />
-        </Form.Item>
+            <Form.Item
+              name="heightUnit"
+              label="Height"
+              style={{ marginBottom: 0 }}
+            >
+              <Segmented options={HEIGHT_UNIT_OPTIONS} />
+            </Form.Item>
+          </Card>
+        </div>
 
-        <Form.Item name="volumeUnit" label="Water">
-          <Segmented options={VOLUME_UNIT_OPTIONS} />
-        </Form.Item>
-
-        <Form.Item name="heightUnit" label="Height">
-          <Segmented options={HEIGHT_UNIT_OPTIONS} />
-        </Form.Item>
-
-        <Form.Item style={{ marginBottom: 0 }}>
+        <Flex gap={12} wrap style={{ marginTop: 20 }}>
           <Button type="primary" htmlType="submit" loading={saving}>
-            Save
+            Save changes
           </Button>
-        </Form.Item>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => setReportOpen(true)}
+          >
+            Download report
+          </Button>
+        </Flex>
       </Form>
+
+      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   );
 }

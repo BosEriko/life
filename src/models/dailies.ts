@@ -15,8 +15,6 @@ import { getFirebaseDb } from "@/lib/firebase";
 export type DailyEntry = {
   date: string;
   weight: number | null;
-  junkFood: boolean | null;
-  junkDrink: boolean | null;
   bath: boolean | null;
   brushTeeth: boolean | null;
   updatedAt: Timestamp | null;
@@ -24,8 +22,6 @@ export type DailyEntry = {
 
 export type DailyInput = {
   weight?: number;
-  junkFood?: boolean;
-  junkDrink?: boolean;
   bath?: boolean;
   brushTeeth?: boolean;
 };
@@ -60,8 +56,6 @@ export async function saveDaily(uid: string, date: string, input: DailyInput) {
     updatedAt: serverTimestamp(),
   };
   if (input.weight !== undefined) payload.weight = input.weight;
-  if (input.junkFood !== undefined) payload.junkFood = input.junkFood;
-  if (input.junkDrink !== undefined) payload.junkDrink = input.junkDrink;
   if (input.bath !== undefined) payload.bath = input.bath;
   if (input.brushTeeth !== undefined) payload.brushTeeth = input.brushTeeth;
 
@@ -88,8 +82,6 @@ export function watchDailies(
           return {
             date: data.date as string,
             weight: (data.weight as number | undefined) ?? null,
-            junkFood: (data.junkFood as boolean | undefined) ?? null,
-            junkDrink: (data.junkDrink as boolean | undefined) ?? null,
             bath: (data.bath as boolean | undefined) ?? null,
             brushTeeth: (data.brushTeeth as boolean | undefined) ?? null,
             updatedAt: (data.updatedAt as Timestamp | undefined) ?? null,
