@@ -7,12 +7,17 @@ import {
   DatePicker,
   Empty,
   Flex,
+  Grid,
   Popconfirm,
   Spin,
   theme,
   Typography,
 } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { relativeDate, todayKey } from "@/models/dailies";
@@ -28,9 +33,10 @@ export default function NotesPage() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const screens = Grid.useBreakpoint();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [date, setDate] = useState<Dayjs | null>(null);
+  const [date, setDate] = useState<Dayjs>(() => dayjs(todayKey()));
 
   useEffect(() => {
     if (!user) return;
@@ -54,15 +60,26 @@ export default function NotesPage() {
     );
   }
 
-  const shown = useMemo(() => {
-    const all = sortNotes(notes);
-    if (!date) return all;
-    const key = date.format("YYYY-MM-DD");
-    return all.filter((note) => note.date === key);
-  }, [notes, date]);
+  const sortedNotes = useMemo(() => sortNotes(notes), [notes]);
+  const datesWithNotes = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const note of sortedNotes) {
+      counts.set(note.date, (counts.get(note.date) ?? 0) + 1);
+    }
+    return Array.from(counts, ([key, count]) => ({ key, count }));
+  }, [sortedNotes]);
+  const selectedDateKey = date.format("YYYY-MM-DD");
+  const shown = useMemo(
+    () => sortedNotes.filter((note) => note.date === selectedDateKey),
+    [sortedNotes, selectedDateKey],
+  );
+
+  function changeDay(amount: number) {
+    setDate((current) => current.add(amount, "day"));
+  }
 
   return (
-    <div style={{ maxWidth: 640 }}>
+    <div>
       <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
         Notes
       </Typography.Title>
@@ -70,68 +87,144 @@ export default function NotesPage() {
         Everything you&apos;ve jotted down. Add new ones from the pencil button.
       </Typography.Paragraph>
 
-      <Flex align="center" gap={10} wrap style={{ marginBottom: 20 }}>
-        <DatePicker
-          value={date}
-          onChange={setDate}
-          format="YYYY-MM-DD"
-          maxDate={dayjs(todayKey())}
-          placeholder="Filter by day"
-          style={{ minWidth: 180 }}
-        />
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {shown.length} {shown.length === 1 ? "note" : "notes"}
-          {date ? "" : " total"}
-        </Typography.Text>
-      </Flex>
-
-      {!loaded ? (
-        <Flex justify="center" style={{ padding: 24 }}>
-          <Spin />
-        </Flex>
-      ) : shown.length === 0 ? (
-        <Empty
-          description={date ? "No notes on this day." : "No notes yet."}
-        />
-      ) : (
-        <Flex vertical>
-          {shown.map((note) => (
-            <Flex
-              key={note.id}
-              align="flex-start"
-              justify="space-between"
-              gap={12}
-              style={{
-                padding: "14px 0",
-                borderTop: `1px solid ${token.colorBorderSecondary}`,
-              }}
-            >
-              <Flex vertical gap={4}>
-                <Typography.Text style={{ whiteSpace: "pre-wrap" }}>
-                  {note.text}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {relativeDate(note.date)} ·{" "}
-                  {formatNoteTime(note.date, note.time)}
-                </Typography.Text>
-              </Flex>
-              <Popconfirm
-                title="Delete this note?"
-                okText="Delete"
-                okButtonProps={{ danger: true }}
-                onConfirm={() => handleDelete(note.id)}
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                />
-              </Popconfirm>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: screens.md
+            ? "minmax(220px, 280px) minmax(0, 1fr)"
+            : "minmax(0, 1fr)",
+          gap: 32,
+          alignItems: "start",
+        }}
+      >
+        <Flex vertical gap={8}>
+          <Typography.Text strong>Dates with notes</Typography.Text>
+          {!loaded ? (
+            <Flex justify="center" style={{ padding: 24 }}>
+              <Spin size="small" />
             </Flex>
-          ))}
+          ) : datesWithNotes.length === 0 ? (
+            <Typography.Text type="secondary">No notes yet.</Typography.Text>
+          ) : (
+            datesWithNotes.map(({ key, count }) => {
+              const selected = key === selectedDateKey;
+              return (
+                <Button
+                  key={key}
+                  type={selected ? "primary" : "text"}
+                  onClick={() => setDate(dayjs(key))}
+                  style={{ height: 42, paddingInline: 12 }}
+                >
+                  <Flex align="center" justify="space-between" style={{ width: "100%" }}>
+                    <span>{dayjs(key).format("MMMM D, YYYY")}</span>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        color: selected ? token.colorPrimary : token.colorTextSecondary,
+                        background: selected
+                          ? token.colorBgContainer
+                          : token.colorFillSecondary,
+                        fontSize: 12,
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </Flex>
+                </Button>
+              );
+            })
+          )}
         </Flex>
-      )}
+
+        <div style={{ minWidth: 0 }}>
+          <Flex align="center" gap={8} wrap style={{ marginBottom: 20 }}>
+            <Button
+              aria-label="Previous day"
+              icon={<LeftOutlined />}
+              onClick={() => changeDay(-1)}
+            />
+            <DatePicker
+              value={date}
+              onChange={(next) => next && setDate(next)}
+              format="YYYY-MM-DD"
+              maxDate={dayjs(todayKey())}
+              allowClear={false}
+              style={{ minWidth: 160 }}
+            />
+            <Button
+              aria-label="Next day"
+              icon={<RightOutlined />}
+              disabled={date.isSame(dayjs(todayKey()), "day")}
+              onClick={() => changeDay(1)}
+            />
+            <Button
+              disabled={date.isSame(dayjs(todayKey()), "day")}
+              onClick={() => setDate(dayjs(todayKey()))}
+            >
+              Today
+            </Button>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {shown.length} {shown.length === 1 ? "note" : "notes"}
+            </Typography.Text>
+          </Flex>
+
+          <Typography.Title level={4} style={{ marginTop: 0, marginBottom: 12 }}>
+            {date.format("MMMM D, YYYY")}
+          </Typography.Title>
+
+          {!loaded ? (
+            <Flex justify="center" style={{ padding: 24 }}>
+              <Spin />
+            </Flex>
+          ) : shown.length === 0 ? (
+            <Empty description="No notes on this day." />
+          ) : (
+            <Flex vertical>
+              {shown.map((note) => (
+                <Flex
+                  key={note.id}
+                  align="flex-start"
+                  justify="space-between"
+                  gap={12}
+                  style={{
+                    padding: "14px 0",
+                    borderTop: `1px solid ${token.colorBorderSecondary}`,
+                  }}
+                >
+                  <Flex vertical gap={4}>
+                    <Typography.Text style={{ whiteSpace: "pre-wrap" }}>
+                      {note.text}
+                    </Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {relativeDate(note.date)} ·{" "}
+                      {formatNoteTime(note.date, note.time)}
+                    </Typography.Text>
+                  </Flex>
+                  <Popconfirm
+                    title="Delete this note?"
+                    okText="Delete"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => handleDelete(note.id)}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      aria-label="Delete note"
+                      icon={<DeleteOutlined />}
+                    />
+                  </Popconfirm>
+                </Flex>
+              ))}
+            </Flex>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
