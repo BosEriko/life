@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { BpModal } from "@/components/bp-modal";
 import { WaterModal } from "@/components/water-modal";
+import { WeightModal } from "@/components/weight-modal";
 import { Icon } from "@/components/icon";
 import { useUnits } from "@/components/units-provider";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
@@ -65,6 +66,7 @@ export function ReportDownload() {
   const [open, setOpen] = useState(false);
   const [bpOpen, setBpOpen] = useState(false);
   const [waterOpen, setWaterOpen] = useState(false);
+  const [weightOpen, setWeightOpen] = useState(false);
   const [range, setRange] = useState<Range>("30");
   const [busy, setBusy] = useState(false);
 
@@ -108,6 +110,13 @@ export function ReportDownload() {
   const hasWaterToday = useMemo(
     () => waterLogs.some((log) => log.date === todayKey()),
     [waterLogs],
+  );
+  const hasWeightToday = useMemo(
+    () =>
+      entries.some(
+        (entry) => entry.date === todayKey() && entry.weight != null,
+      ),
+    [entries],
   );
 
   const rows = useMemo(() => {
@@ -253,6 +262,12 @@ export function ReportDownload() {
         style={screens.md === false ? { insetBlockEnd: 88 } : undefined}
       >
         <FloatButton
+          icon={<Icon name="weight" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Weight")}
+          onClick={() => setWeightOpen(true)}
+          className={hasWeightToday ? undefined : "bp-pulse"}
+        />
+        <FloatButton
           icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
           tooltip={tip("Water")}
           onClick={() => setWaterOpen(true)}
@@ -271,6 +286,13 @@ export function ReportDownload() {
           onClick={() => setOpen(true)}
         />
       </FloatButton.Group>
+
+      <WeightModal
+        open={weightOpen}
+        onClose={() => setWeightOpen(false)}
+        entries={entries}
+        ideals={ideals}
+      />
 
       <WaterModal
         open={waterOpen}
