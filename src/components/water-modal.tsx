@@ -81,7 +81,7 @@ export function WaterModal({
     () =>
       logs
         .filter((log) => log.date === dateKey)
-        .sort((a, b) => a.time.localeCompare(b.time)),
+        .sort((a, b) => b.time.localeCompare(a.time)),
     [logs, dateKey],
   );
 

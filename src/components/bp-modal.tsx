@@ -113,7 +113,7 @@ export function BpModal({
     () =>
       readings
         .filter((reading) => reading.date === dateKey)
-        .sort((a, b) => a.time.localeCompare(b.time)),
+        .sort((a, b) => b.time.localeCompare(a.time)),
     [readings, dateKey],
   );
 
