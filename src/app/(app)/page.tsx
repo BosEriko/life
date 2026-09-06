@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { Flex, Spin } from "antd";
 import { AverageStats } from "@/components/average-stats";
 import { DailyTracker } from "@/components/daily-tracker";
-import { DashboardHeader } from "@/components/dashboard-header";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { OfflineSync } from "@/components/offline-sync";
 import { RecentEntries } from "@/components/recent-entries";
@@ -23,36 +22,32 @@ const MetricsChart = dynamic(
   },
 );
 
-export default function Home() {
+export default function HealthPage() {
   return (
     <SaveStatusProvider>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 20px" }}>
-        <DashboardHeader />
+      <OfflineSync />
 
-        <OfflineSync />
-
-        <div style={{ marginBottom: 40 }}>
-          <AverageStats />
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
-            gap: 32,
-            alignItems: "start",
-          }}
-        >
-          <DailyTracker />
-          <HabitCalendar />
-          <Flex vertical gap={40}>
-            <MetricsChart />
-            <RecentEntries />
-          </Flex>
-        </div>
-
-        <ReportDownload />
+      <div style={{ marginBottom: 40 }}>
+        <AverageStats />
       </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
+          gap: 32,
+          alignItems: "start",
+        }}
+      >
+        <DailyTracker />
+        <HabitCalendar />
+        <Flex vertical gap={40}>
+          <MetricsChart />
+          <RecentEntries />
+        </Flex>
+      </div>
+
+      <ReportDownload />
     </SaveStatusProvider>
   );
 }

@@ -3,18 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   App,
+  Button,
   DatePicker,
   Flex,
   Form,
   Input,
   InputNumber,
-  Modal,
   Select,
   Typography,
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { saveProfile, type Profile, type Sex } from "@/models/profile";
+import {
+  EMPTY_PROFILE,
+  saveProfile,
+  watchProfile,
+  type Profile,
+  type Sex,
+} from "@/models/profile";
 
 type FormShape = {
   name?: string;
@@ -47,23 +53,20 @@ function detectedTimezone(): string | undefined {
   }
 }
 
-export function ProfileModal({
-  open,
-  onClose,
-  profile,
-}: {
-  open: boolean;
-  onClose: () => void;
-  profile: Profile;
-}) {
+export function ProfileForm() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const [form] = Form.useForm<FormShape>();
+  const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [saving, setSaving] = useState(false);
   const tzOptions = useMemo(() => timezoneOptions(), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!user) return;
+    return watchProfile(user.uid, setProfile, () => {});
+  }, [user]);
+
+  useEffect(() => {
     form.setFieldsValue({
       name: profile.name ?? undefined,
       birthday: profile.birthday ? dayjs(profile.birthday) : undefined,
@@ -72,7 +75,7 @@ export function ProfileModal({
       sex: profile.sex ?? undefined,
       timezone: profile.timezone ?? detectedTimezone(),
     });
-  }, [open, profile, form]);
+  }, [profile, form]);
 
   async function handleSave() {
     if (!user) return;
@@ -90,7 +93,6 @@ export function ProfileModal({
         timezone: values.timezone ?? null,
       });
       message.success("Profile saved");
-      onClose();
     } catch {
       message.error("Could not save. Try again.");
     } finally {
@@ -99,20 +101,15 @@ export function ProfileModal({
   }
 
   return (
-    <Modal
-      open={open}
-      centered
-      title="Profile"
-      okText="Save"
-      confirmLoading={saving}
-      onOk={handleSave}
-      onCancel={onClose}
-    >
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+    <div style={{ maxWidth: 480 }}>
+      <Typography.Title level={4} style={{ marginTop: 0 }}>
+        Profile
+      </Typography.Title>
+      <Typography.Paragraph type="secondary">
         Personal details used in reports and by anything reading your data
         through MCP.
       </Typography.Paragraph>
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" onFinish={handleSave}>
         <Form.Item name="name" label="Name">
           <Input placeholder="Your name" />
         </Form.Item>
@@ -158,7 +155,13 @@ export function ProfileModal({
             <Input placeholder="e.g. Asia/Manila" />
           )}
         </Form.Item>
+
+        <Form.Item style={{ marginBottom: 0 }}>
+          <Button type="primary" htmlType="submit" loading={saving}>
+            Save
+          </Button>
+        </Form.Item>
       </Form>
-    </Modal>
+    </div>
   );
 }

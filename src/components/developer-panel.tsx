@@ -17,13 +17,7 @@ const PRE_STYLE: CSSProperties = {
   background: "rgba(127,127,127,0.12)",
 };
 
-export function DeveloperModal({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function DeveloperPanel() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const [meta, setMeta] = useState<McpKeyMeta | null>(null);
@@ -45,12 +39,6 @@ export function DeveloperModal({
     );
   }, [user]);
 
-  function handleClose() {
-    setConfirmOpen(false);
-    setFreshKey(null);
-    onClose();
-  }
-
   async function handleGenerate() {
     if (!user) return;
     setBusy(true);
@@ -64,7 +52,9 @@ export function DeveloperModal({
   }
 
   const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://life.boseriko.com";
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://life.boseriko.com";
 
   function mcpUrl(key: string): string {
     return `${origin}/api/mcp/${key}`;
@@ -107,13 +97,10 @@ export function DeveloperModal({
   }
 
   return (
-    <Modal
-      open={open}
-      centered
-      title="Developer · MCP"
-      footer={null}
-      onCancel={handleClose}
-    >
+    <div style={{ maxWidth: 640 }}>
+      <Typography.Title level={4} style={{ marginTop: 0 }}>
+        Developer · MCP
+      </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         Your entries, targets, and presets as an MCP server — connect it to any
         MCP-capable agent so it can read your data. Read-only.
@@ -178,8 +165,8 @@ export function DeveloperModal({
             </Typography.Text>
           </Typography.Paragraph>
           <Typography.Paragraph type="warning" style={{ fontSize: 13 }}>
-            Copy it now. It is shown once and cannot be retrieved after you close
-            this window or refresh the page.
+            Copy it now. It is shown once and cannot be retrieved after you leave
+            or refresh this page.
           </Typography.Paragraph>
         </>
       ) : meta ? (
@@ -236,9 +223,7 @@ export function DeveloperModal({
             key: "claude",
             label: "Claude",
             children: (
-              <Typography.Paragraph
-                style={{ fontSize: 13, marginBottom: 0 }}
-              >
+              <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
                 claude.ai or Claude Desktop → Settings →{" "}
                 <strong>Connectors</strong> → Add custom connector → paste the
                 URL, leave authentication as <strong>None</strong>.
@@ -249,9 +234,7 @@ export function DeveloperModal({
             key: "chatgpt",
             label: "ChatGPT",
             children: (
-              <Typography.Paragraph
-                style={{ fontSize: 13, marginBottom: 0 }}
-              >
+              <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
                 Settings → <strong>Connectors</strong> → enable{" "}
                 <em>Developer mode</em> → Add custom connector → paste the URL,
                 choose <strong>No authentication</strong>. Enable it in a chat.
@@ -263,10 +246,9 @@ export function DeveloperModal({
             label: "Codex",
             children: (
               <>
-                <Typography.Paragraph
-                  style={{ fontSize: 13, marginBottom: 0 }}
-                >
-                  Add to <Typography.Text code>~/.codex/config.toml</Typography.Text>:
+                <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
+                  Add to{" "}
+                  <Typography.Text code>~/.codex/config.toml</Typography.Text>:
                 </Typography.Paragraph>
                 <pre style={PRE_STYLE}>
                   <code>{codexConfig}</code>
@@ -279,12 +261,13 @@ export function DeveloperModal({
             label: "Config file",
             children: (
               <>
-                <Typography.Paragraph
-                  style={{ fontSize: 13, marginBottom: 0 }}
-                >
+                <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
                   Cursor, VS Code, Windsurf, Claude Desktop, etc. —{" "}
                   <Typography.Text code>mcp.json</Typography.Text> /{" "}
-                  <Typography.Text code>claude_desktop_config.json</Typography.Text>:
+                  <Typography.Text code>
+                    claude_desktop_config.json
+                  </Typography.Text>
+                  :
                 </Typography.Paragraph>
                 <pre style={PRE_STYLE}>
                   <code>{jsonConfig}</code>
@@ -329,6 +312,6 @@ export function DeveloperModal({
       <pre style={PRE_STYLE}>
         <code>{testCommand}</code>
       </pre>
-    </Modal>
+    </div>
   );
 }
