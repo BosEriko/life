@@ -8,6 +8,7 @@ import {
   Flex,
   InputNumber,
   Modal,
+  Popconfirm,
   Segmented,
   theme,
   TimePicker,
@@ -91,7 +92,6 @@ export function BpModal({
   const [diastolic, setDiastolic] = useState<number | null>(null);
   const [posture, setPosture] = useState<BpPosture>("sitting");
   const [arm, setArm] = useState<BpArm>("left");
-  const [busy, setBusy] = useState(false);
 
   function handleClose() {
     setDate(dayjs());
@@ -124,35 +124,29 @@ export function BpModal({
     [dayReadings, dateKey],
   );
 
-  async function handleAdd() {
+  function handleAdd() {
     if (!user || !canAdd) return;
-    setBusy(true);
-    try {
-      await addBpReading(user.uid, {
-        date: dateKey,
-        systolic,
-        diastolic,
-        time: time.format("HH:mm"),
-        posture,
-        arm,
-      });
-      setSystolic(null);
-      setDiastolic(null);
-      setTime(dayjs());
-    } catch {
-      message.error("Could not add reading.");
-    } finally {
-      setBusy(false);
-    }
+    const payload = {
+      date: dateKey,
+      systolic,
+      diastolic,
+      time: time.format("HH:mm"),
+      posture,
+      arm,
+    };
+    setSystolic(null);
+    setDiastolic(null);
+    setTime(dayjs());
+    addBpReading(user.uid, payload).catch(() =>
+      message.error("Could not add reading."),
+    );
   }
 
-  async function handleDelete(id: string) {
+  function handleDelete(id: string) {
     if (!user) return;
-    try {
-      await deleteBpReading(user.uid, id);
-    } catch {
-      message.error("Could not delete reading.");
-    }
+    deleteBpReading(user.uid, id).catch(() =>
+      message.error("Could not delete reading."),
+    );
   }
 
   return (
@@ -222,12 +216,7 @@ export function BpModal({
             onChange={(value) => setArm(value as BpArm)}
           />
         </Flex>
-        <Button
-          type="primary"
-          loading={busy}
-          disabled={!canAdd}
-          onClick={handleAdd}
-        >
+        <Button type="primary" disabled={!canAdd} onClick={handleAdd}>
           Add reading
         </Button>
       </Flex>
@@ -271,13 +260,19 @@ export function BpModal({
                     {reading.posture}, {reading.arm} arm
                   </Typography.Text>
                 </Tip>
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleDelete(reading.id)}
-                />
+                <Popconfirm
+                  title="Delete this reading?"
+                  okText="Delete"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => handleDelete(reading.id)}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                  />
+                </Popconfirm>
               </Flex>
             );
           })}

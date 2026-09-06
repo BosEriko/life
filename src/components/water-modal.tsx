@@ -8,6 +8,7 @@ import {
   Flex,
   InputNumber,
   Modal,
+  Popconfirm,
   theme,
   TimePicker,
   Typography,
@@ -64,7 +65,6 @@ export function WaterModal({
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [amount, setAmount] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
 
   function handleClose() {
@@ -101,48 +101,35 @@ export function WaterModal({
         )} ml). ${totalEval === "high" ? WATER_TIPS.high : WATER_TIPS.low}`
       : undefined;
 
-  async function logAmount(ml: number, label?: string) {
+  function logAmount(ml: number, label?: string) {
     if (!user) return;
-    setBusy(true);
-    try {
-      await addWaterLog(user.uid, {
-        date: dateKey,
-        ml,
-        time: dayjs().format("HH:mm"),
-        label: label ?? null,
-      });
-    } catch {
-      message.error("Could not add water.");
-    } finally {
-      setBusy(false);
-    }
+    addWaterLog(user.uid, {
+      date: dateKey,
+      ml,
+      time: dayjs().format("HH:mm"),
+      label: label ?? null,
+    }).catch(() => message.error("Could not add water."));
   }
 
-  async function handleAdd() {
+  function handleAdd() {
     if (!user || !canAdd) return;
-    setBusy(true);
-    try {
-      await addWaterLog(user.uid, {
-        date: dateKey,
-        ml: Math.round(toMl(amount, units.volume)),
-        time: time.format("HH:mm"),
-      });
-      setAmount(null);
-      setTime(dayjs());
-    } catch {
-      message.error("Could not add water.");
-    } finally {
-      setBusy(false);
-    }
+    const payload = {
+      date: dateKey,
+      ml: Math.round(toMl(amount, units.volume)),
+      time: time.format("HH:mm"),
+    };
+    setAmount(null);
+    setTime(dayjs());
+    addWaterLog(user.uid, payload).catch(() =>
+      message.error("Could not add water."),
+    );
   }
 
-  async function handleDelete(id: string) {
+  function handleDelete(id: string) {
     if (!user) return;
-    try {
-      await deleteWaterLog(user.uid, id);
-    } catch {
-      message.error("Could not delete entry.");
-    }
+    deleteWaterLog(user.uid, id).catch(() =>
+      message.error("Could not delete entry."),
+    );
   }
 
   return (
@@ -167,7 +154,6 @@ export function WaterModal({
               >
                 <Button
                   size="small"
-                  disabled={busy}
                   onClick={() => logAmount(preset.ml, preset.name)}
                 >
                   {preset.name}
@@ -175,12 +161,7 @@ export function WaterModal({
               </Tip>
             ))
           : FALLBACK_AMOUNTS.map((ml) => (
-              <Button
-                key={ml}
-                size="small"
-                disabled={busy}
-                onClick={() => logAmount(ml)}
-              >
+              <Button key={ml} size="small" onClick={() => logAmount(ml)}>
                 {formatVolume(ml, units.volume)}
               </Button>
             ))}
@@ -229,12 +210,7 @@ export function WaterModal({
             {volumeSuffix(units.volume)}
           </Typography.Text>
         </Flex>
-        <Button
-          type="primary"
-          loading={busy}
-          disabled={!canAdd}
-          onClick={handleAdd}
-        >
+        <Button type="primary" disabled={!canAdd} onClick={handleAdd}>
           Add
         </Button>
       </Flex>
@@ -281,13 +257,19 @@ export function WaterModal({
                 · {formatWaterTime(log.date, log.time)}
                 {log.label ? ` · ${log.label}` : ""}
               </Typography.Text>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(log.id)}
-              />
+              <Popconfirm
+                title="Delete this entry?"
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+                onConfirm={() => handleDelete(log.id)}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                />
+              </Popconfirm>
             </Flex>
           ))}
         </Flex>
