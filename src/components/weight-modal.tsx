@@ -13,9 +13,13 @@ import {
   weightStep,
   weightSuffix,
 } from "@/lib/units";
-import { relativeDate, todayKey, type DailyEntry } from "@/models/dailies";
+import {
+  relativeDate,
+  saveDaily,
+  todayKey,
+  type DailyEntry,
+} from "@/models/dailies";
 import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
-import { getQueuedDailyInput, queueDailySave } from "@/lib/daily-sync";
 
 export function WeightModal({
   open,
@@ -34,7 +38,6 @@ export function WeightModal({
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [edited, setEdited] = useState<number | null>(null);
   const [touched, setTouched] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const dateKey = date.format("YYYY-MM-DD");
 
@@ -43,12 +46,7 @@ export function WeightModal({
     [entries, dateKey],
   );
 
-  const savedKg = useMemo(() => {
-    const queued = user
-      ? getQueuedDailyInput(user.uid, dateKey)?.weight
-      : undefined;
-    return queued ?? entry?.weight ?? null;
-  }, [user, dateKey, entry]);
+  const savedKg = entry?.weight ?? null;
 
   const savedDisplay =
     savedKg != null ? Math.round(fromKg(savedKg, units.weight) * 10) / 10 : null;
@@ -80,23 +78,16 @@ export function WeightModal({
     setTouched(false);
   }
 
-  async function handleSave() {
+  function handleSave() {
     if (!user || typeof shown !== "number" || shown <= 0) return;
-    setSaving(true);
-    try {
-      const queued = await queueDailySave(
-        user.uid,
-        dateKey,
-        { weight: Math.round(toKg(shown, units.weight) * 100) / 100 },
-        entry?.updatedAt?.toMillis() ?? null,
-      );
-      message.success(queued ? "Saved offline · will sync" : "Weight saved");
-      handleClose();
-    } catch {
-      message.error("Could not save. Try again.");
-    } finally {
-      setSaving(false);
-    }
+    const kg = Math.round(toKg(shown, units.weight) * 100) / 100;
+    saveDaily(user.uid, dateKey, { weight: kg }).catch(() =>
+      message.error("Could not save. Try again."),
+    );
+    message.success(
+      navigator.onLine ? "Weight saved" : "Saved offline · will sync",
+    );
+    handleClose();
   }
 
   return (
@@ -105,7 +96,6 @@ export function WeightModal({
       centered
       title="Weight"
       okText="Save"
-      confirmLoading={saving}
       okButtonProps={{ disabled: typeof shown !== "number" || shown <= 0 }}
       onOk={handleSave}
       onCancel={handleClose}

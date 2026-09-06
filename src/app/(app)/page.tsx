@@ -5,7 +5,6 @@ import { Flex, Spin } from "antd";
 import { AverageStats } from "@/components/average-stats";
 import { DailyTracker } from "@/components/daily-tracker";
 import { HabitCalendar } from "@/components/habit-calendar";
-import { OfflineSync } from "@/components/offline-sync";
 import { RecentEntries } from "@/components/recent-entries";
 import { ReportDownload } from "@/components/report-download";
 import { SaveStatusProvider } from "@/components/save-status";
@@ -25,8 +24,6 @@ const MetricsChart = dynamic(
 export default function HealthPage() {
   return (
     <SaveStatusProvider>
-      <OfflineSync />
-
       <div style={{ marginBottom: 40 }}>
         <AverageStats />
       </div>

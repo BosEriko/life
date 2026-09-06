@@ -1,54 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  App,
-  Button,
-  Card,
-  Checkbox,
-  DatePicker,
-  Flex,
-  Form,
-  Grid,
-  InputNumber,
-} from "antd";
+import { App, Button, Card, Checkbox, DatePicker, Flex, Form, Grid } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { Icon } from "@/components/icon";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import {
+  saveDaily,
   todayKey,
   watchDailies,
   type DailyEntry,
   type DailyInput,
 } from "@/models/dailies";
-import { getQueuedDailyInput, queueDailySave } from "@/lib/daily-sync";
-import {
-  EMPTY_IDEALS,
-  evaluateIdeal,
-  rangeText,
-  watchIdeals,
-  type Ideals,
-} from "@/models/ideals";
-import { IdealBadge } from "@/components/ideal-badge";
 import { useSaveStatus } from "@/components/save-status";
 import { SavePill } from "@/components/save-pill";
-import { Tip } from "@/components/tip";
-import { useUnits } from "@/components/units-provider";
-import {
-  convertRange,
-  fromKg,
-  toKg,
-  weightStep,
-  weightSuffix,
-  type WeightUnit,
-} from "@/lib/units";
 
 const SAVE_DELAY_MS = 2000;
 
 type FormValues = {
   date: Dayjs;
-  weight?: number | null;
   junkFood?: boolean;
   junkDrink?: boolean;
   bath?: boolean;
@@ -62,15 +33,8 @@ type CollectOptions = {
   includeBrushTeeth: boolean;
 };
 
-function collectInput(
-  values: FormValues,
-  opts: CollectOptions,
-  weightUnit: WeightUnit,
-): DailyInput {
+function collectInput(values: FormValues, opts: CollectOptions): DailyInput {
   const input: DailyInput = {};
-  if (typeof values.weight === "number" && values.weight > 0) {
-    input.weight = Math.round(toKg(values.weight, weightUnit) * 100) / 100;
-  }
   if (opts.includeJunkFood) input.junkFood = values.junkFood === true;
   if (opts.includeJunkDrink) input.junkDrink = values.junkDrink === true;
   if (opts.includeBath) input.bath = values.bath === true;
@@ -79,7 +43,6 @@ function collectInput(
 }
 
 export function DailyTracker() {
-  const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const { state: status, setState: setStatus } = useSaveStatus();
@@ -87,9 +50,6 @@ export function DailyTracker() {
   const [form] = Form.useForm<FormValues>();
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayKey());
-  const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
-
-  const watchedWeight = Form.useWatch("weight", form);
 
   const timerRef = useRef<number | null>(null);
   const latestValues = useRef<FormValues | null>(null);
@@ -112,12 +72,9 @@ export function DailyTracker() {
   }, [user, message]);
 
   useEffect(() => {
-    if (!user) return;
-    return watchIdeals(user.uid, setIdeals, () => {});
-  }, [user]);
-
-  useEffect(() => {
-    if (status === "pending" || status === "saving") return;
+    if (status === "pending" || status === "saving" || status === "offline") {
+      return;
+    }
     if (
       junkFoodDirtyRef.current ||
       junkDrinkDirtyRef.current ||
@@ -127,62 +84,45 @@ export function DailyTracker() {
       return;
     }
     const entry = entries.find((item) => item.date === selectedDate);
-    const queued = user ? getQueuedDailyInput(user.uid, selectedDate) : null;
-    const weightKg = queued?.weight ?? entry?.weight ?? null;
     form.setFieldsValue({
-      weight:
-        weightKg != null
-          ? Math.round(fromKg(weightKg, units.weight) * 10) / 10
-          : null,
-      junkFood: queued?.junkFood ?? entry?.junkFood ?? false,
-      junkDrink: queued?.junkDrink ?? entry?.junkDrink ?? false,
-      bath: queued?.bath ?? entry?.bath ?? false,
-      brushTeeth: queued?.brushTeeth ?? entry?.brushTeeth ?? false,
+      junkFood: entry?.junkFood ?? false,
+      junkDrink: entry?.junkDrink ?? false,
+      bath: entry?.bath ?? false,
+      brushTeeth: entry?.brushTeeth ?? false,
     });
-  }, [entries, selectedDate, status, form, user, units.weight]);
+  }, [entries, selectedDate, status, form]);
 
   const flush = useCallback(async () => {
     timerRef.current = null;
     const values = latestValues.current;
     if (!user || !values) return;
 
-    const input = collectInput(
-      values,
-      {
-        includeJunkFood: junkFoodDirtyRef.current,
-        includeJunkDrink: junkDrinkDirtyRef.current,
-        includeBath: bathDirtyRef.current,
-        includeBrushTeeth: brushTeethDirtyRef.current,
-      },
-      units.weight,
-    );
+    const dirty = {
+      includeJunkFood: junkFoodDirtyRef.current,
+      includeJunkDrink: junkDrinkDirtyRef.current,
+      includeBath: bathDirtyRef.current,
+      includeBrushTeeth: brushTeethDirtyRef.current,
+    };
+    const input = collectInput(values, dirty);
     if (Object.keys(input).length === 0) {
       setStatus("idle");
       return;
     }
 
     const dateKey = values.date.format("YYYY-MM-DD");
-    const baselineUpdatedAtMs =
-      entries.find((item) => item.date === dateKey)?.updatedAt?.toMillis() ??
-      null;
+    setStatus(navigator.onLine ? "saving" : "offline");
 
-    setStatus("saving");
     try {
-      const queued = await queueDailySave(
-        user.uid,
-        dateKey,
-        input,
-        baselineUpdatedAtMs,
-      );
-      junkFoodDirtyRef.current = false;
-      junkDrinkDirtyRef.current = false;
-      bathDirtyRef.current = false;
-      brushTeethDirtyRef.current = false;
-      setStatus(queued ? "offline" : "idle");
+      await saveDaily(user.uid, dateKey, input);
+      if (dirty.includeJunkFood) junkFoodDirtyRef.current = false;
+      if (dirty.includeJunkDrink) junkDrinkDirtyRef.current = false;
+      if (dirty.includeBath) bathDirtyRef.current = false;
+      if (dirty.includeBrushTeeth) brushTeethDirtyRef.current = false;
+      setStatus("idle");
     } catch {
       setStatus("error");
     }
-  }, [user, setStatus, entries, units.weight]);
+  }, [user, setStatus]);
 
   useEffect(() => {
     return () => {
@@ -248,24 +188,6 @@ export function DailyTracker() {
     markPending();
   }
 
-  const weightKg =
-    typeof watchedWeight === "number"
-      ? toKg(watchedWeight, units.weight)
-      : null;
-  const weightEval = evaluateIdeal(weightKg, ideals.weight);
-  const weightRangeText = rangeText(
-    convertRange(ideals.weight, (value) => fromKg(value, units.weight)),
-  );
-  const weightTip =
-    weightEval === "high"
-      ? `Above your ideal (${weightRangeText} ${weightSuffix(units.weight)})`
-      : weightEval === "low"
-        ? `Below your ideal (${weightRangeText} ${weightSuffix(units.weight)})`
-        : undefined;
-  const weightPlacement = weightEval === "low" ? "bottom" : "top";
-  const weightStatus: "error" | undefined =
-    weightEval === "low" || weightEval === "high" ? "error" : undefined;
-
   return (
     <Card
       title={
@@ -324,31 +246,6 @@ export function DailyTracker() {
               Today
             </Button>
           </Flex>
-        </Form.Item>
-
-        <Form.Item
-          label={
-            <>
-              <Icon name="weight" />
-              Weight
-              <IdealBadge status={weightEval} />
-            </>
-          }
-        >
-          <Tip title={weightTip} placement={weightPlacement}>
-            <div>
-              <Form.Item name="weight" noStyle>
-                <InputNumber
-                  style={{ width: "100%" }}
-                  min={1}
-                  step={weightStep(units.weight)}
-                  suffix={weightSuffix(units.weight)}
-                  placeholder={units.weight === "lb" ? "160" : "72.5"}
-                  status={weightStatus}
-                />
-              </Form.Item>
-            </div>
-          </Tip>
         </Form.Item>
 
         <div
