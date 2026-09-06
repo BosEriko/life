@@ -9,6 +9,7 @@ import {
   Empty,
   Flex,
   Grid,
+  Modal,
   Popconfirm,
   Spin,
   theme,
@@ -16,9 +17,11 @@ import {
 } from "antd";
 import {
   ClockCircleOutlined,
+  CopyOutlined,
   DeleteOutlined,
   LeftOutlined,
   RightOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -40,6 +43,8 @@ export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [date, setDate] = useState<Dayjs>(() => dayjs(todayKey()));
+  const [noteToShare, setNoteToShare] = useState<Note | null>(null);
+  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +66,25 @@ export default function NotesPage() {
     deleteNote(user.uid, id).catch(() =>
       message.error("Could not delete note."),
     );
+  }
+
+  function sharedNoteText(note: Note) {
+    const dateLabel = dayjs(note.date).format("MMMM D, YYYY");
+    return `${note.text}\n\n${dateLabel} at ${formatNoteTime(note.date, note.time)}`;
+  }
+
+  async function copySharedNote() {
+    if (!noteToShare) return;
+    setCopying(true);
+    try {
+      await navigator.clipboard.writeText(sharedNoteText(noteToShare));
+      setNoteToShare(null);
+      message.success("Note copied");
+    } catch {
+      message.error("Could not copy note.");
+    } finally {
+      setCopying(false);
+    }
   }
 
   const sortedNotes = useMemo(() => sortNotes(notes), [notes]);
@@ -218,20 +242,29 @@ export default function NotesPage() {
                         {formatNoteTime(note.date, note.time)}
                       </Typography.Text>
                     </Flex>
-                    <Popconfirm
-                      title="Delete this note?"
-                      okText="Delete"
-                      okButtonProps={{ danger: true }}
-                      onConfirm={() => handleDelete(note.id)}
-                    >
+                    <Flex gap={4}>
                       <Button
                         type="text"
                         size="small"
-                        danger
-                        aria-label="Delete note"
-                        icon={<DeleteOutlined />}
+                        aria-label="Share note"
+                        icon={<SendOutlined />}
+                        onClick={() => setNoteToShare(note)}
                       />
-                    </Popconfirm>
+                      <Popconfirm
+                        title="Delete this note?"
+                        okText="Delete"
+                        okButtonProps={{ danger: true }}
+                        onConfirm={() => handleDelete(note.id)}
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          aria-label="Delete note"
+                          icon={<DeleteOutlined />}
+                        />
+                      </Popconfirm>
+                    </Flex>
                   </Flex>
                 </Card>
               ))}
@@ -239,6 +272,41 @@ export default function NotesPage() {
           )}
         </div>
       </div>
+
+      <Modal
+        open={noteToShare !== null}
+        centered
+        title={
+          <>
+            <SendOutlined style={{ marginRight: 8 }} />
+            Share note
+          </>
+        }
+        okText="Copy note"
+        okButtonProps={{ icon: <CopyOutlined /> }}
+        confirmLoading={copying}
+        onOk={copySharedNote}
+        onCancel={() => setNoteToShare(null)}
+      >
+        <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+          Copy this note, then paste it into the conversation or app where you
+          want to share it.
+        </Typography.Paragraph>
+        {noteToShare && (
+          <Card size="small">
+            <Typography.Paragraph
+              style={{ whiteSpace: "pre-wrap", marginBottom: 8 }}
+            >
+              {noteToShare.text}
+            </Typography.Paragraph>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <ClockCircleOutlined style={{ marginRight: 5 }} />
+              {dayjs(noteToShare.date).format("MMMM D, YYYY")} ·{" "}
+              {formatNoteTime(noteToShare.date, noteToShare.time)}
+            </Typography.Text>
+          </Card>
+        )}
+      </Modal>
     </div>
   );
 }
