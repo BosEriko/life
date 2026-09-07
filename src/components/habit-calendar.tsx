@@ -19,6 +19,7 @@ import {
 } from "@/models/intake";
 
 const WEEKS = 26;
+const WEEKS_SM = 13;
 const CELL = 11;
 const GAP = 3;
 const HISTORY_LIMIT = 220;
@@ -98,6 +99,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   const badColor = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const screens = Grid.useBreakpoint();
   const hoverTips = screens.md === true;
+  const weeks = screens.md === false ? WEEKS_SM : WEEKS;
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [intake, setIntake] = useState<IntakeEntry[]>([]);
@@ -149,11 +151,11 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
 
   const days = useMemo(() => {
     const end = throughDate.startOf("day");
-    const start = end.subtract(WEEKS * 7 - 1, "day");
-    return Array.from({ length: WEEKS * 7 }, (_, index) => ({
+    const start = end.subtract(weeks * 7 - 1, "day");
+    return Array.from({ length: weeks * 7 }, (_, index) => ({
       key: start.add(index, "day").format("YYYY-MM-DD"),
     }));
-  }, [throughDate]);
+  }, [throughDate, weeks]);
 
   const visibleDates = useMemo(
     () => new Set(days.map((day) => day.key)),
@@ -225,7 +227,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
                 <Flex
                   vertical
                   style={{
-                    width: WEEKS * (CELL + GAP) - GAP,
+                    width: weeks * (CELL + GAP) - GAP,
                     minWidth: "100%",
                   }}
                   onMouseOver={(event) => {

@@ -138,11 +138,15 @@ export function ReportDownload() {
     <>
       <FloatButton.Group
         shape="circle"
+        className="quick-action-group"
         style={{
+          insetInlineStart: 24,
+          insetInlineEnd: "auto",
           ...(screens.md === false ? { insetBlockEnd: 88 } : {}),
-          ...(menuSide === "left"
-            ? { insetInlineStart: 24, insetInlineEnd: "auto" }
-            : {}),
+          transform:
+            menuSide === "right"
+              ? "translateX(calc(100vw - 100% - 48px))"
+              : "translateX(0)",
         }}
       >
         <FloatButton
