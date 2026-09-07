@@ -1,29 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { App, Card, Flex, Grid, Spin, theme, Typography } from "antd";
+import { useMemo, useState, type ReactNode } from "react";
+import { Card, Flex, Grid, Spin, theme, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { useHealthData } from "@/components/health-data-provider";
+import { useHealthHistory } from "@/components/use-health-history";
+import { mergeById, mergeByDate } from "@/lib/merge-records";
 import {
   TERRACOTTA,
   TERRACOTTA_DARK,
   useIsDark,
 } from "@/components/theme-provider";
-import { watchDailies, type DailyEntry } from "@/models/dailies";
-import {
-  dailyIntake,
-  watchIntake,
-  type DailyIntake,
-  type IntakeEntry,
-} from "@/models/intake";
+import { type DailyEntry } from "@/models/dailies";
+import { dailyIntake, type DailyIntake } from "@/models/intake";
 
 const WEEKS = 26;
 const WEEKS_SM = 13;
 const CELL = 11;
 const GAP = 3;
-const HISTORY_LIMIT = 220;
-const INTAKE_LIMIT = 4000;
 
 type DailyHabit = "bath" | "brushTeeth";
 type IntakeHabit = "junkFood" | "junkDrink";
@@ -92,8 +87,6 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
 const ALL_HABITS: Habit[] = HABIT_GROUPS.flatMap((group) => group.habits);
 
 export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
-  const { user } = useAuth();
-  const { message } = App.useApp();
   const { token } = theme.useToken();
   const isDark = useIsDark();
   const badColor = isDark ? TERRACOTTA_DARK : TERRACOTTA;
@@ -101,33 +94,27 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   const hoverTips = screens.md === true;
   const weeks = screens.md === false ? WEEKS_SM : WEEKS;
 
-  const [entries, setEntries] = useState<DailyEntry[]>([]);
-  const [intake, setIntake] = useState<IntakeEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(
     null,
   );
 
-  useEffect(() => {
-    if (!user) return;
-    return watchDailies(
-      user.uid,
-      (next) => {
-        setEntries(next);
-        setLoaded(true);
-      },
-      () => {
-        message.error("Could not load your habits.");
-        setLoaded(true);
-      },
-      HISTORY_LIMIT,
-    );
-  }, [user, message]);
+  const { dailies, intake: intakeWindow, cutoff, ready } = useHealthData();
+  const windowStart = throughDate
+    .startOf("day")
+    .subtract(weeks * 7 - 1, "day")
+    .format("YYYY-MM-DD");
+  const needHistory = windowStart < cutoff;
+  const history = useHealthHistory(needHistory, cutoff);
+  const loaded = ready && (!needHistory || history.ready);
 
-  useEffect(() => {
-    if (!user) return;
-    return watchIntake(user.uid, setIntake, () => {}, INTAKE_LIMIT);
-  }, [user]);
+  const entries = useMemo(
+    () => mergeByDate(dailies, history.dailies),
+    [dailies, history.dailies],
+  );
+  const intake = useMemo(
+    () => mergeById(intakeWindow, history.intake),
+    [intakeWindow, history.intake],
+  );
 
   const byDate = useMemo(() => {
     const map = new Map<string, DailyEntry>();

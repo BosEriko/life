@@ -1,39 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  App,
-  Empty,
-  Flex,
-  Segmented,
-  Spin,
-  theme,
-  Typography,
-} from "antd";
+import { useMemo, useState } from "react";
+import { Empty, Flex, Segmented, Spin, theme, Typography } from "antd";
 import { Line } from "@ant-design/charts";
 import dayjs, { type Dayjs } from "dayjs";
-import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { useHealthData } from "@/components/health-data-provider";
+import { useHealthHistory } from "@/components/use-health-history";
+import { mergeById, mergeByDate } from "@/lib/merge-records";
 import {
   TERRACOTTA,
   TERRACOTTA_DARK,
   useIsDark,
 } from "@/components/theme-provider";
-import { watchDailies, type DailyEntry } from "@/models/dailies";
-import {
-  dailyBpAverages,
-  watchBpReadings,
-  type BpReading,
-} from "@/models/bp";
-import {
-  dailyWaterTotals,
-  watchWaterLogs,
-  type WaterLog,
-} from "@/models/water";
+import { dailyBpAverages } from "@/models/bp";
+import { dailyWaterTotals } from "@/models/water";
 import { useUnits } from "@/components/units-provider";
 import { fromKg, fromMl } from "@/lib/units";
-
-const HISTORY_LIMIT = 1000;
 
 type Metric = "weight" | "bp" | "water";
 export type TrendsPreset = "7" | "30" | "90" | "365" | "all";
@@ -76,48 +59,41 @@ export function MetricsChart({
   preset: TrendsPreset;
 }) {
   const units = useUnits();
-  const { user } = useAuth();
-  const { message } = App.useApp();
   const { token } = theme.useToken();
   const isDark = useIsDark();
 
-  const [entries, setEntries] = useState<DailyEntry[]>([]);
-  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
-  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [metric, setMetric] = useState<Metric>(loadMetric);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchDailies(
-      user.uid,
-      (next) => {
-        setEntries(next);
-        setLoaded(true);
-      },
-      () => {
-        message.error("Could not load your history.");
-        setLoaded(true);
-      },
-      HISTORY_LIMIT,
-    );
-  }, [user, message]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchBpReadings(user.uid, setBpReadings, () => {});
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchWaterLogs(user.uid, setWaterLogs, () => {});
-  }, [user]);
 
   const [start, end] = useMemo<[Dayjs | null, Dayjs]>(() => {
     const endDate = throughDate.startOf("day");
     if (preset === "all") return [null, endDate];
     return [endDate.subtract(Number(preset) - 1, "day"), endDate];
   }, [preset, throughDate]);
+
+  const {
+    dailies,
+    bpReadings: bpWindow,
+    waterLogs: waterWindow,
+    cutoff,
+    ready,
+  } = useHealthData();
+  const needHistory =
+    preset === "all" || (start != null && start.format("YYYY-MM-DD") < cutoff);
+  const history = useHealthHistory(needHistory, cutoff);
+  const loaded = ready && (!needHistory || history.ready);
+
+  const entries = useMemo(
+    () => mergeByDate(dailies, history.dailies),
+    [dailies, history.dailies],
+  );
+  const bpReadings = useMemo(
+    () => mergeById(bpWindow, history.bpReadings),
+    [bpWindow, history.bpReadings],
+  );
+  const waterLogs = useMemo(
+    () => mergeById(waterWindow, history.waterLogs),
+    [waterWindow, history.waterLogs],
+  );
 
   const data = useMemo<Point[]>(() => {
     const points: Point[] = [];

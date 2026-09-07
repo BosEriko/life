@@ -1,25 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { App, Checkbox, Divider, Modal, Segmented, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { useHealthData } from "@/components/health-data-provider";
+import { useHealthHistory } from "@/components/use-health-history";
+import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { useUnits } from "@/components/units-provider";
-import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
-import { dailyBpAverages, watchBpReadings, type BpReading } from "@/models/bp";
-import {
-  dailyWaterTotals,
-  watchWaterLogs,
-  type WaterLog,
-} from "@/models/water";
-import {
-  dailyIntake,
-  watchIntake,
-  type IntakeEntry,
-} from "@/models/intake";
+import { todayKey, type DailyEntry } from "@/models/dailies";
+import { dailyBpAverages } from "@/models/bp";
+import { dailyWaterTotals } from "@/models/water";
+import { dailyIntake } from "@/models/intake";
 import { fromKg, volumeSuffix, volumeValue, weightSuffix } from "@/lib/units";
-
-const HISTORY_LIMIT = 1000;
 
 type Range = "7" | "30" | "90" | "365" | "all";
 
@@ -82,40 +75,38 @@ export function ReportModal({
   const { user } = useAuth();
   const { message } = App.useApp();
 
-  const [entries, setEntries] = useState<DailyEntry[]>([]);
-  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
-  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
-  const [intakeEntries, setIntakeEntries] = useState<IntakeEntry[]>([]);
   const [range, setRange] = useState<Range>("30");
   const [fields, setFields] = useState<FieldKey[]>(DEFAULT_FIELDS);
   const [busy, setBusy] = useState(false);
 
   const has = (key: FieldKey) => fields.includes(key);
 
-  useEffect(() => {
-    if (!user || !open) return;
-    return watchDailies(
-      user.uid,
-      setEntries,
-      () => message.error("Could not load your data."),
-      HISTORY_LIMIT,
-    );
-  }, [user, open, message]);
+  const {
+    dailies,
+    bpReadings: bpWindow,
+    waterLogs: waterWindow,
+    intake: intakeWindow,
+    cutoff,
+  } = useHealthData();
+  const needHistory = open && (range === "all" || range === "365");
+  const history = useHealthHistory(needHistory, cutoff);
 
-  useEffect(() => {
-    if (!user || !open) return;
-    return watchBpReadings(user.uid, setBpReadings, () => {});
-  }, [user, open]);
-
-  useEffect(() => {
-    if (!user || !open) return;
-    return watchWaterLogs(user.uid, setWaterLogs, () => {});
-  }, [user, open]);
-
-  useEffect(() => {
-    if (!user || !open) return;
-    return watchIntake(user.uid, setIntakeEntries, () => {});
-  }, [user, open]);
+  const entries = useMemo(
+    () => mergeByDate(dailies, history.dailies),
+    [dailies, history.dailies],
+  );
+  const bpReadings = useMemo(
+    () => mergeById(bpWindow, history.bpReadings),
+    [bpWindow, history.bpReadings],
+  );
+  const waterLogs = useMemo(
+    () => mergeById(waterWindow, history.waterLogs),
+    [waterWindow, history.waterLogs],
+  );
+  const intakeEntries = useMemo(
+    () => mergeById(intakeWindow, history.intake),
+    [intakeWindow, history.intake],
+  );
 
   const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
   const dailyWater = useMemo(() => dailyWaterTotals(waterLogs), [waterLogs]);

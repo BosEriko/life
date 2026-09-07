@@ -3,6 +3,7 @@
 import { AppFooter } from "@/components/app-footer";
 import { useAuth } from "@/components/auth-provider";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { HealthDataProvider } from "@/components/health-data-provider";
 import { MobileNav } from "@/components/mobile-nav";
 import { ReportDownload } from "@/components/report-download";
 import { UnitsProvider } from "@/components/units-provider";
@@ -14,26 +15,32 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <UnitsProvider>
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}
-      >
-        <DashboardHeader />
-        <main
-          className="app-shell"
+      <HealthDataProvider>
+        <div
           style={{
-            flex: 1,
-            width: "100%",
-            maxWidth: 1200,
-            margin: "0 auto",
-            padding: "32px 20px 56px",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "100dvh",
           }}
         >
-          {children}
-        </main>
-        <ReportDownload />
-        <AppFooter />
-        <MobileNav />
-      </div>
+          <DashboardHeader />
+          <main
+            className="app-shell"
+            style={{
+              flex: 1,
+              width: "100%",
+              maxWidth: 1200,
+              margin: "0 auto",
+              padding: "32px 20px 56px",
+            }}
+          >
+            {children}
+          </main>
+          <ReportDownload />
+          <AppFooter />
+          <MobileNav />
+        </div>
+      </HealthDataProvider>
     </UnitsProvider>
   );
 }

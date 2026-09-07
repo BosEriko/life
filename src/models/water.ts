@@ -8,7 +8,10 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  where,
+  type DocumentData,
   type QueryConstraint,
+  type QueryDocumentSnapshot,
   type Timestamp,
 } from "firebase/firestore";
 import dayjs from "dayjs";
@@ -42,31 +45,51 @@ export function formatWaterTime(dateKey: string, time: string): string {
   return dayjs(`${dateKey}T${time}`).format("h:mm A");
 }
 
+export function mapWaterDoc(
+  snap: QueryDocumentSnapshot<DocumentData>,
+): WaterLog {
+  const data = snap.data();
+  return {
+    id: snap.id,
+    date: (data.date as string | undefined) ?? "",
+    ml: (data.ml as number | undefined) ?? 0,
+    time: (data.time as string | undefined) ?? "",
+    label: (data.label as string | undefined) ?? null,
+    createdAt: (data.createdAt as Timestamp | undefined) ?? null,
+  };
+}
+
 export function watchWaterLogs(
   uid: string,
   onChange: (logs: WaterLog[]) => void,
   onError: (error: Error) => void,
   max: number | null = 2000,
+  sinceDate: string | null = null,
 ) {
   const constraints: QueryConstraint[] = [orderBy("date", "desc")];
+  if (sinceDate != null) constraints.push(where("date", ">=", sinceDate));
   if (max != null) constraints.push(limit(max));
   const recent = query(waterCollection(uid), ...constraints);
   return onSnapshot(
     recent,
     (snapshot) => {
-      onChange(
-        snapshot.docs.map((entry) => {
-          const data = entry.data();
-          return {
-            id: entry.id,
-            date: (data.date as string | undefined) ?? "",
-            ml: (data.ml as number | undefined) ?? 0,
-            time: (data.time as string | undefined) ?? "",
-            label: (data.label as string | undefined) ?? null,
-            createdAt: (data.createdAt as Timestamp | undefined) ?? null,
-          };
-        }),
-      );
+      onChange(snapshot.docs.map(mapWaterDoc));
+    },
+    onError,
+  );
+}
+
+export function watchWaterForDate(
+  uid: string,
+  date: string,
+  onChange: (logs: WaterLog[]) => void,
+  onError: (error: Error) => void,
+) {
+  const byDate = query(waterCollection(uid), where("date", "==", date));
+  return onSnapshot(
+    byDate,
+    (snapshot) => {
+      onChange(snapshot.docs.map(mapWaterDoc));
     },
     onError,
   );

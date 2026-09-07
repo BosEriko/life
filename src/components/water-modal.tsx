@@ -15,6 +15,8 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { useHealthData } from "@/components/health-data-provider";
+import { useDayWater } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
@@ -29,14 +31,12 @@ import {
   volumeSuffix,
 } from "@/lib/units";
 import { relativeDate, todayKey } from "@/models/dailies";
-import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
-import { type WaterPreset } from "@/models/presets";
+import { evaluateIdeal, rangeText } from "@/models/ideals";
 import {
   addWaterLog,
   dailyWaterTotals,
   deleteWaterLog,
   formatWaterTime,
-  type WaterLog,
 } from "@/models/water";
 
 const FALLBACK_AMOUNTS = [500, 1000];
@@ -44,20 +44,15 @@ const FALLBACK_AMOUNTS = [500, 1000];
 export function WaterModal({
   open,
   onClose,
-  logs,
-  presets,
-  ideals,
 }: {
   open: boolean;
   onClose: () => void;
-  logs: WaterLog[];
-  presets: WaterPreset[];
-  ideals: Ideals;
 }) {
   const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const { presets, ideals } = useHealthData();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [amount, setAmount] = useState<number | null>(null);
@@ -73,12 +68,10 @@ export function WaterModal({
   const dateKey = date.format("YYYY-MM-DD");
   const canAdd = typeof amount === "number" && amount > 0;
 
+  const waterRows = useDayWater(dateKey, open);
   const dayLogs = useMemo(
-    () =>
-      logs
-        .filter((log) => log.date === dateKey)
-        .sort((a, b) => b.time.localeCompare(a.time)),
-    [logs, dateKey],
+    () => [...waterRows].sort((a, b) => b.time.localeCompare(a.time)),
+    [waterRows],
   );
 
   const dailyTotalMl = useMemo(

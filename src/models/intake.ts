@@ -8,7 +8,10 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  where,
+  type DocumentData,
   type QueryConstraint,
+  type QueryDocumentSnapshot,
   type Timestamp,
 } from "firebase/firestore";
 import dayjs from "dayjs";
@@ -77,37 +80,57 @@ export function formatIntakeTime(dateKey: string, time: string): string {
   return dayjs(`${dateKey}T${time}`).format("h:mm A");
 }
 
+export function mapIntakeDoc(
+  snap: QueryDocumentSnapshot<DocumentData>,
+): IntakeEntry {
+  const data = snap.data();
+  return {
+    id: snap.id,
+    date: (data.date as string | undefined) ?? "",
+    time: (data.time as string | undefined) ?? "",
+    kind: (data.kind as IntakeKind | undefined) ?? "food",
+    name: (data.name as string | undefined) ?? "",
+    category: (data.category as string | undefined) ?? "",
+    junk: (data.junk as boolean | undefined) ?? false,
+    calories: (data.calories as number | undefined) ?? null,
+    sodium: (data.sodium as number | undefined) ?? null,
+    amount: (data.amount as string | undefined) ?? null,
+    note: (data.note as string | undefined) ?? null,
+    createdAt: (data.createdAt as Timestamp | undefined) ?? null,
+  };
+}
+
 export function watchIntake(
   uid: string,
   onChange: (entries: IntakeEntry[]) => void,
   onError: (error: Error) => void,
   max: number | null = 2000,
+  sinceDate: string | null = null,
 ) {
   const constraints: QueryConstraint[] = [orderBy("date", "desc")];
+  if (sinceDate != null) constraints.push(where("date", ">=", sinceDate));
   if (max != null) constraints.push(limit(max));
   const recent = query(intakeCollection(uid), ...constraints);
   return onSnapshot(
     recent,
     (snapshot) => {
-      onChange(
-        snapshot.docs.map((entry) => {
-          const data = entry.data();
-          return {
-            id: entry.id,
-            date: (data.date as string | undefined) ?? "",
-            time: (data.time as string | undefined) ?? "",
-            kind: (data.kind as IntakeKind | undefined) ?? "food",
-            name: (data.name as string | undefined) ?? "",
-            category: (data.category as string | undefined) ?? "",
-            junk: (data.junk as boolean | undefined) ?? false,
-            calories: (data.calories as number | undefined) ?? null,
-            sodium: (data.sodium as number | undefined) ?? null,
-            amount: (data.amount as string | undefined) ?? null,
-            note: (data.note as string | undefined) ?? null,
-            createdAt: (data.createdAt as Timestamp | undefined) ?? null,
-          };
-        }),
-      );
+      onChange(snapshot.docs.map(mapIntakeDoc));
+    },
+    onError,
+  );
+}
+
+export function watchIntakeForDate(
+  uid: string,
+  date: string,
+  onChange: (entries: IntakeEntry[]) => void,
+  onError: (error: Error) => void,
+) {
+  const byDate = query(intakeCollection(uid), where("date", "==", date));
+  return onSnapshot(
+    byDate,
+    (snapshot) => {
+      onChange(snapshot.docs.map(mapIntakeDoc));
     },
     onError,
   );

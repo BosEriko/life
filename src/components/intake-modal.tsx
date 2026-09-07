@@ -20,11 +20,15 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { useHealthData } from "@/components/health-data-provider";
+import { useHealthHistory } from "@/components/use-health-history";
+import { useDayIntake } from "@/components/use-day-records";
+import { mergeById } from "@/lib/merge-records";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
-import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
+import { evaluateIdeal, rangeText } from "@/models/ideals";
 import {
   addIntake,
   dailyIntake,
@@ -61,17 +65,15 @@ function detailLine(entry: IntakeEntry): string {
 export function IntakeModal({
   open,
   onClose,
-  entries,
-  ideals,
 }: {
   open: boolean;
   onClose: () => void;
-  entries: IntakeEntry[];
-  ideals: Ideals;
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const { intake: intakeWindow, ideals, cutoff } = useHealthData();
+  const history = useHealthHistory(open, cutoff);
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [kind, setKind] = useState<IntakeKind>("food");
@@ -113,12 +115,10 @@ export function IntakeModal({
     setJunk(false);
   }
 
+  const intakeRows = useDayIntake(dateKey, open);
   const dayEntries = useMemo(
-    () =>
-      entries
-        .filter((entry) => entry.date === dateKey)
-        .sort((a, b) => b.time.localeCompare(a.time)),
-    [entries, dateKey],
+    () => [...intakeRows].sort((a, b) => b.time.localeCompare(a.time)),
+    [intakeRows],
   );
 
   const totals = useMemo(
@@ -126,10 +126,15 @@ export function IntakeModal({
     [dayEntries, dateKey],
   );
 
+  const nameHistory = useMemo(
+    () => mergeById(intakeWindow, history.intake),
+    [intakeWindow, history.intake],
+  );
+
   const nameOptions = useMemo(() => {
     const seen = new Set<string>();
     const out: { value: string }[] = [];
-    for (const entry of entries) {
+    for (const entry of nameHistory) {
       const trimmed = entry.name?.trim();
       if (!trimmed) continue;
       const key = trimmed.toLowerCase();
@@ -138,7 +143,7 @@ export function IntakeModal({
       out.push({ value: trimmed });
     }
     return out;
-  }, [entries]);
+  }, [nameHistory]);
   const calorieStatus = evaluateIdeal(
     dayEntries.some((entry) => entry.calories != null)
       ? (totals?.calories ?? null)

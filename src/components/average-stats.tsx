@@ -1,53 +1,30 @@
 "use client";
 
 import {
-  useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from "react";
-import {
-  App,
-  Button,
-  Flex,
-  Grid,
-  Segmented,
-  Spin,
-  theme,
-  Typography,
-} from "antd";
+import { Button, Flex, Grid, Segmented, Spin, theme, Typography } from "antd";
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   MinusOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useAuth } from "@/components/auth-provider";
+import { useHealthData } from "@/components/health-data-provider";
+import { useHealthHistory } from "@/components/use-health-history";
+import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { Icon, type IconName } from "@/components/icon";
 import { IdealBadge } from "@/components/ideal-badge";
 import { IdealsModal } from "@/components/ideals-modal";
 import { Tip } from "@/components/tip";
-import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
-import {
-  dailyBpAverages,
-  watchBpReadings,
-  type BpReading,
-  type DailyBp,
-} from "@/models/bp";
-import {
-  dailyWaterTotals,
-  watchWaterLogs,
-  type DailyWater,
-  type WaterLog,
-} from "@/models/water";
-import {
-  dailyIntake,
-  watchIntake,
-  type DailyIntake,
-  type IntakeEntry,
-} from "@/models/intake";
+import { todayKey, type DailyEntry } from "@/models/dailies";
+import { dailyBpAverages, type DailyBp } from "@/models/bp";
+import { dailyWaterTotals, type DailyWater } from "@/models/water";
+import { dailyIntake, type DailyIntake } from "@/models/intake";
 import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
@@ -60,16 +37,12 @@ import {
   weightSuffix,
 } from "@/lib/units";
 import {
-  EMPTY_IDEALS,
   evaluateIdeal,
   rangeText,
-  watchIdeals,
   worstStatus,
-  type Ideals,
   type IdealStatus,
 } from "@/models/ideals";
 
-const HISTORY_LIMIT = 1000;
 const RANGE_STORAGE_KEY = "averages-range";
 const RAIL_GAP = 12;
 
@@ -179,58 +152,44 @@ function meanStats(
 
 export function AverageStats() {
   const units = useUnits();
-  const { user } = useAuth();
-  const { message } = App.useApp();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const compact = screens.md === false;
   const railRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const [entries, setEntries] = useState<DailyEntry[]>([]);
-  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
-  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
-  const [intakeEntries, setIntakeEntries] = useState<IntakeEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [range, setRange] = useState<Range>(loadRange);
-  const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
   const [idealsOpen, setIdealsOpen] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    return watchDailies(
-      user.uid,
-      (next) => {
-        setEntries(next);
-        setLoaded(true);
-      },
-      () => {
-        message.error("Could not load your averages.");
-        setLoaded(true);
-      },
-      HISTORY_LIMIT,
-    );
-  }, [user, message]);
+  const {
+    dailies,
+    bpReadings: bpWindow,
+    waterLogs: waterWindow,
+    intake: intakeWindow,
+    ideals,
+    cutoff,
+    ready,
+  } = useHealthData();
+  const needHistory = range === "365" || range === "all";
+  const history = useHealthHistory(needHistory, cutoff);
+  const loaded = ready && (!needHistory || history.ready);
 
-  useEffect(() => {
-    if (!user) return;
-    return watchBpReadings(user.uid, setBpReadings, () => {});
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchWaterLogs(user.uid, setWaterLogs, () => {});
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchIntake(user.uid, setIntakeEntries, () => {});
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchIdeals(user.uid, setIdeals, () => {});
-  }, [user]);
+  const entries = useMemo(
+    () => mergeByDate(dailies, history.dailies),
+    [dailies, history.dailies],
+  );
+  const bpReadings = useMemo(
+    () => mergeById(bpWindow, history.bpReadings),
+    [bpWindow, history.bpReadings],
+  );
+  const waterLogs = useMemo(
+    () => mergeById(waterWindow, history.waterLogs),
+    [waterWindow, history.waterLogs],
+  );
+  const intakeEntries = useMemo(
+    () => mergeById(intakeWindow, history.intake),
+    [intakeWindow, history.intake],
+  );
 
   const dailyBp = useMemo(
     () => Array.from(dailyBpAverages(bpReadings).values()),

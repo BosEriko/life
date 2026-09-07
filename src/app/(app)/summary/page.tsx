@@ -1,44 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { App, Button, Card, Flex, Table, Tabs, theme, Typography } from "antd";
+import { useMemo, useState } from "react";
+import { Button, Card, Flex, Table, Tabs, theme, Typography } from "antd";
 import { DownloadOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { TableProps } from "antd";
-import { useAuth } from "@/components/auth-provider";
 import { ReportModal } from "@/components/report-modal";
+import { useHealthData } from "@/components/health-data-provider";
+import { useHealthHistory } from "@/components/use-health-history";
+import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { useUnits } from "@/components/units-provider";
 import { formatVolume, formatWeight } from "@/lib/units";
-import { watchDailies, type DailyEntry } from "@/models/dailies";
-import {
-  formatWaterTime,
-  watchWaterLogs,
-  type WaterLog,
-} from "@/models/water";
-import {
-  formatBpTime,
-  watchBpReadings,
-  type BpReading,
-} from "@/models/bp";
-import {
-  formatIntakeTime,
-  watchIntake,
-  type IntakeEntry,
-} from "@/models/intake";
-
-type LoadedState = {
-  daily: boolean;
-  water: boolean;
-  bp: boolean;
-  intake: boolean;
-};
-
-const EMPTY_LOADED: LoadedState = {
-  daily: false,
-  water: false,
-  bp: false,
-  intake: false,
-};
+import { type DailyEntry } from "@/models/dailies";
+import { formatWaterTime, type WaterLog } from "@/models/water";
+import { formatBpTime, type BpReading } from "@/models/bp";
+import { formatIntakeTime, type IntakeEntry } from "@/models/intake";
 
 const pagination = {
   defaultPageSize: 25,
@@ -61,40 +37,37 @@ function capitalize(value: string) {
 }
 
 export default function SummaryPage() {
-  const { user } = useAuth();
   const units = useUnits();
-  const { message } = App.useApp();
   const { token } = theme.useToken();
-  const [daily, setDaily] = useState<DailyEntry[]>([]);
-  const [water, setWater] = useState<WaterLog[]>([]);
-  const [bp, setBp] = useState<BpReading[]>([]);
-  const [intake, setIntake] = useState<IntakeEntry[]>([]);
-  const [loaded, setLoaded] = useState<LoadedState>(EMPTY_LOADED);
   const [reportOpen, setReportOpen] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    const fail = (key: keyof LoadedState, label: string) => () => {
-      setLoaded((current) => ({ ...current, [key]: true }));
-      message.error(`Could not load ${label}.`);
-    };
-    const complete = <T,>(
-      key: keyof LoadedState,
-      setter: (items: T[]) => void,
-    ) =>
-      (items: T[]) => {
-        setter(items);
-        setLoaded((current) => ({ ...current, [key]: true }));
-      };
+  const {
+    dailies,
+    bpReadings,
+    waterLogs,
+    intake: intakeWindow,
+    cutoff,
+    ready,
+  } = useHealthData();
+  const history = useHealthHistory(true, cutoff);
+  const dataReady = ready && history.ready;
 
-    const unsubscribers = [
-      watchDailies(user.uid, complete("daily", setDaily), fail("daily", "daily entries"), null),
-      watchWaterLogs(user.uid, complete("water", setWater), fail("water", "water logs"), null),
-      watchBpReadings(user.uid, complete("bp", setBp), fail("bp", "blood pressure logs"), null),
-      watchIntake(user.uid, complete("intake", setIntake), fail("intake", "intake logs"), null),
-    ];
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
-  }, [user, message]);
+  const daily = useMemo(
+    () => mergeByDate(dailies, history.dailies),
+    [dailies, history.dailies],
+  );
+  const water = useMemo(
+    () => mergeById(waterLogs, history.waterLogs),
+    [waterLogs, history.waterLogs],
+  );
+  const bp = useMemo(
+    () => mergeById(bpReadings, history.bpReadings),
+    [bpReadings, history.bpReadings],
+  );
+  const intake = useMemo(
+    () => mergeById(intakeWindow, history.intake),
+    [intakeWindow, history.intake],
+  );
 
   const dailyColumns = useMemo<TableProps<DailyEntry>["columns"]>(
     () => [
@@ -199,22 +172,22 @@ export default function SummaryPage() {
     {
       key: "daily",
       label: "Daily",
-      children: table(daily, dailyColumns, "date", loaded.daily, 550),
+      children: table(daily, dailyColumns, "date", dataReady, 550),
     },
     {
       key: "water",
       label: "Water",
-      children: table(water, waterColumns, "id", loaded.water, 540),
+      children: table(water, waterColumns, "id", dataReady, 540),
     },
     {
       key: "bp",
       label: "Blood pressure",
-      children: table(bp, bpColumns, "id", loaded.bp, 630),
+      children: table(bp, bpColumns, "id", dataReady, 630),
     },
     {
       key: "intake",
       label: "Intake",
-      children: table(intake, intakeColumns, "id", loaded.intake, 1370),
+      children: table(intake, intakeColumns, "id", dataReady, 1370),
     },
   ];
 

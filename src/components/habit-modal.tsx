@@ -1,25 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { App, Checkbox, DatePicker, Flex, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { useDailyDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
-import {
-  relativeDate,
-  saveDaily,
-  todayKey,
-  type DailyEntry,
-} from "@/models/dailies";
+import { relativeDate, saveDaily, todayKey } from "@/models/dailies";
 
 export function HabitModal({
   open,
   onClose,
-  entries,
 }: {
   open: boolean;
   onClose: () => void;
-  entries: DailyEntry[];
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -28,10 +22,7 @@ export function HabitModal({
 
   const dateKey = date.format("YYYY-MM-DD");
 
-  const entry = useMemo(
-    () => entries.find((item) => item.date === dateKey),
-    [entries, dateKey],
-  );
+  const entry = useDailyDoc(dateKey, open);
 
   const bath = override.bath ?? entry?.bath ?? false;
   const brushTeeth = override.brushTeeth ?? entry?.brushTeeth ?? false;

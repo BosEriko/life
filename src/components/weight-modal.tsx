@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { App, DatePicker, Flex, InputNumber, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { useHealthData } from "@/components/health-data-provider";
+import { useDailyDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { useUnits } from "@/components/units-provider";
@@ -14,33 +16,27 @@ import {
   weightStep,
   weightSuffix,
 } from "@/lib/units";
-import { saveDaily, todayKey, type DailyEntry } from "@/models/dailies";
-import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
+import { saveDaily, todayKey } from "@/models/dailies";
+import { evaluateIdeal, rangeText } from "@/models/ideals";
 
 export function WeightModal({
   open,
   onClose,
-  entries,
-  ideals,
 }: {
   open: boolean;
   onClose: () => void;
-  entries: DailyEntry[];
-  ideals: Ideals;
 }) {
   const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
+  const { ideals } = useHealthData();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [edited, setEdited] = useState<number | null>(null);
   const [touched, setTouched] = useState(false);
 
   const dateKey = date.format("YYYY-MM-DD");
 
-  const entry = useMemo(
-    () => entries.find((item) => item.date === dateKey) ?? null,
-    [entries, dateKey],
-  );
+  const entry = useDailyDoc(dateKey, open);
 
   const savedKg = entry?.weight ?? null;
 

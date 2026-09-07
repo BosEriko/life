@@ -7,7 +7,10 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  where,
+  type DocumentData,
   type QueryConstraint,
+  type QueryDocumentSnapshot,
   type Timestamp,
 } from "firebase/firestore";
 import dayjs from "dayjs";
@@ -63,30 +66,49 @@ export async function saveDaily(uid: string, date: string, input: DailyInput) {
   await setDoc(dailyDocRef(uid, date), payload, { merge: true });
 }
 
+export function mapDailyDoc(
+  snap: QueryDocumentSnapshot<DocumentData>,
+): DailyEntry {
+  const data = snap.data();
+  return {
+    date: data.date as string,
+    weight: (data.weight as number | undefined) ?? null,
+    bath: (data.bath as boolean | undefined) ?? null,
+    brushTeeth: (data.brushTeeth as boolean | undefined) ?? null,
+    updatedAt: (data.updatedAt as Timestamp | undefined) ?? null,
+  };
+}
+
 export function watchDailies(
   uid: string,
   onChange: (entries: DailyEntry[]) => void,
   onError: (error: Error) => void,
   max: number | null = 30,
+  sinceDate: string | null = null,
 ) {
   const constraints: QueryConstraint[] = [orderBy("date", "desc")];
+  if (sinceDate != null) constraints.push(where("date", ">=", sinceDate));
   if (max != null) constraints.push(limit(max));
   const recent = query(dailiesCollection(uid), ...constraints);
   return onSnapshot(
     recent,
     (snapshot) => {
-      onChange(
-        snapshot.docs.map((entry) => {
-          const data = entry.data();
-          return {
-            date: data.date as string,
-            weight: (data.weight as number | undefined) ?? null,
-            bath: (data.bath as boolean | undefined) ?? null,
-            brushTeeth: (data.brushTeeth as boolean | undefined) ?? null,
-            updatedAt: (data.updatedAt as Timestamp | undefined) ?? null,
-          };
-        }),
-      );
+      onChange(snapshot.docs.map(mapDailyDoc));
+    },
+    onError,
+  );
+}
+
+export function watchDailyDoc(
+  uid: string,
+  date: string,
+  onChange: (entry: DailyEntry | null) => void,
+  onError: (error: Error) => void,
+) {
+  return onSnapshot(
+    dailyDocRef(uid, date),
+    (snapshot) => {
+      onChange(snapshot.exists() ? mapDailyDoc(snapshot) : null);
     },
     onError,
   );

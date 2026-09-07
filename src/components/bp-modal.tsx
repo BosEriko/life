@@ -16,15 +16,12 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { useHealthData } from "@/components/health-data-provider";
+import { useDayBp } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { relativeDate, todayKey } from "@/models/dailies";
-import {
-  evaluateIdeal,
-  rangeText,
-  type IdealRange,
-  type Ideals,
-} from "@/models/ideals";
+import { evaluateIdeal, rangeText, type IdealRange } from "@/models/ideals";
 import {
   addBpReading,
   dailyBpAverages,
@@ -32,7 +29,6 @@ import {
   formatBpTime,
   type BpArm,
   type BpPosture,
-  type BpReading,
 } from "@/models/bp";
 
 const POSTURE_OPTIONS = [
@@ -60,17 +56,14 @@ function metricTip(
 export function BpModal({
   open,
   onClose,
-  readings,
-  ideals,
 }: {
   open: boolean;
   onClose: () => void;
-  readings: BpReading[];
-  ideals: Ideals;
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const { ideals } = useHealthData();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [systolic, setSystolic] = useState<number | null>(null);
@@ -96,12 +89,10 @@ export function BpModal({
     typeof diastolic === "number" &&
     diastolic > 0;
 
+  const bpRows = useDayBp(dateKey, open);
   const dayReadings = useMemo(
-    () =>
-      readings
-        .filter((reading) => reading.date === dateKey)
-        .sort((a, b) => b.time.localeCompare(a.time)),
-    [readings, dateKey],
+    () => [...bpRows].sort((a, b) => b.time.localeCompare(a.time)),
+    [bpRows],
   );
 
   const dailyAverage = useMemo(

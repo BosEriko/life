@@ -1,30 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { App, Empty, Flex, Spin, theme, Typography } from "antd";
+import { useMemo } from "react";
+import { Empty, Flex, Spin, theme, Typography } from "antd";
 import dayjs from "dayjs";
-import { useAuth } from "@/components/auth-provider";
-import {
-  relativeDate,
-  todayKey,
-  watchDailies,
-  type DailyEntry,
-} from "@/models/dailies";
-import {
-  dailyBpAverages,
-  watchBpReadings,
-  type BpReading,
-} from "@/models/bp";
-import {
-  dailyWaterTotals,
-  watchWaterLogs,
-  type WaterLog,
-} from "@/models/water";
-import {
-  dailyIntake,
-  watchIntake,
-  type IntakeEntry,
-} from "@/models/intake";
+import { useHealthData } from "@/components/health-data-provider";
+import { relativeDate, todayKey } from "@/models/dailies";
+import { dailyBpAverages } from "@/models/bp";
+import { dailyWaterTotals } from "@/models/water";
+import { dailyIntake } from "@/models/intake";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { useUnits } from "@/components/units-provider";
@@ -38,13 +21,10 @@ import {
   weightSuffix,
 } from "@/lib/units";
 import {
-  EMPTY_IDEALS,
   evaluateIdeal,
   rangeText,
-  watchIdeals,
   type IdealRange,
   type IdealStatus,
-  type Ideals,
 } from "@/models/ideals";
 
 const DAYS = 7;
@@ -61,51 +41,15 @@ function idealTip(
 
 export function RecentEntries() {
   const units = useUnits();
-  const { user } = useAuth();
-  const { message } = App.useApp();
   const { token } = theme.useToken();
-  const [entries, setEntries] = useState<DailyEntry[]>([]);
-  const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
-  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
-  const [intakeEntries, setIntakeEntries] = useState<IntakeEntry[]>([]);
-  const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchDailies(
-      user.uid,
-      (next) => {
-        setEntries(next);
-        setLoaded(true);
-      },
-      () => {
-        message.error("Could not load your entries.");
-        setLoaded(true);
-      },
-      DAYS,
-    );
-  }, [user, message]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchBpReadings(user.uid, setBpReadings, () => {}, 200);
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchWaterLogs(user.uid, setWaterLogs, () => {}, 400);
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchIntake(user.uid, setIntakeEntries, () => {}, 800);
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    return watchIdeals(user.uid, setIdeals, () => {});
-  }, [user]);
+  const {
+    dailies: entries,
+    bpReadings,
+    waterLogs,
+    intake: intakeEntries,
+    ideals,
+    ready: loaded,
+  } = useHealthData();
 
   const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
   const dailyWater = useMemo(() => dailyWaterTotals(waterLogs), [waterLogs]);
