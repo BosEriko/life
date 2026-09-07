@@ -201,7 +201,7 @@ body {
     margin: 0 auto;
   }
 
-  .ant-modal-content {
+  .ant-modal-container {
     max-height: calc(100dvh - 48px);
     display: flex;
     flex-direction: column;
@@ -209,7 +209,11 @@ body {
   }
 
   .ant-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    padding-inline: 8px;
+    margin-inline: -8px;
   }
 }
 
