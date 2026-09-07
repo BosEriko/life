@@ -11,13 +11,15 @@ import { addNote } from "@/models/notes";
 export function NotesModal({
   open,
   onClose,
+  initialDate,
 }: {
   open: boolean;
   onClose: () => void;
+  initialDate?: Dayjs;
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
-  const [date, setDate] = useState<Dayjs>(() => dayjs());
+  const [date, setDate] = useState<Dayjs>(() => initialDate ?? dayjs());
   const [text, setText] = useState("");
 
   const canAdd = text.trim().length > 0;

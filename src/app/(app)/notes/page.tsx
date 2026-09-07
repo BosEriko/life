@@ -19,6 +19,7 @@ import {
   ClockCircleOutlined,
   CopyOutlined,
   DeleteOutlined,
+  EditOutlined,
   LeftOutlined,
   RightOutlined,
   SendOutlined,
@@ -26,6 +27,7 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { NotesModal } from "@/components/notes-modal";
 import { relativeDate, todayKey } from "@/models/dailies";
 import {
   deleteNote,
@@ -44,6 +46,7 @@ export default function NotesPage() {
   const [loaded, setLoaded] = useState(false);
   const [date, setDate] = useState<Dayjs>(() => dayjs(todayKey()));
   const [noteToShare, setNoteToShare] = useState<Note | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [copying, setCopying] = useState(false);
 
   useEffect(() => {
@@ -107,10 +110,19 @@ export default function NotesPage() {
 
   return (
     <div>
-      <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
-        <Icon name="logEntry" />
-        Notes
-      </Typography.Title>
+      <Flex align="center" justify="space-between" gap={12} wrap>
+        <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
+          <Icon name="logEntry" />
+          Notes
+        </Typography.Title>
+        <Button
+          type="primary"
+          icon={<EditOutlined />}
+          onClick={() => setNotesOpen(true)}
+        >
+          Write note
+        </Button>
+      </Flex>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
         Everything you&apos;ve jotted down. Add new ones from the pencil button.
       </Typography.Paragraph>
@@ -307,6 +319,13 @@ export default function NotesPage() {
           </Card>
         )}
       </Modal>
+      {notesOpen && (
+        <NotesModal
+          open
+          initialDate={date}
+          onClose={() => setNotesOpen(false)}
+        />
+      )}
     </div>
   );
 }
