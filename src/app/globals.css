@@ -158,6 +158,11 @@ body {
 
 .quick-action-group {
   transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.quick-action-group .ant-float-btn:not(.quick-action-health-collapsed) {
+  pointer-events: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

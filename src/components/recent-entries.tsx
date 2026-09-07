@@ -175,23 +175,22 @@ export function RecentEntries() {
               ),
               volumeSuffix(units.volume),
             );
-            const bpTips = bp
-              ? [
-                  idealTip(
-                    "Systolic",
-                    evaluateIdeal(bp.systolic, ideals.systolic),
-                    ideals.systolic,
-                    "mmHg",
-                  ),
-                  idealTip(
-                    "Diastolic",
-                    evaluateIdeal(bp.diastolic, ideals.diastolic),
-                    ideals.diastolic,
-                    "mmHg",
-                  ),
-                ].filter(Boolean)
-              : [];
-            const bpTip = bpTips.length ? bpTips.join(" ") : undefined;
+            const sysTip = bp
+              ? idealTip(
+                  "Systolic",
+                  evaluateIdeal(bp.systolic, ideals.systolic),
+                  ideals.systolic,
+                  "mmHg",
+                )
+              : undefined;
+            const diaTip = bp
+              ? idealTip(
+                  "Diastolic",
+                  evaluateIdeal(bp.diastolic, ideals.diastolic),
+                  ideals.diastolic,
+                  "mmHg",
+                )
+              : undefined;
             return (
             <Flex
               key={entry.date}
@@ -223,15 +222,27 @@ export function RecentEntries() {
                 {bp ? (
                   <Typography.Text type="secondary">
                     <Icon name="bp" style={{ marginRight: 4 }} />
-                    <Tip title={bpTip}>
+                    <Tip title={sysTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: bpTip ? token.colorError : undefined,
-                          cursor: bpTip ? "help" : undefined,
+                          color: sysTip ? token.colorError : undefined,
+                          cursor: sysTip ? "help" : undefined,
                         }}
                       >
-                        {bp.systolic}/{bp.diastolic} mmHg
+                        {bp.systolic}
+                      </Typography.Text>
+                    </Tip>
+                    /
+                    <Tip title={diaTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: diaTip ? token.colorError : undefined,
+                          cursor: diaTip ? "help" : undefined,
+                        }}
+                      >
+                        {bp.diastolic} mmHg
                       </Typography.Text>
                     </Tip>
                   </Typography.Text>

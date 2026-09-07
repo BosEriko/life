@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
 } from "react";
 import {
   App,
@@ -128,6 +129,7 @@ type StatItem = {
   value: string;
   status: IdealStatus;
   tip?: string;
+  valueNode?: ReactNode;
   delta?: StatDelta;
 };
 
@@ -313,17 +315,14 @@ export function AverageStats() {
       };
     };
 
-    const bpParts: string[] = [];
-    if (sysStatus === "low" || sysStatus === "high") {
-      bpParts.push(
-        `systolic ${offBound(sysStatus)} ${rangeText(ideals.systolic)}`,
-      );
-    }
-    if (diaStatus === "low" || diaStatus === "high") {
-      bpParts.push(
-        `diastolic ${offBound(diaStatus)} ${rangeText(ideals.diastolic)}`,
-      );
-    }
+    const sysAvgTip =
+      sysStatus === "low" || sysStatus === "high"
+        ? `Systolic ${offBound(sysStatus)} ideal (${rangeText(ideals.systolic)} mmHg)`
+        : undefined;
+    const diaAvgTip =
+      diaStatus === "low" || diaStatus === "high"
+        ? `Diastolic ${offBound(diaStatus)} ideal (${rangeText(ideals.diastolic)} mmHg)`
+        : undefined;
 
     const toWeight = (value: number) => fromKg(value, units.weight);
     const toVolume = (value: number) => fromMl(value, units.volume);
@@ -356,9 +355,33 @@ export function AverageStats() {
             ? `${Math.round(stats.systolic)}/${Math.round(stats.diastolic)} mmHg`
             : "—",
         status: bpStatus,
-        tip: bpParts.length
-          ? `Outside ideal — ${bpParts.join(", ")}`
-          : "systolic/diastolic",
+        valueNode:
+          stats.systolic != null && stats.diastolic != null ? (
+            <>
+              <Tip title={sysAvgTip} placement="bottom">
+                <span
+                  style={{
+                    color: sysAvgTip ? token.colorError : undefined,
+                    cursor: sysAvgTip ? "help" : undefined,
+                  }}
+                >
+                  {Math.round(stats.systolic)}
+                </span>
+              </Tip>
+              /
+              <Tip title={diaAvgTip} placement="bottom">
+                <span
+                  style={{
+                    color: diaAvgTip ? token.colorError : undefined,
+                    cursor: diaAvgTip ? "help" : undefined,
+                  }}
+                >
+                  {Math.round(stats.diastolic)}
+                </span>
+              </Tip>{" "}
+              mmHg
+            </>
+          ) : undefined,
         delta: deltaFor(stats.systolic, prevStats?.systolic, "mmHg", 0),
       },
       {
@@ -407,7 +430,7 @@ export function AverageStats() {
         delta: deltaFor(stats.sodium, prevStats?.sodium, "mg", 0),
       },
     ];
-  }, [stats, prevStats, ideals, range, units]);
+  }, [stats, prevStats, ideals, range, units, token]);
 
   return (
     <div>
@@ -513,18 +536,16 @@ export function AverageStats() {
                   </Typography.Text>
                   <IdealBadge status={item.status} />
                 </Flex>
-                <Tip title={item.tip} placement="bottom">
+                {item.valueNode ? (
                   <Typography.Text
                     strong
                     style={{
                       display: "inline-block",
                       marginTop: 4,
                       fontSize: 18,
-                      cursor: item.tip ? "help" : undefined,
-                      color: off ? token.colorError : undefined,
                     }}
                   >
-                    {item.value}
+                    {item.valueNode}
                     {off ? (
                       <Icon
                         name="alert"
@@ -536,7 +557,32 @@ export function AverageStats() {
                       />
                     ) : null}
                   </Typography.Text>
-                </Tip>
+                ) : (
+                  <Tip title={item.tip} placement="bottom">
+                    <Typography.Text
+                      strong
+                      style={{
+                        display: "inline-block",
+                        marginTop: 4,
+                        fontSize: 18,
+                        cursor: item.tip ? "help" : undefined,
+                        color: off ? token.colorError : undefined,
+                      }}
+                    >
+                      {item.value}
+                      {off ? (
+                        <Icon
+                          name="alert"
+                          style={{
+                            marginLeft: 6,
+                            marginRight: 0,
+                            color: token.colorError,
+                          }}
+                        />
+                      ) : null}
+                    </Typography.Text>
+                  </Tip>
+                )}
                 {item.delta ? (
                   (() => {
                     const deltaColor =
