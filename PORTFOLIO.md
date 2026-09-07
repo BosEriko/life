@@ -1,96 +1,77 @@
 # Life Tracker
 
-**A private health-tracking web app I use as my browser homepage.** Open a tab,
-log the day — weight, blood pressure, water, habits — and watch the trends.
-Designed, built, and maintained solo with Next.js, React, TypeScript, and Firebase.
-Anyone can create an account; every account only ever sees its own data.
+A personal health diary. You log a few simple things each day and it turns them
+into a picture of how you're doing over time. Anyone can create an account;
+every account only ever sees its own data.
+
+![Cover](./COVER.png)
 
 ---
 
-## What this project demonstrates
+## What you can keep track of
 
-- **End-to-end ownership** — product design, UI, data modelling, auth, security
-  rules, and CI, all built and maintained by one person.
-- **Real-time state that stays consistent** — every panel subscribes to Firestore
-  live, and a per-field write-tracking layer means two edits to the same day
-  (a morning weigh-in, an afternoon BP reading) merge instead of overwriting.
-- **Attention to the browser** — SSR-safe theming and breakpoints with no
-  hydration mismatches, heavy libraries code-split out of the initial bundle, and
-  autosave that survives navigation.
-- **Security at the right layer** — per-user Firestore rules are the real
-  boundary (not the client route guard), deployed through CI with no secrets in
-  the repo.
-- **A consistent quality bar** — strict TypeScript, ESLint, and a passing
-  production build on every change.
+- Weight
+- Water — how much you drank, with quick-add buttons for your usual glass or bottle
+- Food and drinks — what it was, roughly how much, and (optionally) calories and
+  sodium; you can also mark something as "junk"
+- Blood pressure — as many readings a day as you want
+- Two daily habits: did you bathe, did you brush your teeth
+- Free-form notes — just write down how the day felt
 
----
+## The main screen
 
-## Features
+- Your recent averages for weight, blood pressure, and water, with a note of
+  whether you're above or below your target
+- A colored calendar grid showing your streaks — green for good habits, a warm
+  color for junk food/drink days
+- A trend graph you can flip between weight, blood pressure, and water, and
+  scroll back through time
+- A short list of the last several days with the key numbers, shown in red if
+  they're outside the range you set
+- Controls to move day by day, jump to today, or change the graph's time span
 
-- **One-screen daily log** — weight, blood pressure (systolic/diastolic + posture
-  + arm + auto-stamped time), water, notes, and habit checkboxes.
-- **No save button** — edits autosave 2 seconds after you stop typing; a header
-  status pill moves through *Auto-saving → Unsaved changes → Saving… → Save failed*.
-- **Any date** — `◀ / ▶ / Today` plus a picker; the form always reflects what's
-  stored for the selected day, past or future.
-- **Trends** — a line chart for weight, blood pressure, or water over
-  7D / 30D / 90D / 1Y / All, or a custom date range.
-- **Averages** — rolling means with change-vs-previous-period, over a window you
-  pick (remembered between visits).
-- **Habits** — a GitHub-style contribution calendar grouped into Hygiene and
-  Junk, with a consistency figure per habit.
-- **Personal targets** — set min/max "ideal" ranges; averages and live inputs
-  flag out-of-range values with a badge, colour, and a short guidance tooltip.
-- **Water presets** — name your bottles and glasses once; they become the
-  quick-add buttons.
-- **PDF export** — a floating button generates a formatted report: summary stats
-  plus a full day-by-day table.
+## Targets
+
+You can set a healthy min/max for weight, blood pressure, water, calories, and
+sodium. Anything outside that range gets flagged in red around the app so it's
+easy to spot.
+
+## Notes and history
+
+- A dedicated Notes page where you can browse everything you've written and jump
+  to a specific day
+- A history page with full tables of every weight, water, blood-pressure, and
+  food entry you've ever made
+
+## Downloadable report
+
+- Make a PDF for any time span (last week, month, year, everything)
+- Tick which things to include
+- It comes out with a summary, a day-by-day table, and clean trend charts
+
+## Nice touches
+
+- Choose your units — kilograms or pounds, milliliters/liters or fluid ounces,
+  feet-inches or centimeters — and the whole app switches
+- Works with a spotty or missing connection: your entries save on your device and
+  sync up later, with a little "saved offline" message so you know
+- Light and dark mode
+- Built to be used on your phone, with a bar of shortcuts along the bottom, and it
+  can be added to your home screen like a normal app
+- When you share the link, it shows a proper preview card with the logo and a
+  short description
+- If you use an AI assistant, there's a page that gives you a link so the
+  assistant can read your tracked data and answer questions about it
+- The app can estimate calories and sodium for a food entry when you don't feel
+  like looking them up
 
 ---
 
 ## Built with
 
-| | |
-| --- | --- |
-| **Framework** | Next.js 16 (App Router, Turbopack), React 19 |
-| **Language** | TypeScript (strict) |
-| **UI** | Ant Design 6, a custom sage-green theme, Manrope |
-| **Charts / PDF** | `@ant-design/charts`, `jsPDF` + `jspdf-autotable` (both lazy-loaded) |
-| **Backend** | Firebase — Auth (email/password + Google) and Cloud Firestore |
-| **Tooling / CI** | ESLint 9, GitHub Actions (auto-deploys the Firestore rules) |
-
----
-
-## Implementation notes
-
-**Conflict-safe writes.** Each day is one Firestore document keyed by the local
-date. Writes are `merge` patches, and the form tracks which fields the user
-actually touched in the current session — only those are sent. So autosaving a
-weight entry never wipes that day's notes or habit flags, and the blood-pressure
-timestamp is stamped only when the BP numbers themselves change.
-
-**Autosave.** `onValuesChange` → debounce (2s) → flush. A pending flush also runs
-on unmount, so navigating away never loses an edit. Save state lives in a small
-React context, which is how the header pill reflects it from outside the form.
-
-**Hydration-safe theming.** Light/dark is read through `useSyncExternalStore` with
-a deterministic server snapshot, so the server and first client render always
-agree — no hydration warning, no theme flash. The mode ignores the OS setting,
-defaults to light, and persists to `localStorage`.
-
-**Bundle size.** The chart library loads on mount (`ssr: false`); the PDF stack
-loads only when the user clicks download. Neither is in the initial JavaScript.
-
-**Security rules without secrets.** `firestore.rules.template` is committed and
-contains no owner identity — access is `request.auth.uid == userId` on
-`/users/{userId}/**`, and everything else is denied. A GitHub Action deploys it
-via `firebase-tools` on every push to `main`.
-
-**Responsive layout.** A CSS `auto-fit` / `minmax` grid collapses its columns
-with no media queries; the one spot that genuinely needs a breakpoint (the
-header) uses `Grid.useBreakpoint()` so the desktop markup stays untouched.
-
----
+Next.js 16 (App Router), React 19, TypeScript, Ant Design 6, and Firebase
+(sign-in + database). Charts and PDF export are loaded only when needed. Designed,
+built, and maintained solo.
 
 ## Run it locally
 
