@@ -351,6 +351,10 @@ export function IntakeModal({
             >
               <Flex vertical gap={2}>
                 <Typography.Text>
+                  <Icon
+                    name={entry.kind === "drink" ? "drink" : "food"}
+                    style={{ marginRight: 6 }}
+                  />
                   <Typography.Text strong>
                     {entry.name || entry.category}
                   </Typography.Text>
@@ -361,7 +365,15 @@ export function IntakeModal({
                     </Typography.Text>
                   ) : null}
                   {entry.junk ? (
-                    <Typography.Text type="warning"> · junk</Typography.Text>
+                    <Icon
+                      name="junk"
+                      style={{
+                        marginRight: 0,
+                        marginLeft: 6,
+                        color: token.colorWarning,
+                        opacity: 1,
+                      }}
+                    />
                   ) : null}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
