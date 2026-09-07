@@ -116,7 +116,31 @@ const TOOLS = [
   {
     name: "get_intake",
     description:
-      "Every individual food/drink log: date, time (HH:mm), kind (food/drink), name (the item, e.g. \"Chicken adobo\"), category, junk (boolean), calories (kcal), sodium (mg), amount, note. calories/sodium/amount/note may be null; name may be empty on older entries. get_entries returns the per-day roll-up.",
+      "Every individual food/drink log: date, time (HH:mm), kind (food/drink), name (the item, e.g. \"Chicken adobo\"), category, junk (boolean), calories (kcal), sodium (mg), amount, note, nutritionSource (\"claude\" when calories/sodium were estimated by AI, otherwise null). calories/sodium/amount/note may be null; name may be empty on older entries. get_entries returns the per-day roll-up.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        range: {
+          type: "string",
+          enum: ["7d", "30d", "90d", "1y", "all"],
+          description: "Last N days, counted in UTC. Default all.",
+        },
+        from: {
+          type: "string",
+          description: "YYYY-MM-DD inclusive lower bound. Overrides range.",
+        },
+        to: { type: "string", description: "YYYY-MM-DD inclusive upper bound." },
+        limit: {
+          type: "number",
+          description: "Max number of days, newest first (1-2000).",
+        },
+      },
+    },
+  },
+  {
+    name: "get_notes",
+    description:
+      "Every free-text note the user wrote: date, time (HH:mm), text. Notes are personal journal entries, not tied to any metric.",
     inputSchema: {
       type: "object",
       properties: {
@@ -216,6 +240,11 @@ async function runTool(
         url: "mcp://life-tracker/intake",
       },
       {
+        id: "notes",
+        title: "Notes (all)",
+        url: "mcp://life-tracker/notes",
+      },
+      {
         id: "ideals",
         title: "Target ranges (ideals)",
         url: "mcp://life-tracker/ideals",
@@ -272,6 +301,18 @@ async function runTool(
         url: "mcp://life-tracker/intake",
       };
     }
+    if (id === "notes") {
+      const data = await fetchExportData(uid, { range: "all" });
+      return {
+        id,
+        title: "Notes",
+        text: JSON.stringify({
+          count: data.notes.length,
+          notes: data.notes,
+        }),
+        url: "mcp://life-tracker/notes",
+      };
+    }
     if (id === "ideals" || id === "presets" || id === "profile") {
       const data = await fetchExportData(uid, { limit: 1 });
       const byId = { ideals: data.ideals, presets: data.presets, profile: data.profile };
@@ -300,6 +341,7 @@ async function runTool(
           bpReadings: data.bpReadings,
           waterLogs: data.waterLogs,
           intake: data.intake,
+          notes: data.notes,
         }),
         url: `mcp://life-tracker/${id}`,
       };
@@ -321,6 +363,7 @@ async function runTool(
       bpReadings: data.bpReadings,
       waterLogs: data.waterLogs,
       intake: data.intake,
+      notes: data.notes,
     };
   }
 
@@ -366,6 +409,20 @@ async function runTool(
     };
   }
 
+  if (name === "get_notes") {
+    const data = await fetchExportData(uid, {
+      range: typeof args.range === "string" ? args.range : null,
+      from: typeof args.from === "string" ? args.from : null,
+      to: typeof args.to === "string" ? args.to : null,
+      limit: typeof args.limit === "number" ? args.limit : null,
+    });
+    return {
+      range: data.range,
+      count: data.notes.length,
+      notes: data.notes,
+    };
+  }
+
   if (name === "get_ideals") {
     return (await fetchExportData(uid, { limit: 1 })).ideals;
   }
@@ -406,7 +463,7 @@ export async function POST(
       capabilities: { tools: {} },
       serverInfo: { name: "life-tracker", version: "1.0.0" },
       instructions:
-        "Read the user's personal health tracker. Use get_entries for daily weight / hygiene data with each day's mean blood pressure, total water, and food/drink roll-up (junk flags, calories, sodium); get_bp for every individual blood-pressure reading; get_water for every individual water log; get_intake for every individual food/drink log; get_ideals for their target ranges; get_presets for their water containers; and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
+        "Read the user's personal health tracker. Use get_entries for daily weight / hygiene data with each day's mean blood pressure, total water, and food/drink roll-up (junk flags, calories, sodium); get_bp for every individual blood-pressure reading; get_water for every individual water log; get_intake for every individual food/drink log; get_notes for the user's free-text notes; get_ideals for their target ranges; get_presets for their water containers; and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
     });
   }
 

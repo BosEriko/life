@@ -107,11 +107,19 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   if (from) intakeQuery = intakeQuery.where("date", ">=", from);
   if (to) intakeQuery = intakeQuery.where("date", "<=", to);
 
+  let notesQuery = userRef
+    .collection("notes")
+    .orderBy("date", "desc")
+    .limit(limit);
+  if (from) notesQuery = notesQuery.where("date", ">=", from);
+  if (to) notesQuery = notesQuery.where("date", "<=", to);
+
   const [
     dailiesSnap,
     bpSnap,
     waterSnap,
     intakeSnap,
+    notesSnap,
     idealsSnap,
     presetsSnap,
     profileSnap,
@@ -120,6 +128,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     bpQuery.get(),
     waterQuery.get(),
     intakeQuery.get(),
+    notesQuery.get(),
     userRef.collection("ideals").doc("current").get(),
     userRef.collection("presets").orderBy("ml", "asc").get(),
     userRef.collection("profile").doc("current").get(),
@@ -187,7 +196,21 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
         sodium: clean(i.sodium),
         amount: clean(i.amount),
         note: clean(i.note),
+        nutritionSource: clean(i.nutritionSource),
         createdAt: toIso(i.createdAt),
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const notes = notesSnap.docs
+    .map((doc) => {
+      const n = doc.data();
+      return {
+        id: doc.id,
+        date: String(n.date ?? ""),
+        time: clean(n.time),
+        text: clean(n.text),
+        createdAt: toIso(n.createdAt),
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -275,6 +298,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     bpReadings,
     waterLogs,
     intake,
+    notes,
     ideals,
     presets,
     profile,
