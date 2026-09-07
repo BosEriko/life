@@ -90,7 +90,7 @@ export function DashboardHeader() {
         }}
       >
         <Flex
-          align="center"
+          align="stretch"
           gap={compact ? 12 : 20}
           wrap
           style={{ minWidth: 0 }}
@@ -135,38 +135,45 @@ export function DashboardHeader() {
           </Link>
 
           {compact ? null : (
-            <Flex align="center" gap={4}>
+            <Flex align="stretch" gap={4}>
               {NAV.map((item) => {
                 const active = pathname === item.key;
                 return (
-                  <Button
+                  <div
                     key={item.key}
-                    type="text"
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => router.push(item.key)}
                     style={{
                       position: "relative",
-                      fontWeight: active ? 600 : 400,
-                      color: active ? token.colorPrimary : undefined,
+                      display: "flex",
+                      alignItems: "center",
                     }}
                   >
-                    {item.label}
+                    <Button
+                      type="text"
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => router.push(item.key)}
+                      style={{
+                        fontWeight: active ? 600 : 400,
+                        color: active ? token.colorPrimary : undefined,
+                      }}
+                    >
+                      {item.label}
+                    </Button>
                     {active ? (
                       <span
                         aria-hidden
                         style={{
                           position: "absolute",
                           left: "50%",
-                          bottom: 3,
+                          bottom: -16,
                           transform: "translateX(-50%)",
-                          width: 18,
+                          width: 20,
                           height: 3,
-                          borderRadius: 3,
+                          borderRadius: "3px 3px 0 0",
                           background: token.colorPrimary,
                         }}
                       />
                     ) : null}
-                  </Button>
+                  </div>
                 );
               })}
             </Flex>

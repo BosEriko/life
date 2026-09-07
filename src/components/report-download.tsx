@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { App, FloatButton, Grid } from "antd";
+import { App, FloatButton, Grid, theme } from "antd";
 import { MenuOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { BpModal } from "@/components/bp-modal";
@@ -27,6 +27,12 @@ export function ReportDownload() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const screens = Grid.useBreakpoint();
+  const { token } = theme.useToken();
+
+  const controlStyle = {
+    background: token.colorBgSpotlight,
+    color: token.colorTextLightSolid,
+  };
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
@@ -179,11 +185,13 @@ export function ReportDownload() {
           }
           tooltip={tip(`Move menu to ${menuSide === "right" ? "left" : "right"}`)}
           onClick={toggleMenuSide}
+          style={controlStyle}
           className={`quick-action-health${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
         />
         <FloatButton
           aria-label={menuCollapsed ? "Expand menu" : "Collapse menu"}
           icon={<MenuOutlined />}
+          style={controlStyle}
           tooltip={tip(menuCollapsed ? "Expand menu" : "Collapse menu")}
           onClick={() => setMenuCollapsed((current) => !current)}
         />
