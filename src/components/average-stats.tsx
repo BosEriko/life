@@ -41,6 +41,12 @@ import {
   type DailyWater,
   type WaterLog,
 } from "@/models/water";
+import {
+  dailyIntake,
+  watchIntake,
+  type DailyIntake,
+  type IntakeEntry,
+} from "@/models/intake";
 import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
@@ -130,6 +136,13 @@ type WindowStats = {
   systolic: number | null;
   diastolic: number | null;
   water: number | null;
+  calories: number | null;
+  sodium: number | null;
+};
+
+type DailyNutrition = DailyIntake & {
+  hasCalories: boolean;
+  hasSodium: boolean;
 };
 
 function withinRange<T extends { date: string }>(items: T[], range: Range): T[] {
@@ -142,6 +155,7 @@ function meanStats(
   entries: DailyEntry[],
   bp: DailyBp[],
   water: DailyWater[],
+  intake: DailyNutrition[],
 ): WindowStats {
   return {
     weight: mean(
@@ -152,6 +166,12 @@ function meanStats(
     systolic: mean(bp.map((day) => day.systolic)),
     diastolic: mean(bp.map((day) => day.diastolic)),
     water: mean(water.map((day) => day.ml)),
+    calories: mean(
+      intake.filter((day) => day.hasCalories).map((day) => day.calories),
+    ),
+    sodium: mean(
+      intake.filter((day) => day.hasSodium).map((day) => day.sodium),
+    ),
   };
 }
 
@@ -168,6 +188,7 @@ export function AverageStats() {
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
+  const [intakeEntries, setIntakeEntries] = useState<IntakeEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [range, setRange] = useState<Range>(loadRange);
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
@@ -201,6 +222,11 @@ export function AverageStats() {
 
   useEffect(() => {
     if (!user) return;
+    return watchIntake(user.uid, setIntakeEntries, () => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
     return watchIdeals(user.uid, setIdeals, () => {});
   }, [user]);
 
@@ -214,14 +240,33 @@ export function AverageStats() {
     [waterLogs],
   );
 
+  const dailyNutrition = useMemo<DailyNutrition[]>(() => {
+    const calorieDates = new Set(
+      intakeEntries
+        .filter((entry) => entry.calories != null)
+        .map((entry) => entry.date),
+    );
+    const sodiumDates = new Set(
+      intakeEntries
+        .filter((entry) => entry.sodium != null)
+        .map((entry) => entry.date),
+    );
+    return Array.from(dailyIntake(intakeEntries).values()).map((day) => ({
+      ...day,
+      hasCalories: calorieDates.has(day.date),
+      hasSodium: sodiumDates.has(day.date),
+    }));
+  }, [intakeEntries]);
+
   const stats = useMemo(
     () =>
       meanStats(
         withinRange(entries, range),
         withinRange(dailyBp, range),
         withinRange(dailyWater, range),
+        withinRange(dailyNutrition, range),
       ),
-    [entries, dailyBp, dailyWater, range],
+    [entries, dailyBp, dailyWater, dailyNutrition, range],
   );
 
   const prevStats = useMemo<WindowStats | null>(() => {
@@ -234,14 +279,21 @@ export function AverageStats() {
         const day = dayjs(item.date);
         return !day.isBefore(start, "day") && !day.isAfter(end, "day");
       });
-    return meanStats(inWindow(entries), inWindow(dailyBp), inWindow(dailyWater));
-  }, [entries, dailyBp, dailyWater, range]);
+    return meanStats(
+      inWindow(entries),
+      inWindow(dailyBp),
+      inWindow(dailyWater),
+      inWindow(dailyNutrition),
+    );
+  }, [entries, dailyBp, dailyWater, dailyNutrition, range]);
 
   const items: StatItem[] = useMemo(() => {
     const weightStatus = evaluateIdeal(stats.weight, ideals.weight);
     const waterStatus = evaluateIdeal(stats.water, ideals.water);
     const sysStatus = evaluateIdeal(stats.systolic, ideals.systolic);
     const diaStatus = evaluateIdeal(stats.diastolic, ideals.diastolic);
+    const calorieStatus = evaluateIdeal(stats.calories, ideals.calories);
+    const sodiumStatus = evaluateIdeal(stats.sodium, ideals.sodium);
     const bpStatus = worstStatus(sysStatus, diaStatus);
 
     const priorLabel = range === "7" ? "week" : "period";
@@ -328,6 +380,32 @@ export function AverageStats() {
           volumeDecimals(units.volume),
         ),
       },
+      {
+        label: "Calories",
+        icon: "calories",
+        value:
+          stats.calories != null
+            ? `${Math.round(stats.calories)} kcal`
+            : "—",
+        status: calorieStatus,
+        tip:
+          calorieStatus === "low" || calorieStatus === "high"
+            ? `${calorieStatus === "high" ? "Above" : "Below"} ideal (${rangeText(ideals.calories)} kcal)`
+            : undefined,
+        delta: deltaFor(stats.calories, prevStats?.calories, "kcal", 0),
+      },
+      {
+        label: "Sodium",
+        icon: "sodium",
+        value:
+          stats.sodium != null ? `${Math.round(stats.sodium)} mg` : "—",
+        status: sodiumStatus,
+        tip:
+          sodiumStatus === "low" || sodiumStatus === "high"
+            ? `${sodiumStatus === "high" ? "Above" : "Below"} ideal (${rangeText(ideals.sodium)} mg)`
+            : undefined,
+        delta: deltaFor(stats.sodium, prevStats?.sodium, "mg", 0),
+      },
     ];
   }, [stats, prevStats, ideals, range, units]);
 
@@ -401,10 +479,15 @@ export function AverageStats() {
                   scrollSnapType: "x mandatory",
                   WebkitOverflowScrolling: "touch",
                 }
-              : { marginTop: 12, display: "flex", gap: RAIL_GAP, flexWrap: "wrap" }
+              : {
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                  gap: RAIL_GAP,
+                }
           }
         >
-          {items.map((item) => {
+          {items.map((item, index) => {
             const off = item.status === "low" || item.status === "high";
             const tileStyle: CSSProperties = {
               padding: "12px 14px",
@@ -416,7 +499,7 @@ export function AverageStats() {
                     scrollSnapAlign: "start",
                     scrollSnapStop: "always",
                   }
-                : { flex: "1 1 220px" }),
+                : { gridColumn: index < 2 ? "span 3" : "span 2" }),
             };
             return (
               <div key={item.label} style={tileStyle}>
