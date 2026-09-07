@@ -161,69 +161,68 @@ export function RecentEntries() {
             return (
             <Flex
               key={entry.date}
-              vertical
-              gap={4}
+              align="flex-start"
+              justify="space-between"
+              gap={12}
               style={{
                 padding: "12px 0",
                 borderTop: `1px solid ${token.colorBorderSecondary}`,
               }}
             >
-              <Flex align="center" justify="space-between" gap={12}>
-                <Typography.Text strong>
-                  {relativeDate(entry.date)}
-                </Typography.Text>
-                <Flex gap={16} wrap justify="flex-end">
-                  {entry.weight != null ? (
-                    <Typography.Text type="secondary">
-                      <Icon name="weight" style={{ marginRight: 4 }} />
-                      <Tip title={weightTip}>
-                        <Typography.Text
-                          strong
-                          style={{
-                            color: weightTip ? token.colorError : undefined,
-                            cursor: weightTip ? "help" : undefined,
-                          }}
-                        >
-                          {formatWeight(entry.weight, units.weight)}
-                        </Typography.Text>
-                      </Tip>
-                    </Typography.Text>
-                  ) : null}
-                  {bp ? (
-                    <Typography.Text type="secondary">
-                      <Icon name="bp" style={{ marginRight: 4 }} />
-                      <Tip title={bpTip}>
-                        <Typography.Text
-                          strong
-                          style={{
-                            color: bpTip ? token.colorError : undefined,
-                            cursor: bpTip ? "help" : undefined,
-                          }}
-                        >
-                          {bp.systolic}/{bp.diastolic}
-                        </Typography.Text>
-                      </Tip>{" "}
-                      mmHg
-                    </Typography.Text>
-                  ) : null}
-                  {water ? (
-                    <Typography.Text type="secondary">
-                      <Icon name="water" style={{ marginRight: 4 }} />
-                      <Tip title={waterTip}>
-                        <Typography.Text
-                          strong
-                          style={{
-                            color: waterTip ? token.colorError : undefined,
-                            cursor: waterTip ? "help" : undefined,
-                          }}
-                        >
-                          {formatVolume(water.ml, units.volume)}
-                        </Typography.Text>
-                      </Tip>
-                    </Typography.Text>
-                  ) : null}
-                </Flex>
+              <Flex vertical gap={4} style={{ minWidth: 0 }}>
+                {entry.weight != null ? (
+                  <Typography.Text type="secondary">
+                    <Icon name="weight" style={{ marginRight: 4 }} />
+                    <Tip title={weightTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: weightTip ? token.colorError : undefined,
+                          cursor: weightTip ? "help" : undefined,
+                        }}
+                      >
+                        {formatWeight(entry.weight, units.weight)}
+                      </Typography.Text>
+                    </Tip>
+                  </Typography.Text>
+                ) : null}
+                {bp ? (
+                  <Typography.Text type="secondary">
+                    <Icon name="bp" style={{ marginRight: 4 }} />
+                    <Tip title={bpTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: bpTip ? token.colorError : undefined,
+                          cursor: bpTip ? "help" : undefined,
+                        }}
+                      >
+                        {bp.systolic}/{bp.diastolic}
+                      </Typography.Text>
+                    </Tip>{" "}
+                    mmHg
+                  </Typography.Text>
+                ) : null}
+                {water ? (
+                  <Typography.Text type="secondary">
+                    <Icon name="water" style={{ marginRight: 4 }} />
+                    <Tip title={waterTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: waterTip ? token.colorError : undefined,
+                          cursor: waterTip ? "help" : undefined,
+                        }}
+                      >
+                        {formatVolume(water.ml, units.volume)}
+                      </Typography.Text>
+                    </Tip>
+                  </Typography.Text>
+                ) : null}
               </Flex>
+              <Typography.Text strong style={{ whiteSpace: "nowrap" }}>
+                {relativeDate(entry.date)}
+              </Typography.Text>
             </Flex>
             );
           })}
