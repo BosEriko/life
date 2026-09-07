@@ -139,8 +139,13 @@ export function AdminPanel() {
         </Button>
       </Flex>
 
-      <Card size="small">
+      <Card
+        size="small"
+        styles={{ body: { padding: 0 } }}
+        style={{ overflow: "hidden" }}
+      >
         <Table<AdminUser>
+          className="flush-table"
           rowKey="uid"
           size="middle"
           loading={loading}

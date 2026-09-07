@@ -183,6 +183,7 @@ export default function SummaryPage() {
     scrollWidth: number,
   ) => (
     <Table<T>
+      className="flush-table"
       rowKey={rowKey}
       dataSource={data}
       columns={columns}
@@ -250,15 +251,37 @@ export default function SummaryPage() {
         </Button>
       </Flex>
 
+      <style>{`
+        .flush-tabs .ant-tabs-nav {
+          border-bottom: 1px solid ${token.colorBorderSecondary} !important;
+        }
+        .flush-tabs .ant-tabs-nav::before { display: none !important; }
+        .flush-tabs .ant-tabs-ink-bar {
+          visibility: visible !important;
+          background: ${token.colorPrimary} !important;
+        }
+        .flush-tabs .ant-tabs-tab {
+          border: 0 !important;
+          border-inline-end: 1px solid ${token.colorBorderSecondary} !important;
+          background: transparent !important;
+        }
+      `}</style>
+
       <Card
-        styles={{ body: { padding: "4px 24px 24px" } }}
+        styles={{ body: { padding: 0 } }}
         style={{
           borderColor: token.colorBorderSecondary,
           borderRadius: token.borderRadiusLG,
           boxShadow: token.boxShadowTertiary,
+          overflow: "hidden",
         }}
       >
-        <Tabs items={tabs} tabBarStyle={{ marginBottom: 20 }} />
+        <Tabs
+          type="card"
+          className="flush-tabs"
+          items={tabs}
+          tabBarStyle={{ margin: 0, padding: 0 }}
+        />
       </Card>
       <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
     </div>

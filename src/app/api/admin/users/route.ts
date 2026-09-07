@@ -1,5 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { adminFromRequest } from "@/lib/api-auth";
+import { ADMIN_EMAIL } from "@/lib/admin";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 
 export const runtime = "nodejs";
@@ -33,7 +34,12 @@ export async function GET(request: Request) {
         claudeEnabled: enabledByUid.get(user.uid) ?? false,
         createdAt: user.metadata.creationTime ?? null,
       }))
-      .sort((a, b) => (a.email ?? a.uid).localeCompare(b.email ?? b.uid));
+      .sort((a, b) => {
+        const aPinned = a.email?.toLowerCase() === ADMIN_EMAIL;
+        const bPinned = b.email?.toLowerCase() === ADMIN_EMAIL;
+        if (aPinned !== bPinned) return aPinned ? -1 : 1;
+        return (a.email ?? a.uid).localeCompare(b.email ?? b.uid);
+      });
 
     return Response.json({ users: rows });
   } catch (error) {

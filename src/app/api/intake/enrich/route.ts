@@ -85,7 +85,8 @@ export async function POST(request: Request) {
       model: HAIKU_MODEL,
       system:
         "You estimate nutrition for a single food or drink entry in a personal tracker. " +
-        "Base your estimate mainly on the item name and the amount. " +
+        "Base your estimate on the item name, the amount, and the note. " +
+        "The note may mention brand, preparation, ingredients, sides, or size — factor all of it in. " +
         "Give your best estimate of the TOTAL calories (kcal) and sodium (mg) for the portion described. " +
         "If the amount is vague or missing, assume one typical serving. Answer only through the tool.",
       prompt:

@@ -119,3 +119,58 @@ body {
     overflow-y: auto;
   }
 }
+
+/* tables that sit flush against a card's edges: square corners and scroll
+   shadow, but keep the cell text off the card border. !important is needed
+   to beat antd's size-scoped cell padding (.ant-table.ant-table-medium ...) */
+.flush-table .ant-table,
+.flush-table .ant-table table,
+.flush-table .ant-table-container,
+.flush-table .ant-table-content,
+.flush-table .ant-table-header,
+.flush-table .ant-table-body,
+.flush-table .ant-table-container::before,
+.flush-table .ant-table-container::after,
+.flush-table .ant-table-thead > tr > th,
+.flush-table .ant-table-tbody > tr > td {
+  border-radius: 0 !important;
+}
+
+.flush-table .ant-table-thead > tr > th:first-child,
+.flush-table .ant-table-tbody > tr > td:first-child {
+  padding-inline-start: 20px !important;
+}
+
+.flush-table .ant-table-thead > tr > th:last-child,
+.flush-table .ant-table-tbody > tr > td:last-child {
+  padding-inline-end: 20px !important;
+}
+
+.flush-table .ant-table-pagination.ant-pagination {
+  padding-inline: 20px;
+}
+
+/* no inset edge shadow when the table can scroll horizontally */
+.flush-table .ant-table-container::before,
+.flush-table .ant-table-container::after,
+.flush-table .ant-table-cell-fix-left::after,
+.flush-table .ant-table-cell-fix-right::after {
+  box-shadow: none !important;
+}
+
+/* square-topped card tabs, flush against each other */
+.flush-tabs .ant-tabs-tab {
+  border-radius: 0 !important;
+}
+
+.flush-tabs .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 0 !important;
+  margin-inline-start: 0 !important;
+}
+
+.flush-tabs .ant-tabs-nav,
+.flush-tabs .ant-tabs-nav-wrap,
+.flush-tabs .ant-tabs-nav-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
