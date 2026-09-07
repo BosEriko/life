@@ -14,14 +14,31 @@ const sans = Manrope({
   display: "swap",
 });
 
+const DESCRIPTION =
+  "A private daily tracker for habits, hydration, nutrition, weight, blood pressure, and notes.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://life.boseriko.com"),
+  applicationName: "Life Tracker",
   title: "Life Tracker",
-  description:
-    "A private daily tracker for habits, hydration, nutrition, weight, blood pressure, and notes.",
+  description: DESCRIPTION,
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
     apple: "/icon-192.png",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Life Tracker",
+    title: "Life Tracker",
+    description: DESCRIPTION,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Life Tracker",
+    description: DESCRIPTION,
   },
 };
 
