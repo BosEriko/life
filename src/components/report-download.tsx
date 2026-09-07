@@ -11,7 +11,6 @@ import { NotesModal } from "@/components/notes-modal";
 import { WaterModal } from "@/components/water-modal";
 import { WeightModal } from "@/components/weight-modal";
 import { Icon } from "@/components/icon";
-import { useBottomToast } from "@/components/use-bottom-toast";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import { watchIntake, type IntakeEntry } from "@/models/intake";
 import { watchBpReadings, type BpReading } from "@/models/bp";
@@ -21,6 +20,7 @@ import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/ideals";
 
 const HISTORY_LIMIT = 1000;
 const MENU_SIDE_KEY = "quick-action-menu-side";
+const MENU_COLLAPSED_KEY = "quick-action-menu-collapsed";
 
 type MenuSide = "left" | "right";
 
@@ -29,7 +29,6 @@ export function ReportDownload() {
   const { message } = App.useApp();
   const screens = Grid.useBreakpoint();
   const { token } = theme.useToken();
-  const bottomToast = useBottomToast();
 
   const controlStyle = {
     background: token.colorBgSpotlight,
@@ -52,14 +51,23 @@ export function ReportDownload() {
   const [menuCollapsed, setMenuCollapsed] = useState(false);
 
   useEffect(() => {
-    let restoreTimer: number | undefined;
+    let sideTimer: number | undefined;
+    let collapsedTimer: number | undefined;
     try {
-      const saved = window.localStorage.getItem(MENU_SIDE_KEY);
-      if (saved === "left" || saved === "right") {
-        restoreTimer = window.setTimeout(() => setMenuSide(saved), 0);
+      const savedSide = window.localStorage.getItem(MENU_SIDE_KEY);
+      if (savedSide === "left" || savedSide === "right") {
+        sideTimer = window.setTimeout(() => setMenuSide(savedSide), 0);
+      }
+      const savedCollapsed = window.localStorage.getItem(MENU_COLLAPSED_KEY);
+      if (savedCollapsed === "1" || savedCollapsed === "0") {
+        const value = savedCollapsed === "1";
+        collapsedTimer = window.setTimeout(() => setMenuCollapsed(value), 0);
       }
     } catch {}
-    return () => window.clearTimeout(restoreTimer);
+    return () => {
+      window.clearTimeout(sideTimer);
+      window.clearTimeout(collapsedTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -117,9 +125,12 @@ export function ReportDownload() {
     [intakeEntries],
   );
 
-  const pulsing =
-    !hasWeightToday || !hasWaterToday || !hasIntakeToday || !hasBpToday;
-  const collapsed = pulsing ? false : menuCollapsed;
+  const pulsingCount =
+    (hasWeightToday ? 0 : 1) +
+    (hasWaterToday ? 0 : 1) +
+    (hasIntakeToday ? 0 : 1) +
+    (hasBpToday ? 0 : 1);
+  const collapsed = menuCollapsed;
 
   const tip = (title: string) =>
     screens.md === true
@@ -135,6 +146,16 @@ export function ReportDownload() {
       const next = current === "right" ? "left" : "right";
       try {
         window.localStorage.setItem(MENU_SIDE_KEY, next);
+      } catch {}
+      return next;
+    });
+  }
+
+  function toggleMenuCollapsed() {
+    setMenuCollapsed((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(MENU_COLLAPSED_KEY, next ? "1" : "0");
       } catch {}
       return next;
     });
@@ -201,19 +222,10 @@ export function ReportDownload() {
         <FloatButton
           aria-label={collapsed ? "Expand menu" : "Collapse menu"}
           icon={<MenuOutlined />}
-          style={
-            pulsing
-              ? { ...controlStyle, opacity: 0.5, cursor: "not-allowed" }
-              : controlStyle
-          }
+          style={controlStyle}
+          badge={{ count: collapsed ? pulsingCount : 0 }}
           tooltip={tip(collapsed ? "Expand menu" : "Collapse menu")}
-          onClick={() => {
-            if (pulsing) {
-              bottomToast.show("Log today's pulsing items first");
-              return;
-            }
-            setMenuCollapsed((current) => !current);
-          }}
+          onClick={toggleMenuCollapsed}
         />
         {screens.md !== false ? (
           <FloatButton
@@ -226,8 +238,6 @@ export function ReportDownload() {
           />
         ) : null}
       </FloatButton.Group>
-
-      {bottomToast.node}
 
       <HabitModal
         open={habitOpen}
