@@ -16,12 +16,11 @@ import {
   TimePicker,
   Typography,
 } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
-import { confirmDestroy } from "@/lib/confirm-destroy";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
@@ -70,7 +69,7 @@ export function IntakeModal({
   ideals: Ideals;
 }) {
   const { user } = useAuth();
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const { token } = theme.useToken();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
@@ -373,17 +372,9 @@ export function IntakeModal({
                   </Typography.Text>
                 ) : null}
               </Flex>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() =>
-                  confirmDestroy(modal, {
-                    title: "Delete this entry?",
-                    onOk: () => handleDelete(entry.id),
-                  })
-                }
+              <ConfirmDeleteButton
+                ariaLabel="Delete entry"
+                onConfirm={() => handleDelete(entry.id)}
               />
             </Flex>
           ))}

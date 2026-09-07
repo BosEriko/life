@@ -12,12 +12,11 @@ import {
   TimePicker,
   Typography,
 } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
-import { confirmDestroy } from "@/lib/confirm-destroy";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
 import { useUnits } from "@/components/units-provider";
 import {
@@ -60,7 +59,7 @@ export function WaterModal({
 }) {
   const units = useUnits();
   const { user } = useAuth();
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const { token } = theme.useToken();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
@@ -265,17 +264,9 @@ export function WaterModal({
                 · {formatWaterTime(log.date, log.time)}
                 {log.label ? ` · ${log.label}` : ""}
               </Typography.Text>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() =>
-                  confirmDestroy(modal, {
-                    title: "Delete this entry?",
-                    onOk: () => handleDelete(log.id),
-                  })
-                }
+              <ConfirmDeleteButton
+                ariaLabel="Delete entry"
+                onConfirm={() => handleDelete(log.id)}
               />
             </Flex>
           ))}

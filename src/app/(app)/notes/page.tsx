@@ -17,7 +17,6 @@ import {
 import {
   ClockCircleOutlined,
   CopyOutlined,
-  DeleteOutlined,
   EditOutlined,
   LeftOutlined,
   RightOutlined,
@@ -25,9 +24,9 @@ import {
 } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon } from "@/components/icon";
 import { NotesModal } from "@/components/notes-modal";
-import { confirmDestroy } from "@/lib/confirm-destroy";
 import { relativeDate, todayKey } from "@/models/dailies";
 import {
   deleteNote,
@@ -39,7 +38,7 @@ import {
 
 export default function NotesPage() {
   const { user } = useAuth();
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -262,18 +261,9 @@ export default function NotesPage() {
                         icon={<SendOutlined />}
                         onClick={() => setNoteToShare(note)}
                       />
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        aria-label="Delete note"
-                        icon={<DeleteOutlined />}
-                        onClick={() =>
-                          confirmDestroy(modal, {
-                            title: "Delete this note?",
-                            onOk: () => handleDelete(note.id),
-                          })
-                        }
+                      <ConfirmDeleteButton
+                        ariaLabel="Delete note"
+                        onConfirm={() => handleDelete(note.id)}
                       />
                     </Flex>
                   </Flex>

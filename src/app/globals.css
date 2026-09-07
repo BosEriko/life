@@ -20,6 +20,39 @@ body {
   border-end-end-radius: 3px;
 }
 
+.confirm-delete-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 3100;
+  max-width: calc(100vw - 32px);
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: confirm-delete-toast-in 160ms ease-out;
+}
+
+@keyframes confirm-delete-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-delete-toast {
+    animation: none;
+  }
+}
+
 .nav-progress-flash {
   animation: nav-progress-flash 650ms ease-out forwards;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   App,
   Button,
@@ -15,7 +15,6 @@ import {
 } from "antd";
 import { CodeOutlined, CopyOutlined, KeyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
-import { confirmDestroy } from "@/lib/confirm-destroy";
 import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/mcp-key";
 
 const KEY_PLACEHOLDER = "<YOUR_MCP_KEY>";
@@ -31,7 +30,7 @@ const PRE_STYLE: CSSProperties = {
 
 export function DeveloperPanel() {
   const { user } = useAuth();
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const { token } = theme.useToken();
   const [meta, setMeta] = useState<McpKeyMeta | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -39,6 +38,23 @@ export function DeveloperPanel() {
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [copyBusy, setCopyBusy] = useState(false);
+  const [regenArmed, setRegenArmed] = useState(false);
+  const regenTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => () => clearTimeout(regenTimer.current), []);
+
+  function armRegenerate() {
+    if (regenArmed) {
+      clearTimeout(regenTimer.current);
+      setRegenArmed(false);
+      handleGenerate();
+      return;
+    }
+    setRegenArmed(true);
+    regenTimer.current = setTimeout(() => setRegenArmed(false), 3000);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -212,18 +228,14 @@ export function DeveloperPanel() {
             {meta && !freshKey ? (
               <Button
                 type="primary"
+                danger={regenArmed}
                 icon={<KeyOutlined />}
                 loading={busy}
-                onClick={() =>
-                  confirmDestroy(modal, {
-                    title: "Invalidate the current key?",
-                    content: "Anything using the old key stops working.",
-                    okText: "Regenerate",
-                    onOk: handleGenerate,
-                  })
-                }
+                onClick={armRegenerate}
               >
-                Regenerate key
+                {regenArmed
+                  ? "Tap again — this invalidates the current key"
+                  : "Regenerate key"}
               </Button>
             ) : (
               <Button
