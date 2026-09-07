@@ -517,7 +517,7 @@ export function AverageStats() {
                   <Typography.Text
                     strong
                     style={{
-                      display: "block",
+                      display: "inline-block",
                       marginTop: 4,
                       fontSize: 18,
                       cursor: item.tip ? "help" : undefined,

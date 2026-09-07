@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { App, Flex, Grid, Spin, theme, Typography } from "antd";
-import dayjs from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import {
@@ -10,7 +10,7 @@ import {
   TERRACOTTA_DARK,
   useIsDark,
 } from "@/components/theme-provider";
-import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
+import { watchDailies, type DailyEntry } from "@/models/dailies";
 import {
   dailyIntake,
   watchIntake,
@@ -90,7 +90,7 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
 
 const ALL_HABITS: Habit[] = HABIT_GROUPS.flatMap((group) => group.habits);
 
-export function HabitCalendar() {
+export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
@@ -147,13 +147,31 @@ export function HabitCalendar() {
     };
   }, [byDate, intakeByDate]);
 
+  const days = useMemo(() => {
+    const end = throughDate.startOf("day");
+    const start = end.subtract(WEEKS * 7 - 1, "day");
+    return Array.from({ length: WEEKS * 7 }, (_, index) => ({
+      key: start.add(index, "day").format("YYYY-MM-DD"),
+    }));
+  }, [throughDate]);
+
+  const visibleDates = useMemo(
+    () => new Set(days.map((day) => day.key)),
+    [days],
+  );
+
   const figures = useMemo(() => {
-    const logged = entries.length;
+    const visibleEntries = entries.filter((entry) =>
+      visibleDates.has(entry.date),
+    );
+    const logged = visibleEntries.length;
     const map = new Map<string, string>();
-    const intakeDays = Array.from(intakeByDate.values());
+    const intakeDays = Array.from(intakeByDate.values()).filter((day) =>
+      visibleDates.has(day.date),
+    );
     for (const habit of ALL_HABITS) {
       if (habit.source === "daily") {
-        const on = entries.filter(
+        const on = visibleEntries.filter(
           (entry) => entry[habit.key] === true,
         ).length;
         map.set(
@@ -166,19 +184,7 @@ export function HabitCalendar() {
       }
     }
     return map;
-  }, [entries, intakeByDate]);
-
-  const days = useMemo(() => {
-    const today = dayjs(todayKey());
-    const start = today.endOf("week").subtract(WEEKS * 7 - 1, "day");
-    return Array.from({ length: WEEKS * 7 }, (_, index) => {
-      const day = start.add(index, "day");
-      return {
-        key: day.format("YYYY-MM-DD"),
-        future: day.isAfter(today, "day"),
-      };
-    });
-  }, []);
+  }, [entries, intakeByDate, visibleDates]);
 
   return (
     <div>
@@ -258,18 +264,16 @@ export function HabitCalendar() {
                         }}
                       >
                         {days.map((day) => {
-                          const on = !day.future && isOn(habit, day.key);
-                          const background = day.future
-                            ? "transparent"
-                            : on
-                              ? habit.tone === "bad"
-                                ? badColor
-                                : token.colorSuccess
-                              : token.colorFillSecondary;
+                          const on = isOn(habit, day.key);
+                          const background = on
+                            ? habit.tone === "bad"
+                              ? badColor
+                              : token.colorSuccess
+                            : token.colorFillSecondary;
                           return (
                             <div
                               key={day.key}
-                              data-date={day.future ? undefined : day.key}
+                              data-date={day.key}
                               style={{
                                 width: CELL,
                                 height: CELL,

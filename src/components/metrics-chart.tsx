@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   App,
-  DatePicker,
   Empty,
   Flex,
   Segmented,
@@ -20,7 +19,7 @@ import {
   TERRACOTTA_DARK,
   useIsDark,
 } from "@/components/theme-provider";
-import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
+import { watchDailies, type DailyEntry } from "@/models/dailies";
 import {
   dailyBpAverages,
   watchBpReadings,
@@ -37,21 +36,12 @@ import { fromKg, fromMl } from "@/lib/units";
 const HISTORY_LIMIT = 1000;
 
 type Metric = "weight" | "bp" | "water";
-type Preset = "7" | "30" | "90" | "365" | "all" | "custom";
+export type TrendsPreset = "7" | "30" | "90" | "365" | "all";
 
 const METRIC_OPTIONS = [
   { label: "Weight", value: "weight" },
   { label: "Blood pressure", value: "bp" },
   { label: "Water", value: "water" },
-];
-
-const PRESET_OPTIONS = [
-  { label: "7D", value: "7" },
-  { label: "30D", value: "30" },
-  { label: "90D", value: "90" },
-  { label: "1Y", value: "365" },
-  { label: "All", value: "all" },
-  { label: "Custom", value: "custom" },
 ];
 
 type Point = { date: string; value: number; series: string };
@@ -78,7 +68,13 @@ function saveMetric(metric: Metric) {
   }
 }
 
-export function MetricsChart() {
+export function MetricsChart({
+  throughDate,
+  preset,
+}: {
+  throughDate: Dayjs;
+  preset: TrendsPreset;
+}) {
   const units = useUnits();
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -90,8 +86,6 @@ export function MetricsChart() {
   const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [metric, setMetric] = useState<Metric>(loadMetric);
-  const [preset, setPreset] = useState<Preset>("30");
-  const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -120,15 +114,10 @@ export function MetricsChart() {
   }, [user]);
 
   const [start, end] = useMemo<[Dayjs | null, Dayjs]>(() => {
-    const today = dayjs(todayKey());
-    if (preset === "custom") {
-      return customRange
-        ? [customRange[0].startOf("day"), customRange[1].startOf("day")]
-        : [null, today];
-    }
-    if (preset === "all") return [null, today];
-    return [today.subtract(Number(preset) - 1, "day"), today];
-  }, [preset, customRange]);
+    const endDate = throughDate.startOf("day");
+    if (preset === "all") return [null, endDate];
+    return [endDate.subtract(Number(preset) - 1, "day"), endDate];
+  }, [preset, throughDate]);
 
   const data = useMemo<Point[]>(() => {
     const points: Point[] = [];
@@ -212,38 +201,6 @@ export function MetricsChart() {
             const next = value as Metric;
             setMetric(next);
             saveMetric(next);
-          }}
-        />
-      </Flex>
-
-      <Flex align="center" gap={12} wrap style={{ marginBottom: 16 }}>
-        <Segmented
-          options={PRESET_OPTIONS}
-          value={preset}
-          onChange={(value) => {
-            const next = value as Preset;
-            setPreset(next);
-            if (next === "custom") {
-              if (!customRange) {
-                const today = dayjs(todayKey());
-                setCustomRange([today.subtract(29, "day"), today]);
-              }
-            } else {
-              setCustomRange(null);
-            }
-          }}
-        />
-        <DatePicker.RangePicker
-          value={customRange}
-          maxDate={dayjs(todayKey())}
-          onChange={(range) => {
-            if (range && range[0] && range[1]) {
-              setCustomRange([range[0], range[1]]);
-              setPreset("custom");
-            } else {
-              setCustomRange(null);
-              setPreset("30");
-            }
           }}
         />
       </Flex>
