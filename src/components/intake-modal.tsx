@@ -138,10 +138,14 @@ export function IntakeModal({
   );
   const totalTip = [
     calorieStatus === "low" || calorieStatus === "high"
-      ? `Calories ${calorieStatus === "high" ? "above" : "below"} your ideal (${rangeText(ideals.calories)} kcal).`
+      ? `Calories ${calorieStatus === "high" ? "above" : "below"} your ideal (${rangeText(
+          ideals.calories,
+        )} kcal)`
       : null,
     sodiumStatus === "low" || sodiumStatus === "high"
-      ? `Sodium ${sodiumStatus === "high" ? "above" : "below"} your ideal (${rangeText(ideals.sodium)} mg).`
+      ? `Sodium ${sodiumStatus === "high" ? "above" : "below"} your ideal (${rangeText(
+          ideals.sodium,
+        )} mg)`
       : null,
   ]
     .filter((part): part is string => part != null)

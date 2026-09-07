@@ -20,7 +20,9 @@ import { Tip } from "@/components/tip";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
 import { useUnits } from "@/components/units-provider";
 import {
+  convertRange,
   formatVolume,
+  fromMl,
   toMl,
   volumeDecimals,
   volumeStep,
@@ -38,11 +40,6 @@ import {
 } from "@/models/water";
 
 const FALLBACK_AMOUNTS = [500, 1000];
-
-const WATER_TIPS = {
-  low: "Sip steadily through the day rather than in big gulps, keep a bottle in sight, and add water-rich foods. A dry mouth, dark urine, or a dull headache means catch up now.",
-  high: "Well above your target — no need to force more. Drinking a lot in a short window can dilute your sodium, so spread it out and ease off if you feel bloated or headachy.",
-};
 
 export function WaterModal({
   open,
@@ -95,9 +92,9 @@ export function WaterModal({
   );
   const totalTip =
     totalEval === "low" || totalEval === "high"
-      ? `Daily total ${totalEval === "high" ? "above" : "below"} your ideal (${rangeText(
-          ideals.water,
-        )} ml). ${totalEval === "high" ? WATER_TIPS.high : WATER_TIPS.low}`
+      ? `${totalEval === "high" ? "Above" : "Below"} your ideal (${rangeText(
+          convertRange(ideals.water, (value) => fromMl(value, units.volume)),
+        )} ${volumeSuffix(units.volume)})`
       : undefined;
 
   function logAmount(ml: number, label?: string) {

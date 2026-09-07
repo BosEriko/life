@@ -45,28 +45,16 @@ const ARM_OPTIONS = [
   { label: "Right arm", value: "right" },
 ];
 
-const BP_TIPS = {
-  systolicLow:
-    "To nudge it up: drink more water, add a little salt, eat smaller and more frequent meals, and stand up slowly. See a doctor if you feel faint or dizzy.",
-  systolicHigh:
-    "To bring it down: cut back on salt and processed food, move daily, limit alcohol and caffeine, sleep well, and lower stress. See a doctor if it stays high.",
-  diastolicLow:
-    "To raise it: keep fluids up, don't skip meals, ease off alcohol, and rise slowly from sitting or lying down. See a doctor if it comes with fatigue or dizziness.",
-  diastolicHigh:
-    "To lower it: reduce salt, add potassium-rich foods (leafy greens, banana), exercise regularly, cut alcohol, and wind down before bed. See a doctor if it stays high.",
-} as const;
-
 function metricTip(
   value: number,
   range: IdealRange,
   label: "Systolic" | "Diastolic",
-  tips: { low: string; high: string },
 ): string | undefined {
   const status = evaluateIdeal(value, range);
   if (status !== "low" && status !== "high") return undefined;
   return `${label} ${status === "high" ? "above" : "below"} your ideal (${rangeText(
     range,
-  )} mmHg). ${status === "high" ? tips.high : tips.low}`;
+  )} mmHg)`;
 }
 
 export function BpModal({
@@ -120,6 +108,13 @@ export function BpModal({
     () => dailyBpAverages(dayReadings).get(dateKey) ?? null,
     [dayReadings, dateKey],
   );
+
+  const avgSysTip = dailyAverage
+    ? metricTip(dailyAverage.systolic, ideals.systolic, "Systolic")
+    : undefined;
+  const avgDiaTip = dailyAverage
+    ? metricTip(dailyAverage.diastolic, ideals.diastolic, "Diastolic")
+    : undefined;
 
   function handleAdd() {
     if (!user || !canAdd) return;
@@ -229,7 +224,31 @@ export function BpModal({
         </Typography.Title>
         {dailyAverage && dayReadings.length > 1 ? (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Avg {dailyAverage.systolic}/{dailyAverage.diastolic} mmHg
+            Avg{" "}
+            <Tip title={avgSysTip}>
+              <Typography.Text
+                style={{
+                  fontSize: 12,
+                  color: avgSysTip ? token.colorError : undefined,
+                  cursor: avgSysTip ? "help" : undefined,
+                }}
+              >
+                {dailyAverage.systolic}
+              </Typography.Text>
+            </Tip>
+            /
+            <Tip title={avgDiaTip}>
+              <Typography.Text
+                style={{
+                  fontSize: 12,
+                  color: avgDiaTip ? token.colorError : undefined,
+                  cursor: avgDiaTip ? "help" : undefined,
+                }}
+              >
+                {dailyAverage.diastolic}
+              </Typography.Text>
+            </Tip>{" "}
+            mmHg
           </Typography.Text>
         ) : null}
       </Flex>
@@ -241,15 +260,15 @@ export function BpModal({
       ) : (
         <Flex vertical>
           {dayReadings.map((reading) => {
-            const sysTip = metricTip(reading.systolic, ideals.systolic, "Systolic", {
-              low: BP_TIPS.systolicLow,
-              high: BP_TIPS.systolicHigh,
-            });
+            const sysTip = metricTip(
+              reading.systolic,
+              ideals.systolic,
+              "Systolic",
+            );
             const diaTip = metricTip(
               reading.diastolic,
               ideals.diastolic,
               "Diastolic",
-              { low: BP_TIPS.diastolicLow, high: BP_TIPS.diastolicHigh },
             );
             return (
               <Flex
