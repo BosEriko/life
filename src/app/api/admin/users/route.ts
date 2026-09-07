@@ -5,30 +5,40 @@ import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function fail(error: unknown, status = 500): Response {
+  const message =
+    error instanceof Error ? error.message : "Something went wrong.";
+  return Response.json({ error: message }, { status });
+}
+
 export async function GET(request: Request) {
   const admin = await adminFromRequest(request);
   if (!admin) return Response.json({ error: "Forbidden" }, { status: 403 });
 
-  const db = getAdminDb();
-  const { users } = await getAdminAuth().listUsers(1000);
+  try {
+    const db = getAdminDb();
+    const { users } = await getAdminAuth().listUsers(1000);
 
-  const refs = users.map((user) => db.doc(`claudeAccess/${user.uid}`));
-  const snaps = refs.length ? await db.getAll(...refs) : [];
-  const enabledByUid = new Map(
-    snaps.map((snap) => [snap.id, snap.get("enabled") === true]),
-  );
+    const refs = users.map((user) => db.doc(`claudeAccess/${user.uid}`));
+    const snaps = refs.length ? await db.getAll(...refs) : [];
+    const enabledByUid = new Map(
+      snaps.map((snap) => [snap.id, snap.get("enabled") === true]),
+    );
 
-  const rows = users
-    .map((user) => ({
-      uid: user.uid,
-      email: user.email ?? null,
-      displayName: user.displayName ?? null,
-      claudeEnabled: enabledByUid.get(user.uid) ?? false,
-      createdAt: user.metadata.creationTime ?? null,
-    }))
-    .sort((a, b) => (a.email ?? a.uid).localeCompare(b.email ?? b.uid));
+    const rows = users
+      .map((user) => ({
+        uid: user.uid,
+        email: user.email ?? null,
+        displayName: user.displayName ?? null,
+        claudeEnabled: enabledByUid.get(user.uid) ?? false,
+        createdAt: user.metadata.creationTime ?? null,
+      }))
+      .sort((a, b) => (a.email ?? a.uid).localeCompare(b.email ?? b.uid));
 
-  return Response.json({ users: rows });
+    return Response.json({ users: rows });
+  } catch (error) {
+    return fail(error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -46,12 +56,15 @@ export async function POST(request: Request) {
   if (!uid) return Response.json({ error: "Missing uid" }, { status: 400 });
   const enabled = body.enabled === true;
 
-  await getAdminDb()
-    .doc(`claudeAccess/${uid}`)
-    .set(
-      { enabled, updatedAt: FieldValue.serverTimestamp() },
-      { merge: true },
-    );
-
-  return Response.json({ uid, enabled });
+  try {
+    await getAdminDb()
+      .doc(`claudeAccess/${uid}`)
+      .set(
+        { enabled, updatedAt: FieldValue.serverTimestamp() },
+        { merge: true },
+      );
+    return Response.json({ uid, enabled });
+  } catch (error) {
+    return fail(error);
+  }
 }

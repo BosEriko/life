@@ -37,9 +37,11 @@ export function AdminPanel() {
         setRows(users);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return;
-        message.error("Could not load users.");
+        message.error(
+          error instanceof Error ? error.message : "Could not load users.",
+        );
         setLoading(false);
       });
     return () => {
