@@ -180,6 +180,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
         date: String(i.date ?? ""),
         time: clean(i.time),
         kind: clean(i.kind),
+        name: clean(i.name),
         category: clean(i.category),
         junk: clean(i.junk),
         calories: clean(i.calories),

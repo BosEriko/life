@@ -26,6 +26,7 @@ export async function POST(request: Request) {
   let body: {
     id?: unknown;
     kind?: unknown;
+    name?: unknown;
     category?: unknown;
     amount?: unknown;
     note?: unknown;
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
   const id = typeof body.id === "string" ? body.id : "";
   if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
   const kind = body.kind === "drink" ? "drink" : "food";
+  const name = typeof body.name === "string" ? body.name : "";
   const category = typeof body.category === "string" ? body.category : "";
   const amount = typeof body.amount === "string" ? body.amount : "";
   const note = typeof body.note === "string" ? body.note : "";
@@ -83,12 +85,14 @@ export async function POST(request: Request) {
       model: HAIKU_MODEL,
       system:
         "You estimate nutrition for a single food or drink entry in a personal tracker. " +
+        "Base your estimate mainly on the item name and the amount. " +
         "Give your best estimate of the TOTAL calories (kcal) and sodium (mg) for the portion described. " +
         "If the amount is vague or missing, assume one typical serving. Answer only through the tool.",
       prompt:
+        `Item: ${name || "unspecified"}\n` +
+        `Amount: ${amount || "one typical serving"}\n` +
         `Kind: ${kind}\n` +
         `Category: ${category || "unspecified"}\n` +
-        `Amount: ${amount || "not specified"}\n` +
         `Note: ${note || "none"}\n` +
         (knownCalories != null
           ? `Known calories for this portion: ${knownCalories} kcal (keep your other estimate consistent with this).\n`

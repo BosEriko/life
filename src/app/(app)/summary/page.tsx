@@ -161,6 +161,12 @@ export default function SummaryPage() {
       width: 110,
     },
     { title: "Type", dataIndex: "kind", render: capitalize, width: 100 },
+    {
+      title: "Name",
+      dataIndex: "name",
+      render: (value) => value || "—",
+      width: 180,
+    },
     { title: "Category", dataIndex: "category", width: 150 },
     { title: "Amount", dataIndex: "amount", render: (value) => value || "—", width: 130 },
     { title: "Calories", dataIndex: "calories", render: (value) => value == null ? "—" : `${value} kcal`, width: 120 },
@@ -207,7 +213,7 @@ export default function SummaryPage() {
     {
       key: "intake",
       label: "Intake",
-      children: table(intake, intakeColumns, "id", loaded.intake, 1190),
+      children: table(intake, intakeColumns, "id", loaded.intake, 1370),
     },
   ];
 

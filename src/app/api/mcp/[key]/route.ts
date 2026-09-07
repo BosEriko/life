@@ -116,7 +116,7 @@ const TOOLS = [
   {
     name: "get_intake",
     description:
-      "Every individual food/drink log: date, time (HH:mm), kind (food/drink), category, junk (boolean), calories (kcal), sodium (mg), amount, note. calories/sodium/amount/note may be null. get_entries returns the per-day roll-up.",
+      "Every individual food/drink log: date, time (HH:mm), kind (food/drink), name (the item, e.g. \"Chicken adobo\"), category, junk (boolean), calories (kcal), sodium (mg), amount, note. calories/sodium/amount/note may be null; name may be empty on older entries. get_entries returns the per-day roll-up.",
     inputSchema: {
       type: "object",
       properties: {

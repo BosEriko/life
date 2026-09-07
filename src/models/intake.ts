@@ -41,25 +41,12 @@ export const DRINK_CATEGORIES = [
   "Other",
 ];
 
-const JUNK_BY_DEFAULT = new Set([
-  "Dessert / sweets",
-  "Fast food",
-  "Fried",
-  "Soda",
-  "Juice",
-  "Alcohol",
-  "Energy drink",
-]);
-
-export function defaultJunk(category: string): boolean {
-  return JUNK_BY_DEFAULT.has(category);
-}
-
 export type IntakeEntry = {
   id: string;
   date: string;
   time: string;
   kind: IntakeKind;
+  name: string;
   category: string;
   junk: boolean;
   calories: number | null;
@@ -73,6 +60,7 @@ export type IntakeInput = {
   date: string;
   time: string;
   kind: IntakeKind;
+  name: string;
   category: string;
   junk: boolean;
   calories?: number | null;
@@ -109,6 +97,7 @@ export function watchIntake(
             date: (data.date as string | undefined) ?? "",
             time: (data.time as string | undefined) ?? "",
             kind: (data.kind as IntakeKind | undefined) ?? "food",
+            name: (data.name as string | undefined) ?? "",
             category: (data.category as string | undefined) ?? "",
             junk: (data.junk as boolean | undefined) ?? false,
             calories: (data.calories as number | undefined) ?? null,
@@ -133,6 +122,7 @@ export function addIntake(
     date: input.date,
     time: input.time,
     kind: input.kind,
+    name: input.name,
     category: input.category,
     junk: input.junk,
     createdAt: serverTimestamp(),

@@ -28,7 +28,6 @@ import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
 import {
   addIntake,
   dailyIntake,
-  defaultJunk,
   deleteIntake,
   DRINK_CATEGORIES,
   FOOD_CATEGORIES,
@@ -76,6 +75,7 @@ export function IntakeModal({
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [kind, setKind] = useState<IntakeKind>("food");
+  const [name, setName] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [junk, setJunk] = useState(false);
   const [calories, setCalories] = useState<number | null>(null);
@@ -84,13 +84,14 @@ export function IntakeModal({
   const [note, setNote] = useState("");
 
   const dateKey = date.format("YYYY-MM-DD");
-  const canAdd = category != null;
+  const canAdd = category != null && name.trim().length > 0;
   const categoryOptions = (
     kind === "food" ? FOOD_CATEGORIES : DRINK_CATEGORIES
   ).map((value) => ({ label: value, value }));
 
   function resetEntry() {
     setTime(dayjs());
+    setName("");
     setCategory(null);
     setJunk(false);
     setCalories(null);
@@ -110,11 +111,6 @@ export function IntakeModal({
     setKind(next);
     setCategory(null);
     setJunk(false);
-  }
-
-  function changeCategory(next: string) {
-    setCategory(next);
-    setJunk(defaultJunk(next));
   }
 
   const dayEntries = useMemo(
@@ -153,7 +149,8 @@ export function IntakeModal({
     .join(" ");
 
   function handleAdd() {
-    if (!user || category == null) return;
+    if (!user || category == null || name.trim().length === 0) return;
+    const nm = name.trim();
     const cal = typeof calories === "number" ? calories : null;
     const sod = typeof sodium === "number" ? sodium : null;
     const amt = amount.trim() ? amount.trim() : null;
@@ -163,6 +160,7 @@ export function IntakeModal({
       date: dateKey,
       time: time.format("HH:mm"),
       kind,
+      name: nm,
       category,
       junk,
       calories: cal,
@@ -183,6 +181,7 @@ export function IntakeModal({
       requestIntakeEnrichment(user, {
         id,
         kind,
+        name: nm,
         category,
         amount: amt,
         note: nt,
@@ -254,9 +253,32 @@ export function IntakeModal({
           }
           options={categoryOptions}
           value={category}
-          onChange={changeCategory}
+          onChange={setCategory}
           style={{ width: "100%" }}
         />
+
+        <Input
+          placeholder={
+            kind === "food" ? "Name (e.g. Chicken adobo)" : "Name (e.g. Iced latte)"
+          }
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+
+        <Flex gap={12} wrap align="center">
+          <Input
+            placeholder="Amount (e.g. 1.5 servings)"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            style={{ flex: 1, minWidth: 160 }}
+          />
+          <Checkbox
+            checked={junk}
+            onChange={(event) => setJunk(event.target.checked)}
+          >
+            Junk
+          </Checkbox>
+        </Flex>
 
         <Flex gap={8} wrap>
           <InputNumber
@@ -277,21 +299,6 @@ export function IntakeModal({
             onChange={setSodium}
             style={{ flex: 1, minWidth: 130 }}
           />
-        </Flex>
-
-        <Flex gap={12} wrap align="center">
-          <Input
-            placeholder="Amount (e.g. 1.5 servings)"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            style={{ flex: 1, minWidth: 160 }}
-          />
-          <Checkbox
-            checked={junk}
-            onChange={(event) => setJunk(event.target.checked)}
-          >
-            Junk
-          </Checkbox>
         </Flex>
 
         <Input
@@ -341,7 +348,15 @@ export function IntakeModal({
             >
               <Flex vertical gap={2}>
                 <Typography.Text>
-                  <Typography.Text strong>{entry.category}</Typography.Text>
+                  <Typography.Text strong>
+                    {entry.name || entry.category}
+                  </Typography.Text>
+                  {entry.name && entry.category ? (
+                    <Typography.Text type="secondary">
+                      {" "}
+                      · {entry.category}
+                    </Typography.Text>
+                  ) : null}
                   {entry.junk ? (
                     <Typography.Text type="warning"> · junk</Typography.Text>
                   ) : null}

@@ -18,6 +18,7 @@ export async function testClaudeConnection(
 export type IntakeEnrichmentRequest = {
   id: string;
   kind: string;
+  name: string;
   category: string;
   amount: string | null;
   note: string | null;
