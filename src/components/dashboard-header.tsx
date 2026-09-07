@@ -105,33 +105,28 @@ export function DashboardHeader() {
               minWidth: 0,
             }}
           >
-            <Flex align="center" gap={12} style={{ minWidth: 0 }}>
-              <div
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                flexShrink: 0,
+                borderRadius: 10,
+                background: token.colorPrimary,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon
+                name="brand"
                 style={{
-                  width: 36,
-                  height: 36,
-                  flexShrink: 0,
-                  borderRadius: 10,
-                  background: token.colorPrimary,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  margin: 0,
+                  opacity: 1,
+                  color: token.colorTextLightSolid,
+                  fontSize: 17,
                 }}
-              >
-                <Icon
-                  name="brand"
-                  style={{
-                    margin: 0,
-                    opacity: 1,
-                    color: token.colorTextLightSolid,
-                    fontSize: 17,
-                  }}
-                />
-              </div>
-              <Typography.Title level={2} style={{ margin: 0, fontWeight: 400 }}>
-                Life Tracker
-              </Typography.Title>
-            </Flex>
+              />
+            </div>
           </Link>
 
           {compact ? null : (

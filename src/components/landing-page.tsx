@@ -89,9 +89,6 @@ export function LandingPage() {
                 }}
               />
             </div>
-            <Typography.Text strong style={{ fontSize: 17 }}>
-              Life Tracker
-            </Typography.Text>
           </Flex>
           <Flex gap={8}>
             <Button href="/login">Sign in</Button>

@@ -150,9 +150,6 @@ export function AuthForm({ mode }: AuthFormProps) {
                 }}
               />
             </div>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              Life Tracker
-            </Typography.Title>
             <Typography.Text type="secondary" style={{ fontSize: 13 }}>
               {copy.tagline}
             </Typography.Text>
