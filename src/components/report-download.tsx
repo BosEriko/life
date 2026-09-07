@@ -11,6 +11,7 @@ import { NotesModal } from "@/components/notes-modal";
 import { WaterModal } from "@/components/water-modal";
 import { WeightModal } from "@/components/weight-modal";
 import { Icon } from "@/components/icon";
+import { useBottomToast } from "@/components/use-bottom-toast";
 import { todayKey, watchDailies, type DailyEntry } from "@/models/dailies";
 import { watchIntake, type IntakeEntry } from "@/models/intake";
 import { watchBpReadings, type BpReading } from "@/models/bp";
@@ -28,6 +29,7 @@ export function ReportDownload() {
   const { message } = App.useApp();
   const screens = Grid.useBreakpoint();
   const { token } = theme.useToken();
+  const bottomToast = useBottomToast();
 
   const controlStyle = {
     background: token.colorBgSpotlight,
@@ -196,15 +198,23 @@ export function ReportDownload() {
           style={controlStyle}
           className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
         />
-        {!pulsing ? (
-          <FloatButton
-            aria-label={collapsed ? "Expand menu" : "Collapse menu"}
-            icon={<MenuOutlined />}
-            style={controlStyle}
-            tooltip={tip(collapsed ? "Expand menu" : "Collapse menu")}
-            onClick={() => setMenuCollapsed((current) => !current)}
-          />
-        ) : null}
+        <FloatButton
+          aria-label={collapsed ? "Expand menu" : "Collapse menu"}
+          icon={<MenuOutlined />}
+          style={
+            pulsing
+              ? { ...controlStyle, opacity: 0.5, cursor: "not-allowed" }
+              : controlStyle
+          }
+          tooltip={tip(collapsed ? "Expand menu" : "Collapse menu")}
+          onClick={() => {
+            if (pulsing) {
+              bottomToast.show("Log today's pulsing items first");
+              return;
+            }
+            setMenuCollapsed((current) => !current);
+          }}
+        />
         {screens.md !== false ? (
           <FloatButton
             type="primary"
@@ -216,6 +226,8 @@ export function ReportDownload() {
           />
         ) : null}
       </FloatButton.Group>
+
+      {bottomToast.node}
 
       <HabitModal
         open={habitOpen}

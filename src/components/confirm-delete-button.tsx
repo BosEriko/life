@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Button, theme } from "antd";
+import { Button } from "antd";
 import { DeleteFilled, DeleteOutlined } from "@ant-design/icons";
+import { useBottomToast } from "@/components/use-bottom-toast";
 
 export function ConfirmDeleteButton({
   onConfirm,
@@ -14,9 +14,9 @@ export function ConfirmDeleteButton({
   ariaLabel?: string;
   hint?: string;
 }) {
-  const { token } = theme.useToken();
   const [armed, setArmed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const { show, hide, node } = useBottomToast();
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -24,11 +24,16 @@ export function ConfirmDeleteButton({
     if (armed) {
       clearTimeout(timer.current);
       setArmed(false);
+      hide();
       onConfirm();
       return;
     }
     setArmed(true);
-    timer.current = setTimeout(() => setArmed(false), 3000);
+    show(hint, 0);
+    timer.current = setTimeout(() => {
+      setArmed(false);
+      hide();
+    }, 3000);
   }
 
   return (
@@ -41,21 +46,7 @@ export function ConfirmDeleteButton({
         icon={armed ? <DeleteFilled /> : <DeleteOutlined />}
         onClick={handleClick}
       />
-      {armed && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              className="confirm-delete-toast"
-              style={{
-                background: token.colorBgSpotlight,
-                color: token.colorTextLightSolid,
-                boxShadow: token.boxShadowSecondary,
-              }}
-            >
-              {hint}
-            </div>,
-            document.body,
-          )
-        : null}
+      {node}
     </>
   );
 }

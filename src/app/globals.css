@@ -20,7 +20,7 @@ body {
   border-end-end-radius: 3px;
 }
 
-.confirm-delete-toast {
+.bottom-toast {
   position: fixed;
   left: 50%;
   bottom: calc(76px + env(safe-area-inset-bottom));
@@ -31,12 +31,12 @@ body {
   border-radius: 999px;
   font-size: 13px;
   line-height: 1.3;
-  white-space: nowrap;
+  text-align: center;
   pointer-events: none;
-  animation: confirm-delete-toast-in 160ms ease-out;
+  animation: bottom-toast-in 160ms ease-out;
 }
 
-@keyframes confirm-delete-toast-in {
+@keyframes bottom-toast-in {
   from {
     opacity: 0;
     transform: translate(-50%, 8px);
@@ -48,7 +48,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .confirm-delete-toast {
+  .bottom-toast {
     animation: none;
   }
 }
