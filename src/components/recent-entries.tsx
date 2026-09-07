@@ -20,6 +20,11 @@ import {
   watchWaterLogs,
   type WaterLog,
 } from "@/models/water";
+import {
+  dailyIntake,
+  watchIntake,
+  type IntakeEntry,
+} from "@/models/intake";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { useUnits } from "@/components/units-provider";
@@ -62,6 +67,7 @@ export function RecentEntries() {
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
+  const [intakeEntries, setIntakeEntries] = useState<IntakeEntry[]>([]);
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
   const [loaded, setLoaded] = useState(false);
 
@@ -93,11 +99,20 @@ export function RecentEntries() {
 
   useEffect(() => {
     if (!user) return;
+    return watchIntake(user.uid, setIntakeEntries, () => {}, 800);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
     return watchIdeals(user.uid, setIdeals, () => {});
   }, [user]);
 
   const dailyBp = useMemo(() => dailyBpAverages(bpReadings), [bpReadings]);
   const dailyWater = useMemo(() => dailyWaterTotals(waterLogs), [waterLogs]);
+  const dailyMeals = useMemo(
+    () => dailyIntake(intakeEntries),
+    [intakeEntries],
+  );
 
   const recent = useMemo(() => {
     const cutoff = dayjs(todayKey()).subtract(DAYS - 1, "day");
@@ -123,6 +138,25 @@ export function RecentEntries() {
           {recent.map((entry) => {
             const bp = dailyBp.get(entry.date);
             const water = dailyWater.get(entry.date);
+            const meals = dailyMeals.get(entry.date);
+            const calorieTip = idealTip(
+              "Calories",
+              evaluateIdeal(
+                meals && meals.calories > 0 ? meals.calories : null,
+                ideals.calories,
+              ),
+              ideals.calories,
+              "kcal",
+            );
+            const sodiumTip = idealTip(
+              "Sodium",
+              evaluateIdeal(
+                meals && meals.sodium > 0 ? meals.sodium : null,
+                ideals.sodium,
+              ),
+              ideals.sodium,
+              "mg",
+            );
             const weightStatus = evaluateIdeal(entry.weight, ideals.weight);
             const weightTip = idealTip(
               "Weight",
@@ -214,6 +248,38 @@ export function RecentEntries() {
                         }}
                       >
                         {formatVolume(water.ml, units.volume)}
+                      </Typography.Text>
+                    </Tip>
+                  </Typography.Text>
+                ) : null}
+                {meals && meals.calories > 0 ? (
+                  <Typography.Text type="secondary">
+                    <Icon name="calories" style={{ marginRight: 4 }} />
+                    <Tip title={calorieTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: calorieTip ? token.colorError : undefined,
+                          cursor: calorieTip ? "help" : undefined,
+                        }}
+                      >
+                        {meals.calories} kcal
+                      </Typography.Text>
+                    </Tip>
+                  </Typography.Text>
+                ) : null}
+                {meals && meals.sodium > 0 ? (
+                  <Typography.Text type="secondary">
+                    <Icon name="sodium" style={{ marginRight: 4 }} />
+                    <Tip title={sodiumTip}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          color: sodiumTip ? token.colorError : undefined,
+                          cursor: sodiumTip ? "help" : undefined,
+                        }}
+                      >
+                        {meals.sodium} mg
                       </Typography.Text>
                     </Tip>
                   </Typography.Text>

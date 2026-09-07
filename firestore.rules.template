@@ -7,6 +7,11 @@ service cloud.firestore {
         && request.auth.uid == userId;
     }
 
+    match /claudeAccess/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
