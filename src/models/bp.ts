@@ -8,6 +8,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  type QueryConstraint,
   type Timestamp,
 } from "firebase/firestore";
 import dayjs from "dayjs";
@@ -52,13 +53,11 @@ export function watchBpReadings(
   uid: string,
   onChange: (readings: BpReading[]) => void,
   onError: (error: Error) => void,
-  max = 2000,
+  max: number | null = 2000,
 ) {
-  const recent = query(
-    bpCollection(uid),
-    orderBy("date", "desc"),
-    limit(max),
-  );
+  const constraints: QueryConstraint[] = [orderBy("date", "desc")];
+  if (max != null) constraints.push(limit(max));
+  const recent = query(bpCollection(uid), ...constraints);
   return onSnapshot(
     recent,
     (snapshot) => {

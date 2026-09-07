@@ -1,8 +1,20 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { App, Button, Modal, Popconfirm, Spin, Tabs, Typography } from "antd";
-import { CopyOutlined, KeyOutlined } from "@ant-design/icons";
+import {
+  App,
+  Button,
+  Card,
+  Divider,
+  Flex,
+  Modal,
+  Popconfirm,
+  Spin,
+  Tabs,
+  theme,
+  Typography,
+} from "antd";
+import { CodeOutlined, CopyOutlined, KeyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/mcp-key";
 
@@ -20,6 +32,7 @@ const PRE_STYLE: CSSProperties = {
 export function DeveloperPanel() {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [meta, setMeta] = useState<McpKeyMeta | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [freshKey, setFreshKey] = useState<string | null>(null);
@@ -96,14 +109,23 @@ export function DeveloperPanel() {
     setConfirmOpen(false);
   }
 
+  const cardStyle = {
+    borderColor: token.colorBorderSecondary,
+    borderRadius: token.borderRadiusLG,
+    boxShadow: token.boxShadowTertiary,
+  };
+
   return (
-    <div style={{ maxWidth: 640 }}>
-      <Typography.Title level={4} style={{ marginTop: 0 }}>
-        Developer · MCP
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Your entries, targets, and presets as an MCP server — connect it to any
-        MCP-capable agent so it can read your data. Read-only.
+    <div style={{ maxWidth: 880 }}>
+      <Flex align="center" gap={10} style={{ marginBottom: 4 }}>
+        <CodeOutlined style={{ color: token.colorPrimary, fontSize: 22 }} />
+        <Typography.Title level={3} style={{ margin: 0 }}>
+          Developer · MCP
+        </Typography.Title>
+      </Flex>
+      <Typography.Paragraph type="secondary" style={{ margin: "0 0 24px" }}>
+        Connect your entries, targets, and presets to any MCP-capable agent.
+        Your server is read-only.
       </Typography.Paragraph>
 
       <Modal
@@ -133,156 +155,181 @@ export function DeveloperPanel() {
         </Typography.Paragraph>
       </Modal>
 
-      <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        MCP server URL
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-        Streamable HTTP. The key lives in the URL, so treat the whole URL as the
-        secret. On copy you&apos;ll be asked whether to use a real key or a
-        placeholder.
-      </Typography.Paragraph>
-      <div style={{ marginBottom: 20 }}>
-        <Button
-          type="primary"
-          icon={<CopyOutlined />}
-          onClick={() => setConfirmOpen(true)}
-        >
-          Copy MCP URL
-        </Button>
-      </div>
-
-      <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        MCP key
-      </Typography.Title>
-
-      {!loaded ? (
-        <Spin />
-      ) : freshKey ? (
-        <>
-          <Typography.Paragraph style={{ marginBottom: 4 }}>
-            <Typography.Text code copyable={{ text: freshKey }}>
-              {freshKey}
-            </Typography.Text>
+      <Flex vertical gap={24}>
+        <Card title="Access" style={cardStyle} styles={{ body: { padding: 24 } }}>
+          <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4 }}>
+            MCP server URL
+          </Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
+            Streamable HTTP. The key lives in the URL, so treat the whole URL as
+            the secret. On copy you&apos;ll be asked whether to use a real key or
+            a placeholder.
           </Typography.Paragraph>
-          <Typography.Paragraph type="warning" style={{ fontSize: 13 }}>
-            Copy it now. It is shown once and cannot be retrieved after you leave
-            or refresh this page.
-          </Typography.Paragraph>
-        </>
-      ) : meta ? (
-        <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-          A key is active ({meta.prefix}…
-          {meta.createdAt
-            ? `, created ${new Date(meta.createdAt).toLocaleDateString()}`
-            : ""}
-          ). Its value is never stored — regenerate to get a new one, which
-          invalidates the current key.
-        </Typography.Paragraph>
-      ) : (
-        <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-          No MCP key yet.
-        </Typography.Paragraph>
-      )}
-
-      <div style={{ marginBottom: 20 }}>
-        {meta && !freshKey ? (
-          <Popconfirm
-            title="Invalidate the current key?"
-            description="Anything using the old key stops working."
-            okText="Regenerate"
-            onConfirm={handleGenerate}
-          >
-            <Button type="primary" icon={<KeyOutlined />} loading={busy}>
-              Regenerate key
-            </Button>
-          </Popconfirm>
-        ) : (
           <Button
             type="primary"
-            icon={<KeyOutlined />}
-            loading={busy}
-            onClick={handleGenerate}
+            icon={<CopyOutlined />}
+            onClick={() => setConfirmOpen(true)}
           >
-            {meta || freshKey ? "Regenerate key" : "Generate MCP key"}
+            Copy MCP URL
           </Button>
-        )}
-      </div>
 
-      <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        Connect it
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-        Add it as a remote MCP server. Transport is Streamable HTTP with no
-        authentication — the key is already in the URL.
-      </Typography.Paragraph>
-      <Tabs
-        size="small"
-        style={{ marginBottom: 12 }}
-        items={[
-          {
-            key: "claude",
-            label: "Claude",
-            children: (
-              <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
-                claude.ai or Claude Desktop → Settings →{" "}
-                <strong>Connectors</strong> → Add custom connector → paste the
-                URL, leave authentication as <strong>None</strong>.
-              </Typography.Paragraph>
-            ),
-          },
-          {
-            key: "chatgpt",
-            label: "ChatGPT",
-            children: (
-              <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
-                Settings → <strong>Connectors</strong> → enable{" "}
-                <em>Developer mode</em> → Add custom connector → paste the URL,
-                choose <strong>No authentication</strong>. Enable it in a chat.
-              </Typography.Paragraph>
-            ),
-          },
-          {
-            key: "codex",
-            label: "Codex",
-            children: (
-              <>
-                <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
-                  Add to{" "}
-                  <Typography.Text code>~/.codex/config.toml</Typography.Text>:
-                </Typography.Paragraph>
-                <pre style={PRE_STYLE}>
-                  <code>{codexConfig}</code>
-                </pre>
-              </>
-            ),
-          },
-          {
-            key: "config",
-            label: "Config file",
-            children: (
-              <>
-                <Typography.Paragraph style={{ fontSize: 13, marginBottom: 0 }}>
-                  Cursor, VS Code, Windsurf, Claude Desktop, etc. —{" "}
-                  <Typography.Text code>mcp.json</Typography.Text> /{" "}
-                  <Typography.Text code>
-                    claude_desktop_config.json
-                  </Typography.Text>
-                  :
-                </Typography.Paragraph>
-                <pre style={PRE_STYLE}>
-                  <code>{jsonConfig}</code>
-                </pre>
-              </>
-            ),
-          },
-        ]}
-      />
+          <Divider />
 
-      <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        Tools
-      </Typography.Title>
-      <ul style={{ paddingInlineStart: 18, fontSize: 13, margin: "0 0 12px" }}>
-        <li>
+          <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4 }}>
+            MCP key
+          </Typography.Title>
+
+          {!loaded ? (
+            <Spin />
+          ) : freshKey ? (
+            <>
+              <Typography.Paragraph style={{ marginBottom: 4 }}>
+                <Typography.Text code copyable={{ text: freshKey }}>
+                  {freshKey}
+                </Typography.Text>
+              </Typography.Paragraph>
+              <Typography.Paragraph type="warning" style={{ fontSize: 13 }}>
+                Copy it now. It is shown once and cannot be retrieved after you
+                leave or refresh this page.
+              </Typography.Paragraph>
+            </>
+          ) : meta ? (
+            <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
+              A key is active ({meta.prefix}…
+              {meta.createdAt
+                ? `, created ${new Date(meta.createdAt).toLocaleDateString()}`
+                : ""}
+              ). Its value is never stored — regenerate to get a new one, which
+              invalidates the current key.
+            </Typography.Paragraph>
+          ) : (
+            <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
+              No MCP key yet.
+            </Typography.Paragraph>
+          )}
+
+          <div>
+            {meta && !freshKey ? (
+              <Popconfirm
+                title="Invalidate the current key?"
+                description="Anything using the old key stops working."
+                okText="Regenerate"
+                onConfirm={handleGenerate}
+              >
+                <Button type="primary" icon={<KeyOutlined />} loading={busy}>
+                  Regenerate key
+                </Button>
+              </Popconfirm>
+            ) : (
+              <Button
+                type="primary"
+                icon={<KeyOutlined />}
+                loading={busy}
+                onClick={handleGenerate}
+              >
+                {meta || freshKey ? "Regenerate key" : "Generate MCP key"}
+              </Button>
+            )}
+          </div>
+        </Card>
+
+        <Card
+          title="Connect it"
+          style={cardStyle}
+          styles={{ body: { padding: 24 } }}
+        >
+          <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
+            Add it as a remote MCP server. Transport is Streamable HTTP with no
+            authentication — the key is already in the URL.
+          </Typography.Paragraph>
+          <Tabs
+            size="small"
+            style={{ marginBottom: 12 }}
+            items={[
+              {
+                key: "claude",
+                label: "Claude",
+                children: (
+                  <Typography.Paragraph
+                    style={{ fontSize: 13, marginBottom: 0 }}
+                  >
+                    claude.ai or Claude Desktop → Settings →{" "}
+                    <strong>Connectors</strong> → Add custom connector → paste
+                    the URL, leave authentication as <strong>None</strong>.
+                  </Typography.Paragraph>
+                ),
+              },
+              {
+                key: "chatgpt",
+                label: "ChatGPT",
+                children: (
+                  <Typography.Paragraph
+                    style={{ fontSize: 13, marginBottom: 0 }}
+                  >
+                    Settings → <strong>Connectors</strong> → enable{" "}
+                    <em>Developer mode</em> → Add custom connector → paste the
+                    URL, choose <strong>No authentication</strong>. Enable it in
+                    a chat.
+                  </Typography.Paragraph>
+                ),
+              },
+              {
+                key: "codex",
+                label: "Codex",
+                children: (
+                  <>
+                    <Typography.Paragraph
+                      style={{ fontSize: 13, marginBottom: 0 }}
+                    >
+                      Add to{" "}
+                      <Typography.Text code>
+                        ~/.codex/config.toml
+                      </Typography.Text>
+                      :
+                    </Typography.Paragraph>
+                    <pre style={PRE_STYLE}>
+                      <code>{codexConfig}</code>
+                    </pre>
+                  </>
+                ),
+              },
+              {
+                key: "config",
+                label: "Config file",
+                children: (
+                  <>
+                    <Typography.Paragraph
+                      style={{ fontSize: 13, marginBottom: 0 }}
+                    >
+                      Cursor, VS Code, Windsurf, Claude Desktop, etc. —{" "}
+                      <Typography.Text code>mcp.json</Typography.Text> /{" "}
+                      <Typography.Text code>
+                        claude_desktop_config.json
+                      </Typography.Text>
+                      :
+                    </Typography.Paragraph>
+                    <pre style={PRE_STYLE}>
+                      <code>{jsonConfig}</code>
+                    </pre>
+                  </>
+                ),
+              },
+            ]}
+          />
+        </Card>
+
+        <Card
+          title="API reference"
+          style={cardStyle}
+          styles={{ body: { padding: 24 } }}
+        >
+          <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4 }}>
+            Tools
+          </Typography.Title>
+          <ul
+            style={{ paddingInlineStart: 18, fontSize: 13, margin: "0 0 20px" }}
+          >
+            <li>
           <Typography.Text code>get_entries</Typography.Text> /{" "}
           <Typography.Text code>get_bp</Typography.Text> /{" "}
           <Typography.Text code>get_water</Typography.Text> /{" "}
@@ -302,24 +349,26 @@ export function DeveloperPanel() {
           <Typography.Text code>get_water</Typography.Text> /{" "}
           <Typography.Text code>get_intake</Typography.Text> give every individual
           entry.
-        </li>
-        <li>
+            </li>
+            <li>
           <Typography.Text code>get_ideals</Typography.Text>,{" "}
           <Typography.Text code>get_presets</Typography.Text>,{" "}
           <Typography.Text code>get_profile</Typography.Text> — no arguments.
-        </li>
-        <li>
+            </li>
+            <li>
           <Typography.Text code>search</Typography.Text> /{" "}
           <Typography.Text code>fetch</Typography.Text> — same data as documents.
-        </li>
-      </ul>
+            </li>
+          </ul>
 
-      <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        Test it
-      </Typography.Title>
-      <pre style={PRE_STYLE}>
-        <code>{testCommand}</code>
-      </pre>
+          <Typography.Title level={5} style={{ marginBottom: 4 }}>
+            Test it
+          </Typography.Title>
+          <pre style={PRE_STYLE}>
+            <code>{testCommand}</code>
+          </pre>
+        </Card>
+      </Flex>
     </div>
   );
 }

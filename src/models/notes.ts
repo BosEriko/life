@@ -8,6 +8,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  type QueryConstraint,
   type Timestamp,
 } from "firebase/firestore";
 import dayjs from "dayjs";
@@ -45,13 +46,11 @@ export function watchNotes(
   uid: string,
   onChange: (notes: Note[]) => void,
   onError: (error: Error) => void,
-  max = 500,
+  max: number | null = 500,
 ) {
-  const recent = query(
-    notesCollection(uid),
-    orderBy("date", "desc"),
-    limit(max),
-  );
+  const constraints: QueryConstraint[] = [orderBy("date", "desc")];
+  if (max != null) constraints.push(limit(max));
+  const recent = query(notesCollection(uid), ...constraints);
   return onSnapshot(
     recent,
     (snapshot) => {
