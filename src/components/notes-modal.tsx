@@ -40,7 +40,7 @@ export function NotesModal({
     message.success(
       navigator.onLine ? "Note added" : "Saved offline · will sync",
     );
-    setText("");
+    handleClose();
   }
 
   return (
@@ -57,8 +57,7 @@ export function NotesModal({
       onCancel={handleClose}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Jot down anything — add as many as you like. Everything lands on the
-        Notes page.
+        Jot down anything. Everything lands on the Notes page.
       </Typography.Paragraph>
 
       <Flex vertical gap={10}>
