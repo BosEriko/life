@@ -6,8 +6,10 @@ import { Button, Card, DatePicker, Flex, Segmented, Spin, theme } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AverageStats } from "@/components/average-stats";
+import { useAuth } from "@/components/auth-provider";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { Icon } from "@/components/icon";
+import { LandingPage } from "@/components/landing-page";
 import { RecentEntries } from "@/components/recent-entries";
 import { todayKey } from "@/models/dailies";
 import type { TrendsPreset } from "@/components/metrics-chart";
@@ -32,7 +34,7 @@ const MetricsChart = dynamic(
   },
 );
 
-export default function HealthPage() {
+function HealthDashboard() {
   const { token } = theme.useToken();
   const [throughDate, setThroughDate] = useState(() => dayjs(todayKey()));
   const [trendRange, setTrendRange] = useState<TrendsPreset>("30");
@@ -123,4 +125,9 @@ export default function HealthPage() {
       </div>
     </>
   );
+}
+
+export default function HomePage() {
+  const { user } = useAuth();
+  return user ? <HealthDashboard /> : <LandingPage />;
 }

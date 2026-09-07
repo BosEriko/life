@@ -16,7 +16,8 @@ const sans = Manrope({
 
 export const metadata: Metadata = {
   title: "Life Tracker",
-  description: "Personal homepage",
+  description:
+    "A private daily tracker for habits, hydration, nutrition, weight, blood pressure, and notes.",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",

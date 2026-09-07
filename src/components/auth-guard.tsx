@@ -6,24 +6,25 @@ import { Flex } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { BrandLoader } from "@/components/brand-loader";
 
-const PUBLIC_ROUTES = ["/login", "/register"];
+const AUTH_ROUTES = ["/login", "/register"];
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+  const isAuthRoute = AUTH_ROUTES.includes(pathname);
+  const isPublicRoute = pathname === "/" || isAuthRoute;
 
   useEffect(() => {
     if (loading) return;
     if (!user && !isPublicRoute) {
       router.replace("/login");
     }
-    if (user && isPublicRoute) {
+    if (user && isAuthRoute) {
       router.replace("/");
     }
-  }, [user, loading, isPublicRoute, router]);
+  }, [user, loading, isPublicRoute, isAuthRoute, router]);
 
   if (loading) {
     return (
@@ -34,7 +35,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   }
 
   if (!user && !isPublicRoute) return null;
-  if (user && isPublicRoute) return null;
+  if (user && isAuthRoute) return null;
 
   return <>{children}</>;
 }
