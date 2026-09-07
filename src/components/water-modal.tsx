@@ -8,7 +8,6 @@ import {
   Flex,
   InputNumber,
   Modal,
-  Popconfirm,
   theme,
   TimePicker,
   Typography,
@@ -18,6 +17,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
+import { confirmDestroy } from "@/lib/confirm-destroy";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
 import { useUnits } from "@/components/units-provider";
 import {
@@ -60,7 +60,7 @@ export function WaterModal({
 }) {
   const units = useUnits();
   const { user } = useAuth();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const { token } = theme.useToken();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
@@ -265,19 +265,18 @@ export function WaterModal({
                 · {formatWaterTime(log.date, log.time)}
                 {log.label ? ` · ${log.label}` : ""}
               </Typography.Text>
-              <Popconfirm
-                title="Delete this entry?"
-                okText="Delete"
-                okButtonProps={{ danger: true }}
-                onConfirm={() => handleDelete(log.id)}
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                />
-              </Popconfirm>
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() =>
+                  confirmDestroy(modal, {
+                    title: "Delete this entry?",
+                    onOk: () => handleDelete(log.id),
+                  })
+                }
+              />
             </Flex>
           ))}
         </Flex>

@@ -5,6 +5,7 @@ import "antd/dist/reset.css";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import { AuthGuard } from "@/components/auth-guard";
+import { NavProgress } from "@/components/nav-progress";
 import { SwRegister } from "@/components/sw-register";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AntdRegistry>
           <ThemeProvider>
             <AuthProvider>
+              <NavProgress />
               <AuthGuard>{children}</AuthGuard>
             </AuthProvider>
           </ThemeProvider>

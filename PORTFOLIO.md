@@ -4,8 +4,6 @@ A personal health diary. You log a few simple things each day and it turns them
 into a picture of how you're doing over time. Anyone can create an account;
 every account only ever sees its own data.
 
-![Cover](./COVER.png)
-
 ---
 
 ## What you can keep track of

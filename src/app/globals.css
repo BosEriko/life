@@ -10,6 +10,61 @@ body {
     Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+.nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  z-index: 3000;
+  pointer-events: none;
+  border-end-end-radius: 3px;
+}
+
+.nav-progress-flash {
+  animation: nav-progress-flash 650ms ease-out forwards;
+}
+
+.nav-progress-indeterminate {
+  width: 35%;
+  animation: nav-progress-slide 1050ms ease-in-out infinite;
+}
+
+@keyframes nav-progress-flash {
+  0% {
+    width: 0;
+    opacity: 1;
+  }
+  55% {
+    width: 72%;
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes nav-progress-slide {
+  0% {
+    left: -35%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress-flash,
+  .nav-progress-indeterminate {
+    animation: none;
+  }
+
+  .nav-progress-flash {
+    width: 0;
+    opacity: 0;
+  }
+}
+
 @keyframes brand-sprout {
   0%,
   100% {

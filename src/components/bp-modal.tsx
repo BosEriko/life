@@ -8,7 +8,6 @@ import {
   Flex,
   InputNumber,
   Modal,
-  Popconfirm,
   Segmented,
   theme,
   TimePicker,
@@ -19,6 +18,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
+import { confirmDestroy } from "@/lib/confirm-destroy";
 import { relativeDate, todayKey } from "@/models/dailies";
 import {
   evaluateIdeal,
@@ -82,7 +82,7 @@ export function BpModal({
   ideals: Ideals;
 }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const { token } = theme.useToken();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
@@ -291,19 +291,18 @@ export function BpModal({
                     Taken while {reading.posture}, on the {reading.arm} arm
                   </Typography.Text>
                 </Flex>
-                <Popconfirm
-                  title="Delete this reading?"
-                  okText="Delete"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={() => handleDelete(reading.id)}
-                >
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                  />
-                </Popconfirm>
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() =>
+                    confirmDestroy(modal, {
+                      title: "Delete this reading?",
+                      onOk: () => handleDelete(reading.id),
+                    })
+                  }
+                />
               </Flex>
             );
           })}

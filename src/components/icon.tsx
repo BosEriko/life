@@ -18,7 +18,7 @@ import {
   faFireFlameCurved,
   faFlask,
   faHeartPulse,
-  faPenToSquare,
+  faPencil,
   faSeedling,
   faSliders,
   faSoap,
@@ -32,7 +32,7 @@ import {
 const ICONS = {
   menuLeft: faArrowLeftLong,
   menuRight: faArrowRightLong,
-  logEntry: faPenToSquare,
+  logEntry: faPencil,
   averages: faChartColumn,
   habits: faCalendarCheck,
   trends: faChartLine,

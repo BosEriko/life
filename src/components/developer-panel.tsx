@@ -8,7 +8,6 @@ import {
   Divider,
   Flex,
   Modal,
-  Popconfirm,
   Spin,
   Tabs,
   theme,
@@ -16,6 +15,7 @@ import {
 } from "antd";
 import { CodeOutlined, CopyOutlined, KeyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
+import { confirmDestroy } from "@/lib/confirm-destroy";
 import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/mcp-key";
 
 const KEY_PLACEHOLDER = "<YOUR_MCP_KEY>";
@@ -31,7 +31,7 @@ const PRE_STYLE: CSSProperties = {
 
 export function DeveloperPanel() {
   const { user } = useAuth();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const { token } = theme.useToken();
   const [meta, setMeta] = useState<McpKeyMeta | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -210,16 +210,21 @@ export function DeveloperPanel() {
 
           <div>
             {meta && !freshKey ? (
-              <Popconfirm
-                title="Invalidate the current key?"
-                description="Anything using the old key stops working."
-                okText="Regenerate"
-                onConfirm={handleGenerate}
+              <Button
+                type="primary"
+                icon={<KeyOutlined />}
+                loading={busy}
+                onClick={() =>
+                  confirmDestroy(modal, {
+                    title: "Invalidate the current key?",
+                    content: "Anything using the old key stops working.",
+                    okText: "Regenerate",
+                    onOk: handleGenerate,
+                  })
+                }
               >
-                <Button type="primary" icon={<KeyOutlined />} loading={busy}>
-                  Regenerate key
-                </Button>
-              </Popconfirm>
+                Regenerate key
+              </Button>
             ) : (
               <Button
                 type="primary"

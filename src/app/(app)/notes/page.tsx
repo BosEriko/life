@@ -10,7 +10,6 @@ import {
   Flex,
   Grid,
   Modal,
-  Popconfirm,
   Spin,
   theme,
   Typography,
@@ -28,6 +27,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { NotesModal } from "@/components/notes-modal";
+import { confirmDestroy } from "@/lib/confirm-destroy";
 import { relativeDate, todayKey } from "@/models/dailies";
 import {
   deleteNote,
@@ -39,7 +39,7 @@ import {
 
 export default function NotesPage() {
   const { user } = useAuth();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -262,20 +262,19 @@ export default function NotesPage() {
                         icon={<SendOutlined />}
                         onClick={() => setNoteToShare(note)}
                       />
-                      <Popconfirm
-                        title="Delete this note?"
-                        okText="Delete"
-                        okButtonProps={{ danger: true }}
-                        onConfirm={() => handleDelete(note.id)}
-                      >
-                        <Button
-                          type="text"
-                          size="small"
-                          danger
-                          aria-label="Delete note"
-                          icon={<DeleteOutlined />}
-                        />
-                      </Popconfirm>
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        aria-label="Delete note"
+                        icon={<DeleteOutlined />}
+                        onClick={() =>
+                          confirmDestroy(modal, {
+                            title: "Delete this note?",
+                            onOk: () => handleDelete(note.id),
+                          })
+                        }
+                      />
                     </Flex>
                   </Flex>
                 </Card>
