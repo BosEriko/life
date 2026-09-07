@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { App, FloatButton, Grid } from "antd";
-import { MinusOutlined, PlusOutlined } from "@ant-design/icons";
+import { MenuOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { BpModal } from "@/components/bp-modal";
 import { HabitModal } from "@/components/habit-modal";
@@ -170,12 +170,6 @@ export function ReportDownload() {
           className={`quick-action-health${hasBpToday ? "" : " bp-pulse"}${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
         />
         <FloatButton
-          aria-label={menuCollapsed ? "Expand menu" : "Collapse menu"}
-          icon={menuCollapsed ? <PlusOutlined /> : <MinusOutlined />}
-          tooltip={tip(menuCollapsed ? "Expand menu" : "Collapse menu")}
-          onClick={() => setMenuCollapsed((current) => !current)}
-        />
-        <FloatButton
           aria-label={`Move menu to ${menuSide === "right" ? "left" : "right"}`}
           icon={
             <Icon
@@ -185,13 +179,24 @@ export function ReportDownload() {
           }
           tooltip={tip(`Move menu to ${menuSide === "right" ? "left" : "right"}`)}
           onClick={toggleMenuSide}
+          className={`quick-action-health${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
         />
         <FloatButton
-          type="primary"
-          icon={<Icon name="logEntry" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Notes")}
-          onClick={() => setNotesOpen(true)}
+          aria-label={menuCollapsed ? "Expand menu" : "Collapse menu"}
+          icon={<MenuOutlined />}
+          tooltip={tip(menuCollapsed ? "Expand menu" : "Collapse menu")}
+          onClick={() => setMenuCollapsed((current) => !current)}
         />
+        {screens.md !== false ? (
+          <FloatButton
+            type="primary"
+            icon={
+              <Icon name="logEntry" style={{ marginRight: 0, opacity: 1 }} />
+            }
+            tooltip={tip("Notes")}
+            onClick={() => setNotesOpen(true)}
+          />
+        ) : null}
       </FloatButton.Group>
 
       <HabitModal

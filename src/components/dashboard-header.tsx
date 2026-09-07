@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button, Dropdown, Flex, Grid, theme, Typography } from "antd";
 import type { MenuProps } from "antd";
@@ -94,33 +95,44 @@ export function DashboardHeader() {
           wrap
           style={{ minWidth: 0 }}
         >
-          <Flex align="center" gap={12} style={{ minWidth: 0 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                flexShrink: 0,
-                borderRadius: 10,
-                background: token.colorPrimary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icon
-                name="brand"
+          <Link
+            href="/"
+            aria-label="Life Tracker home"
+            style={{
+              display: "inline-flex",
+              textDecoration: "none",
+              color: "inherit",
+              minWidth: 0,
+            }}
+          >
+            <Flex align="center" gap={12} style={{ minWidth: 0 }}>
+              <div
                 style={{
-                  margin: 0,
-                  opacity: 1,
-                  color: token.colorTextLightSolid,
-                  fontSize: 17,
+                  width: 36,
+                  height: 36,
+                  flexShrink: 0,
+                  borderRadius: 10,
+                  background: token.colorPrimary,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-              />
-            </div>
-            <Typography.Title level={2} style={{ margin: 0, fontWeight: 400 }}>
-              Life Tracker
-            </Typography.Title>
-          </Flex>
+              >
+                <Icon
+                  name="brand"
+                  style={{
+                    margin: 0,
+                    opacity: 1,
+                    color: token.colorTextLightSolid,
+                    fontSize: 17,
+                  }}
+                />
+              </div>
+              <Typography.Title level={2} style={{ margin: 0, fontWeight: 400 }}>
+                Life Tracker
+              </Typography.Title>
+            </Flex>
+          </Link>
 
           {compact ? null : (
             <Flex align="center" gap={4}>
@@ -130,13 +142,30 @@ export function DashboardHeader() {
                   <Button
                     key={item.key}
                     type="text"
+                    aria-current={active ? "page" : undefined}
                     onClick={() => router.push(item.key)}
                     style={{
+                      position: "relative",
                       fontWeight: active ? 600 : 400,
                       color: active ? token.colorPrimary : undefined,
                     }}
                   >
                     {item.label}
+                    {active ? (
+                      <span
+                        aria-hidden
+                        style={{
+                          position: "absolute",
+                          left: "50%",
+                          bottom: 3,
+                          transform: "translateX(-50%)",
+                          width: 18,
+                          height: 3,
+                          borderRadius: 3,
+                          background: token.colorPrimary,
+                        }}
+                      />
+                    ) : null}
                   </Button>
                 );
               })}
