@@ -116,7 +116,7 @@ export function DeveloperPanel() {
   };
 
   return (
-    <div style={{ maxWidth: 880 }}>
+    <div>
       <Flex align="center" gap={10} style={{ marginBottom: 4 }}>
         <CodeOutlined style={{ color: token.colorPrimary, fontSize: 22 }} />
         <Typography.Title level={3} style={{ margin: 0 }}>

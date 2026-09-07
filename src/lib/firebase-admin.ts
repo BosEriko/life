@@ -1,10 +1,13 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
+let appInstance: App | null = null;
 let dbInstance: Firestore | null = null;
+let authInstance: Auth | null = null;
 
-export function getAdminDb(): Firestore {
-  if (dbInstance) return dbInstance;
+function getAdminApp(): App {
+  if (appInstance) return appInstance;
 
   const projectId =
     process.env.FIREBASE_PROJECT_ID ??
@@ -16,10 +19,18 @@ export function getAdminDb(): Firestore {
     throw new Error("Firebase Admin credentials are not configured.");
   }
 
-  const app: App =
+  appInstance =
     getApps()[0] ??
     initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
+  return appInstance;
+}
 
-  dbInstance = getFirestore(app);
+export function getAdminDb(): Firestore {
+  if (!dbInstance) dbInstance = getFirestore(getAdminApp());
   return dbInstance;
+}
+
+export function getAdminAuth(): Auth {
+  if (!authInstance) authInstance = getAuth(getAdminApp());
+  return authInstance;
 }

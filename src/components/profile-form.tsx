@@ -186,7 +186,7 @@ export function ProfileForm() {
   }
 
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div>
       <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
         Profile
       </Typography.Title>

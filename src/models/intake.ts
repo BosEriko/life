@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -8,6 +7,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   type QueryConstraint,
   type Timestamp,
 } from "firebase/firestore";
@@ -124,19 +124,26 @@ export function watchIntake(
   );
 }
 
-export async function addIntake(uid: string, input: IntakeInput) {
-  await addDoc(intakeCollection(uid), {
+export function addIntake(
+  uid: string,
+  input: IntakeInput,
+): { id: string; done: Promise<void> } {
+  const ref = doc(intakeCollection(uid));
+  const payload: Record<string, unknown> = {
     date: input.date,
     time: input.time,
     kind: input.kind,
     category: input.category,
     junk: input.junk,
-    calories: input.calories ?? null,
-    sodium: input.sodium ?? null,
-    amount: input.amount ?? null,
-    note: input.note ?? null,
     createdAt: serverTimestamp(),
-  });
+  };
+  if (input.calories != null) payload.calories = input.calories;
+  if (input.sodium != null) payload.sodium = input.sodium;
+  if (input.amount != null) payload.amount = input.amount;
+  if (input.note != null) payload.note = input.note;
+
+  const done = setDoc(ref, payload, { merge: true });
+  return { id: ref.id, done };
 }
 
 export async function deleteIntake(uid: string, id: string) {

@@ -2,13 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { Button, Flex, Grid, theme, Typography } from "antd";
+import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { isAdminEmail } from "@/lib/admin";
 
 export function AppFooter() {
   const { token } = theme.useToken();
   const router = useRouter();
+  const { user } = useAuth();
   const screens = Grid.useBreakpoint();
   const compact = screens.md === false;
+  const admin = isAdminEmail(user?.email);
 
   return (
     <footer
@@ -61,13 +65,24 @@ export function AppFooter() {
           </Typography.Text>
         </Flex>
 
-        <Button
-          type="text"
-          size="small"
-          onClick={() => router.push("/developer")}
-        >
-          Developer
-        </Button>
+        <Flex align="center" gap={4} wrap>
+          <Button
+            type="text"
+            size="small"
+            onClick={() => router.push("/developer")}
+          >
+            Developer
+          </Button>
+          {admin ? (
+            <Button
+              type="text"
+              size="small"
+              onClick={() => router.push("/admin")}
+            >
+              Admin
+            </Button>
+          ) : null}
+        </Flex>
       </Flex>
     </footer>
   );

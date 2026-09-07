@@ -22,6 +22,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
+import { requestIntakeEnrichment } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
 import {
@@ -153,17 +154,44 @@ export function IntakeModal({
 
   function handleAdd() {
     if (!user || category == null) return;
-    addIntake(user.uid, {
+    const cal = typeof calories === "number" ? calories : null;
+    const sod = typeof sodium === "number" ? sodium : null;
+    const amt = amount.trim() ? amount.trim() : null;
+    const nt = note.trim() ? note.trim() : null;
+
+    const { id, done } = addIntake(user.uid, {
       date: dateKey,
       time: time.format("HH:mm"),
       kind,
       category,
       junk,
-      calories: typeof calories === "number" ? calories : null,
-      sodium: typeof sodium === "number" ? sodium : null,
-      amount: amount.trim() ? amount.trim() : null,
-      note: note.trim() ? note.trim() : null,
-    }).catch(() => message.error("Could not add entry."));
+      calories: cal,
+      sodium: sod,
+      amount: amt,
+      note: nt,
+    });
+    done.catch(() => message.error("Could not add entry."));
+
+    const missing: ("calories" | "sodium")[] = [];
+    if (cal == null) missing.push("calories");
+    if (sod == null) missing.push("sodium");
+    if (
+      missing.length > 0 &&
+      typeof navigator !== "undefined" &&
+      navigator.onLine
+    ) {
+      requestIntakeEnrichment(user, {
+        id,
+        kind,
+        category,
+        amount: amt,
+        note: nt,
+        calories: cal,
+        sodium: sod,
+        fields: missing,
+      }).catch(() => {});
+    }
+
     resetEntry();
   }
 
