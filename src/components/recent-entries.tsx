@@ -197,10 +197,9 @@ export function RecentEntries() {
                           cursor: bpTip ? "help" : undefined,
                         }}
                       >
-                        {bp.systolic}/{bp.diastolic}
+                        {bp.systolic}/{bp.diastolic} mmHg
                       </Typography.Text>
-                    </Tip>{" "}
-                    mmHg
+                    </Tip>
                   </Typography.Text>
                 ) : null}
                 {water ? (
