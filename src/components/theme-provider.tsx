@@ -22,6 +22,7 @@ const SHARED = {
   borderRadius: 10,
   borderRadiusLG: 14,
   fontFamily: FONT_SANS,
+  controlOutlineWidth: 0,
 };
 
 const LIGHT_TOKENS = {
