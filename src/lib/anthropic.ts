@@ -3,6 +3,13 @@ const ANTHROPIC_VERSION = "2023-06-01";
 
 export const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 
+export function isCreditExhaustedError(message: string): boolean {
+  return (
+    /credit balance (is )?too low/i.test(message) ||
+    /purchase credits/i.test(message)
+  );
+}
+
 function headers(apiKey: string): Record<string, string> {
   return {
     "content-type": "application/json",

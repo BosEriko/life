@@ -1,7 +1,12 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { uidFromRequest } from "@/lib/api-auth";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { anthropicToolCall, HAIKU_MODEL } from "@/lib/anthropic";
+import {
+  anthropicToolCall,
+  HAIKU_MODEL,
+  isCreditExhaustedError,
+} from "@/lib/anthropic";
+import { setAnthropicCreditAlert } from "@/lib/anthropic-alert";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -113,10 +118,12 @@ export async function POST(request: Request) {
       maxTokens: 256,
     });
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Estimation failed." },
-      { status: 502 },
-    );
+    const detail =
+      error instanceof Error ? error.message : "Estimation failed.";
+    if (isCreditExhaustedError(detail)) {
+      await setAnthropicCreditAlert(true, detail);
+    }
+    return Response.json({ error: detail }, { status: 502 });
   }
 
   const values: Record<Field, number | null> = {

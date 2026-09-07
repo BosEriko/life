@@ -7,6 +7,7 @@ import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AverageStats } from "@/components/average-stats";
 import { useAuth } from "@/components/auth-provider";
+import { CreditAlert } from "@/components/credit-alert";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { Icon } from "@/components/icon";
 import { LandingPage } from "@/components/landing-page";
@@ -42,6 +43,8 @@ function HealthDashboard() {
 
   return (
     <>
+      <CreditAlert />
+
       <div style={{ marginBottom: 16 }}>
         <AverageStats />
       </div>

@@ -12,6 +12,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /adminAlerts/{doc} {
+      allow read: if request.auth != null
+        && request.auth.token.email == 'bos@eriko.ph';
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

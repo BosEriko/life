@@ -1,5 +1,10 @@
 import { adminFromRequest } from "@/lib/api-auth";
-import { anthropicPing, HAIKU_MODEL } from "@/lib/anthropic";
+import {
+  anthropicPing,
+  HAIKU_MODEL,
+  isCreditExhaustedError,
+} from "@/lib/anthropic";
+import { setAnthropicCreditAlert } from "@/lib/anthropic-alert";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,14 +24,16 @@ export async function GET(request: Request) {
   try {
     await anthropicPing(apiKey, HAIKU_MODEL);
   } catch (error) {
-    return Response.json({
-      ok: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Anthropic did not accept the server key.",
-    });
+    const detail =
+      error instanceof Error
+        ? error.message
+        : "Anthropic did not accept the server key.";
+    if (isCreditExhaustedError(detail)) {
+      await setAnthropicCreditAlert(true, detail);
+    }
+    return Response.json({ ok: false, error: detail });
   }
 
+  await setAnthropicCreditAlert(false, null);
   return Response.json({ ok: true });
 }
