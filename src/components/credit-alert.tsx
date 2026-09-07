@@ -84,8 +84,15 @@ export function CreditAlert() {
         sodium estimates until it is topped up.
       </Typography.Paragraph>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-        Add credits at console.anthropic.com under Plans &amp; Billing, then
-        Recheck.
+        Add credits in the{" "}
+        <Typography.Link
+          href="https://console.anthropic.com/settings/billing"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Anthropic console
+        </Typography.Link>{" "}
+        under Plans &amp; Billing, then Recheck.
       </Typography.Paragraph>
       {alert.message ? (
         <Typography.Paragraph
