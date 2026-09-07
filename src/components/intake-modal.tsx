@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   App,
+  AutoComplete,
   Button,
   Checkbox,
   DatePicker,
@@ -124,6 +125,20 @@ export function IntakeModal({
     () => dailyIntake(dayEntries).get(dateKey) ?? null,
     [dayEntries, dateKey],
   );
+
+  const nameOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { value: string }[] = [];
+    for (const entry of entries) {
+      const trimmed = entry.name?.trim();
+      if (!trimmed) continue;
+      const key = trimmed.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ value: trimmed });
+    }
+    return out;
+  }, [entries]);
   const calorieStatus = evaluateIdeal(
     dayEntries.some((entry) => entry.calories != null)
       ? (totals?.calories ?? null)
@@ -260,12 +275,19 @@ export function IntakeModal({
           style={{ width: "100%" }}
         />
 
-        <Input
+        <AutoComplete
+          options={nameOptions}
+          value={name}
+          onChange={(value) => setName(value)}
+          filterOption={(input, option) =>
+            (option?.value ?? "")
+              .toLowerCase()
+              .includes(input.trim().toLowerCase())
+          }
           placeholder={
             kind === "food" ? "Name (e.g. Chicken adobo)" : "Name (e.g. Iced latte)"
           }
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+          style={{ width: "100%" }}
         />
 
         <Flex gap={12} wrap align="center">
