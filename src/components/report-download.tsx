@@ -110,13 +110,13 @@ export function ReportDownload() {
   );
 
   const tip = (title: string) =>
-    screens.md === false
-      ? undefined
-      : {
+    screens.md === true
+      ? {
           title,
           placement:
             menuSide === "left" ? ("right" as const) : ("left" as const),
-        };
+        }
+      : undefined;
 
   function toggleMenuSide() {
     setMenuSide((current) => {

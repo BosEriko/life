@@ -97,7 +97,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   const isDark = useIsDark();
   const badColor = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const screens = Grid.useBreakpoint();
-  const hoverTips = screens.md !== false;
+  const hoverTips = screens.md === true;
 
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [intake, setIntake] = useState<IntakeEntry[]>([]);
