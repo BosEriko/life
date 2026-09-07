@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { App, Flex, Grid, Spin, theme, Typography } from "antd";
+import { App, Card, Flex, Grid, Spin, theme, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
@@ -33,7 +33,7 @@ type Habit =
 
 const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
   {
-    title: "Hygiene",
+    title: "Good habits",
     habits: [
       {
         key: "bath",
@@ -60,7 +60,7 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
     ],
   },
   {
-    title: "Junk",
+    title: "Bad habits",
     habits: [
       {
         key: "junkFood",
@@ -188,109 +188,122 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
 
   return (
     <div>
-      <Typography.Title level={5}>
-        <Icon name="habits" />
-        Habits
-      </Typography.Title>
-
       {!loaded ? (
-        <Flex justify="center" style={{ padding: 24 }}>
-          <Spin />
-        </Flex>
+        <Card
+          styles={{ body: { padding: 28 } }}
+          style={{
+            borderColor: token.colorBorderSecondary,
+            borderRadius: token.borderRadiusLG,
+            boxShadow: token.boxShadowTertiary,
+          }}
+        >
+          <Typography.Title level={5}>
+            <Icon name="habits" />
+            Habits
+          </Typography.Title>
+          <Flex justify="center" style={{ padding: 24 }}>
+            <Spin />
+          </Flex>
+        </Card>
       ) : (
-        <div style={{ overflowX: "auto", paddingBottom: 4 }}>
-          <Flex
-            vertical
-            gap={24}
-            style={{ width: WEEKS * (CELL + GAP) - GAP, minWidth: "100%" }}
-            onMouseOver={(event) => {
-              if (!hoverTips) return;
-              const cell = (event.target as HTMLElement).closest<HTMLElement>(
-                "[data-date]",
-              );
-              if (!cell?.dataset.date) return;
-              const rect = cell.getBoundingClientRect();
-              setTip({
-                text: dayjs(cell.dataset.date).format("ddd, MMM D, YYYY"),
-                x: rect.left + rect.width / 2,
-                y: rect.top,
-              });
-            }}
-            onMouseLeave={() => setTip(null)}
-          >
-            {HABIT_GROUPS.map((group) => (
-              <div key={group.title}>
-                <Typography.Text
+        <Flex vertical gap={24}>
+          {HABIT_GROUPS.map((group) => (
+            <Card
+              key={group.title}
+              styles={{ body: { padding: 28 } }}
+              style={{
+                borderColor: token.colorBorderSecondary,
+                borderRadius: token.borderRadiusLG,
+                boxShadow: token.boxShadowTertiary,
+              }}
+            >
+              <Typography.Title level={5}>
+                <Icon name="habits" />
+                {group.title}
+              </Typography.Title>
+              <div style={{ overflowX: "auto", paddingBottom: 4 }}>
+                <Flex
+                  vertical
                   style={{
-                    display: "block",
-                    marginBottom: 10,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: token.colorTextSecondary,
+                    width: WEEKS * (CELL + GAP) - GAP,
+                    minWidth: "100%",
                   }}
+                  onMouseOver={(event) => {
+                    if (!hoverTips) return;
+                    const cell = (
+                      event.target as HTMLElement
+                    ).closest<HTMLElement>("[data-date]");
+                    if (!cell?.dataset.date) return;
+                    const rect = cell.getBoundingClientRect();
+                    setTip({
+                      text: dayjs(cell.dataset.date).format(
+                        "ddd, MMM D, YYYY",
+                      ),
+                      x: rect.left + rect.width / 2,
+                      y: rect.top,
+                    });
+                  }}
+                  onMouseLeave={() => setTip(null)}
                 >
-                  {group.title}
-                </Typography.Text>
-                <Flex vertical gap={14}>
-                  {group.habits.map((habit) => (
-                    <div key={habit.key}>
-                      <Flex
-                        align="center"
-                        justify="space-between"
-                        gap={8}
-                        style={{ marginBottom: 4 }}
-                      >
-                        <Typography.Text
-                          type="secondary"
-                          style={{ fontSize: 12 }}
+                  <Flex vertical gap={14}>
+                    {group.habits.map((habit) => (
+                      <div key={habit.key}>
+                        <Flex
+                          align="center"
+                          justify="space-between"
+                          gap={8}
+                          style={{ marginBottom: 4 }}
                         >
-                          {habit.label}
-                        </Typography.Text>
-                        <Typography.Text
-                          type="secondary"
-                          style={{ fontSize: 12 }}
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12 }}
+                          >
+                            {habit.label}
+                          </Typography.Text>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12 }}
+                          >
+                            {figures.get(habit.key)}
+                          </Typography.Text>
+                        </Flex>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateRows: `repeat(7, ${CELL}px)`,
+                            gridAutoFlow: "column",
+                            gap: GAP,
+                          }}
                         >
-                          {figures.get(habit.key)}
-                        </Typography.Text>
-                      </Flex>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateRows: `repeat(7, ${CELL}px)`,
-                          gridAutoFlow: "column",
-                          gap: GAP,
-                        }}
-                      >
-                        {days.map((day) => {
-                          const on = isOn(habit, day.key);
-                          const background = on
-                            ? habit.tone === "bad"
-                              ? badColor
-                              : token.colorSuccess
-                            : token.colorFillSecondary;
-                          return (
-                            <div
-                              key={day.key}
-                              data-date={day.key}
-                              style={{
-                                width: CELL,
-                                height: CELL,
-                                borderRadius: 2,
-                                background,
-                              }}
-                            />
-                          );
-                        })}
+                          {days.map((day) => {
+                            const on = isOn(habit, day.key);
+                            const background = on
+                              ? habit.tone === "bad"
+                                ? badColor
+                                : token.colorSuccess
+                              : token.colorFillSecondary;
+                            return (
+                              <div
+                                key={day.key}
+                                data-date={day.key}
+                                style={{
+                                  width: CELL,
+                                  height: CELL,
+                                  borderRadius: 2,
+                                  background,
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </Flex>
                 </Flex>
               </div>
-            ))}
-          </Flex>
-        </div>
+            </Card>
+          ))}
+        </Flex>
       )}
 
       {tip ? (

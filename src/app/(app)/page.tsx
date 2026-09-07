@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Button, DatePicker, Flex, Segmented, Spin } from "antd";
+import { Button, Card, DatePicker, Flex, Segmented, Spin, theme } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AverageStats } from "@/components/average-stats";
@@ -33,6 +33,7 @@ const MetricsChart = dynamic(
 );
 
 export default function HealthPage() {
+  const { token } = theme.useToken();
   const [throughDate, setThroughDate] = useState(() => dayjs(todayKey()));
   const [trendRange, setTrendRange] = useState<TrendsPreset>("30");
   const today = dayjs(todayKey());
@@ -48,7 +49,7 @@ export default function HealthPage() {
         justify="center"
         gap={8}
         wrap
-        style={{ marginBottom: 32 }}
+        style={{ marginBottom: 48 }}
       >
         <Button
           aria-label="Previous day"
@@ -89,14 +90,36 @@ export default function HealthPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
-          gap: 32,
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
+          gap: 24,
           alignItems: "start",
+          paddingBottom: 32,
         }}
       >
         <HabitCalendar throughDate={throughDate} />
-        <MetricsChart throughDate={throughDate} preset={trendRange} />
-        <RecentEntries />
+        <Flex vertical gap={24} style={{ minWidth: 0 }}>
+          <Card
+            styles={{ body: { padding: 28 } }}
+            style={{
+              borderColor: token.colorBorderSecondary,
+              borderRadius: token.borderRadiusLG,
+              boxShadow: token.boxShadowTertiary,
+            }}
+          >
+            <MetricsChart throughDate={throughDate} preset={trendRange} />
+          </Card>
+          <Card
+            styles={{ body: { padding: 28 } }}
+            style={{
+              borderColor: token.colorBorderSecondary,
+              borderRadius: token.borderRadiusLG,
+              boxShadow: token.boxShadowTertiary,
+            }}
+          >
+            <RecentEntries />
+          </Card>
+        </Flex>
       </div>
     </>
   );
