@@ -21,11 +21,11 @@ type NavButton = {
 
 const LEFT: NavButton[] = [
   { key: "/", label: "Health", Icon: HeartOutlined },
-  { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
+  { key: "/notes", label: "Notes", Icon: FileTextOutlined },
 ];
 
 const RIGHT: NavButton[] = [
-  { key: "/notes", label: "Notes", Icon: FileTextOutlined },
+  { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
   { key: "/profile", label: "Profile", Icon: IdcardOutlined },
 ];
 

@@ -13,6 +13,6 @@ export type NavItem = {
 
 export const NAV: NavItem[] = [
   { key: "/", label: "Health", Icon: HeartOutlined },
-  { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
   { key: "/notes", label: "Notes", Icon: FileTextOutlined },
+  { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
 ];
