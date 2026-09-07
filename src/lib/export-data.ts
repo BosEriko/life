@@ -234,6 +234,8 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     systolic: clean(idealsData.systolic),
     diastolic: clean(idealsData.diastolic),
     water: clean(idealsData.water),
+    calories: clean(idealsData.calories),
+    sodium: clean(idealsData.sodium),
   };
 
   const presets = presetsSnap.docs.map((doc) => {

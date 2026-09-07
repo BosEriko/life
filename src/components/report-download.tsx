@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { App, FloatButton, Grid } from "antd";
+import { MinusOutlined, PlusOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { BpModal } from "@/components/bp-modal";
 import { HabitModal } from "@/components/habit-modal";
@@ -40,6 +41,7 @@ export function ReportDownload() {
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [menuSide, setMenuSide] = useState<MenuSide>("right");
+  const [menuCollapsed, setMenuCollapsed] = useState(false);
 
   useEffect(() => {
     let restoreTimer: number | undefined;
@@ -138,6 +140,42 @@ export function ReportDownload() {
         }}
       >
         <FloatButton
+          icon={<Icon name="habits" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Habits")}
+          onClick={() => setHabitOpen(true)}
+          className={`quick-action-health${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
+          icon={<Icon name="weight" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Weight")}
+          onClick={() => setWeightOpen(true)}
+          className={`quick-action-health${hasWeightToday ? "" : " bp-pulse"}${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
+          icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Water")}
+          onClick={() => setWaterOpen(true)}
+          className={`quick-action-health${hasWaterToday ? "" : " bp-pulse"}${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
+          icon={<Icon name="intake" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Food & drink")}
+          onClick={() => setIntakeOpen(true)}
+          className={`quick-action-health${hasIntakeToday ? "" : " bp-pulse"}${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
+          icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Blood pressure")}
+          onClick={() => setBpOpen(true)}
+          className={`quick-action-health${hasBpToday ? "" : " bp-pulse"}${menuCollapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
+          aria-label={menuCollapsed ? "Expand menu" : "Collapse menu"}
+          icon={menuCollapsed ? <PlusOutlined /> : <MinusOutlined />}
+          tooltip={tip(menuCollapsed ? "Expand menu" : "Collapse menu")}
+          onClick={() => setMenuCollapsed((current) => !current)}
+        />
+        <FloatButton
           aria-label={`Move menu to ${menuSide === "right" ? "left" : "right"}`}
           icon={
             <Icon
@@ -147,35 +185,6 @@ export function ReportDownload() {
           }
           tooltip={tip(`Move menu to ${menuSide === "right" ? "left" : "right"}`)}
           onClick={toggleMenuSide}
-        />
-        <FloatButton
-          icon={<Icon name="habits" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Habits")}
-          onClick={() => setHabitOpen(true)}
-        />
-        <FloatButton
-          icon={<Icon name="weight" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Weight")}
-          onClick={() => setWeightOpen(true)}
-          className={hasWeightToday ? undefined : "bp-pulse"}
-        />
-        <FloatButton
-          icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Water")}
-          onClick={() => setWaterOpen(true)}
-          className={hasWaterToday ? undefined : "bp-pulse"}
-        />
-        <FloatButton
-          icon={<Icon name="intake" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Food & drink")}
-          onClick={() => setIntakeOpen(true)}
-          className={hasIntakeToday ? undefined : "bp-pulse"}
-        />
-        <FloatButton
-          icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Blood pressure")}
-          onClick={() => setBpOpen(true)}
-          className={hasBpToday ? undefined : "bp-pulse"}
         />
         <FloatButton
           type="primary"

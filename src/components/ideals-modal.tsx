@@ -21,6 +21,8 @@ const ROWS: { key: IdealKey; label: string }[] = [
   { key: "systolic", label: "BP systolic" },
   { key: "diastolic", label: "BP diastolic" },
   { key: "water", label: "Water" },
+  { key: "calories", label: "Calories" },
+  { key: "sodium", label: "Sodium" },
 ];
 
 type FormShape = Record<IdealKey, { min: number | null; max: number | null }>;
@@ -61,6 +63,8 @@ export function IdealsModal({
   const unitLabel = (key: IdealKey): string => {
     if (key === "weight") return weightSuffix(units.weight);
     if (key === "water") return volumeSuffix(units.volume);
+    if (key === "calories") return "kcal";
+    if (key === "sodium") return "mg";
     return "mmHg";
   };
 

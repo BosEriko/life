@@ -3,7 +3,13 @@ import { getFirebaseDb } from "@/lib/firebase";
 
 export type IdealRange = { min: number | null; max: number | null };
 
-export type IdealKey = "weight" | "systolic" | "diastolic" | "water";
+export type IdealKey =
+  | "weight"
+  | "systolic"
+  | "diastolic"
+  | "water"
+  | "calories"
+  | "sodium";
 
 export type Ideals = Record<IdealKey, IdealRange>;
 
@@ -14,6 +20,8 @@ export const EMPTY_IDEALS: Ideals = {
   systolic: EMPTY_RANGE,
   diastolic: EMPTY_RANGE,
   water: EMPTY_RANGE,
+  calories: EMPTY_RANGE,
+  sodium: EMPTY_RANGE,
 };
 
 export type IdealStatus = "ok" | "low" | "high" | "unset";
@@ -44,6 +52,8 @@ export function watchIdeals(
         systolic: readRange(data.systolic),
         diastolic: readRange(data.diastolic),
         water: readRange(data.water),
+        calories: readRange(data.calories),
+        sodium: readRange(data.sodium),
       });
     },
     onError,
