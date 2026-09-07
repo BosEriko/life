@@ -14,6 +14,16 @@ export function AppFooter() {
   const compact = screens.md === false;
   const admin = isAdminEmail(user?.email);
 
+  const links = user
+    ? [
+        { key: "/developer", label: "Developer" },
+        ...(admin ? [{ key: "/admin", label: "Admin" }] : []),
+      ]
+    : [
+        { key: "/login", label: "Sign in" },
+        { key: "/register", label: "Register" },
+      ];
+
   return (
     <footer
       style={{
@@ -32,9 +42,10 @@ export function AppFooter() {
           margin: "0 auto",
           paddingInline: 20,
           paddingTop: 24,
-          paddingBottom: compact
-            ? "calc(24px + 72px + env(safe-area-inset-bottom))"
-            : 24,
+          paddingBottom:
+            compact && user
+              ? "calc(24px + 72px + env(safe-area-inset-bottom))"
+              : 24,
         }}
       >
         <Flex align="center" gap={10}>
@@ -66,22 +77,16 @@ export function AppFooter() {
         </Flex>
 
         <Flex align="center" gap={4} wrap>
-          <Button
-            type="text"
-            size="small"
-            onClick={() => router.push("/developer")}
-          >
-            Developer
-          </Button>
-          {admin ? (
+          {links.map((link) => (
             <Button
+              key={link.key}
               type="text"
               size="small"
-              onClick={() => router.push("/admin")}
+              onClick={() => router.push(link.key)}
             >
-              Admin
+              {link.label}
             </Button>
-          ) : null}
+          ))}
         </Flex>
       </Flex>
     </footer>

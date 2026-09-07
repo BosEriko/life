@@ -129,7 +129,7 @@ export function DashboardHeader() {
             </div>
           </Link>
 
-          {compact ? null : (
+          {user && !compact ? (
             <Flex align="stretch" gap={4}>
               {NAV.map((item) => {
                 const active = pathname === item.key;
@@ -172,10 +172,17 @@ export function DashboardHeader() {
                 );
               })}
             </Flex>
-          )}
+          ) : null}
         </Flex>
 
-        {compact ? (
+        {!user ? (
+          <Flex gap={8} wrap justify="flex-end">
+            <Button onClick={() => router.push("/login")}>Sign in</Button>
+            <Button type="primary" onClick={() => router.push("/register")}>
+              Get started
+            </Button>
+          </Flex>
+        ) : compact ? (
           <Dropdown
             trigger={["click"]}
             placement="bottomRight"

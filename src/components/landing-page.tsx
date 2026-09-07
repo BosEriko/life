@@ -6,6 +6,8 @@ import {
   LockOutlined,
 } from "@ant-design/icons";
 import { Button, Card, Flex, Grid, theme, Typography } from "antd";
+import { AppFooter } from "@/components/app-footer";
+import { DashboardHeader } from "@/components/dashboard-header";
 import { Icon, type IconName } from "@/components/icon";
 import { TERRACOTTA, TERRACOTTA_DARK, useIsDark } from "@/components/theme-provider";
 
@@ -55,49 +57,7 @@ export function LandingPage() {
 
   return (
     <div style={{ minHeight: "100dvh", overflow: "hidden" }}>
-      <header
-        style={{
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          background: token.colorBgContainer,
-        }}
-      >
-        <Flex
-          align="center"
-          justify="space-between"
-          gap={16}
-          style={{ maxWidth: 1120, margin: "0 auto", padding: "16px 20px" }}
-        >
-          <Flex align="center" gap={10}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: token.colorPrimary,
-              }}
-            >
-              <Icon
-                name="brand"
-                style={{
-                  margin: 0,
-                  opacity: 1,
-                  color: token.colorTextLightSolid,
-                  fontSize: 17,
-                }}
-              />
-            </div>
-          </Flex>
-          <Flex gap={8}>
-            <Button href="/login">Sign in</Button>
-            <Button type="primary" href="/register">
-              Get started
-            </Button>
-          </Flex>
-        </Flex>
-      </header>
+      <DashboardHeader />
 
       <main>
         <section
@@ -340,32 +300,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer
-        style={{
-          borderTop: `1px solid ${token.colorBorderSecondary}`,
-          background: token.colorBgContainer,
-        }}
-      >
-        <Flex
-          align="center"
-          justify="space-between"
-          gap={16}
-          wrap
-          style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 20px" }}
-        >
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Life Tracker © {new Date().getFullYear()}
-          </Typography.Text>
-          <Flex gap={8}>
-            <Button type="text" size="small" href="/login">
-              Sign in
-            </Button>
-            <Button type="text" size="small" href="/register">
-              Register
-            </Button>
-          </Flex>
-        </Flex>
-      </footer>
+      <AppFooter />
     </div>
   );
 }
