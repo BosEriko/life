@@ -13,6 +13,7 @@ import {
   Popconfirm,
   Segmented,
   Select,
+  theme,
   TimePicker,
   Typography,
 } from "antd";
@@ -20,7 +21,9 @@ import { DeleteOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { Tip } from "@/components/tip";
 import { relativeDate, todayKey } from "@/models/dailies";
+import { evaluateIdeal, rangeText, type Ideals } from "@/models/ideals";
 import {
   addIntake,
   dailyIntake,
@@ -59,13 +62,16 @@ export function IntakeModal({
   open,
   onClose,
   entries,
+  ideals,
 }: {
   open: boolean;
   onClose: () => void;
   entries: IntakeEntry[];
+  ideals: Ideals;
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [kind, setKind] = useState<IntakeKind>("food");
@@ -122,6 +128,28 @@ export function IntakeModal({
     () => dailyIntake(dayEntries).get(dateKey) ?? null,
     [dayEntries, dateKey],
   );
+  const calorieStatus = evaluateIdeal(
+    dayEntries.some((entry) => entry.calories != null)
+      ? (totals?.calories ?? null)
+      : null,
+    ideals.calories,
+  );
+  const sodiumStatus = evaluateIdeal(
+    dayEntries.some((entry) => entry.sodium != null)
+      ? (totals?.sodium ?? null)
+      : null,
+    ideals.sodium,
+  );
+  const totalTip = [
+    calorieStatus === "low" || calorieStatus === "high"
+      ? `Calories ${calorieStatus === "high" ? "above" : "below"} your ideal (${rangeText(ideals.calories)} kcal).`
+      : null,
+    sodiumStatus === "low" || sodiumStatus === "high"
+      ? `Sodium ${sodiumStatus === "high" ? "above" : "below"} your ideal (${rangeText(ideals.sodium)} mg).`
+      : null,
+  ]
+    .filter((part): part is string => part != null)
+    .join(" ");
 
   function handleAdd() {
     if (!user || category == null) return;
@@ -254,9 +282,18 @@ export function IntakeModal({
           {relativeDate(dateKey)}
         </Typography.Title>
         {totals && totals.count > 0 ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {totalsLine(totals)}
-          </Typography.Text>
+          <Tip title={totalTip || undefined}>
+            <Typography.Text
+              type={totalTip ? undefined : "secondary"}
+              style={{
+                fontSize: 12,
+                cursor: totalTip ? "help" : undefined,
+                color: totalTip ? token.colorError : undefined,
+              }}
+            >
+              {totalsLine(totals)}
+            </Typography.Text>
+          </Tip>
         ) : null}
       </Flex>
 

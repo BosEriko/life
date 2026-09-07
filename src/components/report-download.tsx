@@ -219,6 +219,7 @@ export function ReportDownload() {
         open={intakeOpen}
         onClose={() => setIntakeOpen(false)}
         entries={intakeEntries}
+        ideals={ideals}
       />
 
       <BpModal
