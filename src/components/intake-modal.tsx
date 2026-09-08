@@ -95,7 +95,7 @@ export function IntakeModal({
 
   useEffect(() => {
     if (!user || !open) return;
-    return watchFoods(user.uid, setFoods, () => {});
+    return watchFoods(setFoods, () => {});
   }, [user, open]);
 
   const dateKey = date.format("YYYY-MM-DD");

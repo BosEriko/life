@@ -62,7 +62,6 @@ export function DatabasePanel() {
   useEffect(() => {
     if (!user) return;
     return watchFoods(
-      user.uid,
       (next) => {
         setFoods(next);
         setLoaded(true);
@@ -107,7 +106,7 @@ export function DatabasePanel() {
   async function handleDelete(id: string) {
     if (!user) return;
     try {
-      await deleteFood(user.uid, id);
+      await deleteFood(id);
     } catch {
       message.error("Could not delete item.");
     }
@@ -122,8 +121,8 @@ export function DatabasePanel() {
         </Typography.Title>
       </Flex>
       <Typography.Paragraph type="secondary" style={{ margin: "0 0 24px" }}>
-        A catalog of the foods and drinks you have — name, calories, sodium, and
-        the rest — kept separate from your daily log.
+        A shared directory of foods and drinks — name, calories, sodium, and the
+        rest. Everyone can add to it, and entries show up when you log food.
       </Typography.Paragraph>
 
       <Flex vertical gap={24}>

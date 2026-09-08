@@ -56,8 +56,8 @@ export type FoodInput = {
   amount?: string | null;
 };
 
-function foodsCollection(uid: string) {
-  return collection(getFirebaseDb(), "users", uid, "foods");
+function foodsCollection() {
+  return collection(getFirebaseDb(), "foods");
 }
 
 export function mapFoodDoc(snap: QueryDocumentSnapshot<DocumentData>): FoodItem {
@@ -75,11 +75,10 @@ export function mapFoodDoc(snap: QueryDocumentSnapshot<DocumentData>): FoodItem 
 }
 
 export function watchFoods(
-  uid: string,
   onChange: (foods: FoodItem[]) => void,
   onError: (error: Error) => void,
 ) {
-  const ordered = query(foodsCollection(uid), orderBy("name", "asc"));
+  const ordered = query(foodsCollection(), orderBy("name", "asc"));
   return onSnapshot(
     ordered,
     (snapshot) => onChange(snapshot.docs.map(mapFoodDoc)),
@@ -93,14 +92,15 @@ export async function addFood(uid: string, input: FoodInput) {
     kind: input.kind,
     category: input.category,
     junk: input.junk,
+    addedBy: uid,
     createdAt: serverTimestamp(),
   };
   if (input.calories != null) payload.calories = input.calories;
   if (input.sodium != null) payload.sodium = input.sodium;
   if (input.amount != null) payload.amount = input.amount;
-  await addDoc(foodsCollection(uid), payload);
+  await addDoc(foodsCollection(), payload);
 }
 
-export async function deleteFood(uid: string, id: string) {
-  await deleteDoc(doc(foodsCollection(uid), id));
+export async function deleteFood(id: string) {
+  await deleteDoc(doc(foodsCollection(), id));
 }
