@@ -17,11 +17,13 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { useHealthData } from "@/components/health-data-provider";
+import { useUnitsContext } from "@/components/units-provider";
 import { useDayBp } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { IdealTip, idealTipProps } from "@/components/ideal-tip";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal } from "@/models/ideals";
+import { postActivityIfShared } from "@/models/community";
 import {
   addBpReading,
   dailyBpAverages,
@@ -51,7 +53,8 @@ export function BpModal({
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const { ideals } = useHealthData();
+  const { ideals, communityPrefs } = useHealthData();
+  const { profile } = useUnitsContext();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [systolic, setSystolic] = useState<number | null>(null);
@@ -121,6 +124,13 @@ export function BpModal({
     setTime(dayjs());
     addBpReading(user.uid, payload).catch(() =>
       message.error("Could not add reading."),
+    );
+    postActivityIfShared(
+      user.uid,
+      communityPrefs,
+      profile.name,
+      "bp",
+      `logged BP — ${payload.systolic}/${payload.diastolic} mmHg`,
     );
   }
 

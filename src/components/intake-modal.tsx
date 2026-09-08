@@ -27,6 +27,8 @@ import { mergeById } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
+import { useUnitsContext } from "@/components/units-provider";
+import { postActivityIfShared } from "@/models/community";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText } from "@/models/ideals";
@@ -64,7 +66,13 @@ export function IntakeModal({
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const { intake: intakeWindow, ideals, cutoff } = useHealthData();
+  const {
+    intake: intakeWindow,
+    ideals,
+    cutoff,
+    communityPrefs,
+  } = useHealthData();
+  const { profile } = useUnitsContext();
   const history = useHealthHistory(open, cutoff);
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
@@ -184,6 +192,32 @@ export function IntakeModal({
       note: nt,
     });
     done.catch(() => message.error("Could not add entry."));
+
+    postActivityIfShared(
+      user.uid,
+      communityPrefs,
+      profile.name,
+      "food",
+      `logged ${nm}`,
+    );
+    if (cal != null) {
+      postActivityIfShared(
+        user.uid,
+        communityPrefs,
+        profile.name,
+        "calories",
+        `ate ${cal.toLocaleString()} kcal`,
+      );
+    }
+    if (sod != null) {
+      postActivityIfShared(
+        user.uid,
+        communityPrefs,
+        profile.name,
+        "sodium",
+        `${sod.toLocaleString()} mg sodium`,
+      );
+    }
 
     const missing: ("calories" | "sodium")[] = [];
     if (cal == null) missing.push("calories");

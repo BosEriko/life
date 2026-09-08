@@ -17,6 +17,7 @@ import {
 import { DownloadOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { CommunitySharingCard } from "@/components/community-sharing-card";
 import { DeleteAccountCard } from "@/components/delete-account-card";
 import { Icon } from "@/components/icon";
 import { ReportModal } from "@/components/report-modal";
@@ -329,6 +330,8 @@ export function ProfileForm() {
                 <Segmented options={HEIGHT_UNIT_OPTIONS} />
               </Form.Item>
             </Card>
+
+            <CommunitySharingCard />
 
             <Card
               size="small"

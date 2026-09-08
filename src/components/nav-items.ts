@@ -1,6 +1,7 @@
 import {
   FileTextOutlined,
   HeartOutlined,
+  TeamOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import type { CSSProperties, ComponentType } from "react";
@@ -15,4 +16,5 @@ export const NAV: NavItem[] = [
   { key: "/", label: "Health", Icon: HeartOutlined },
   { key: "/notes", label: "Notes", Icon: FileTextOutlined },
   { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
+  { key: "/community", label: "Community", Icon: TeamOutlined },
 ];

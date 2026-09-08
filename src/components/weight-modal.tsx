@@ -8,9 +8,10 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useDailyDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
-import { useUnits } from "@/components/units-provider";
+import { useUnits, useUnitsContext } from "@/components/units-provider";
 import {
   convertRange,
+  formatWeight,
   fromKg,
   toKg,
   weightStep,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/units";
 import { saveDaily, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText } from "@/models/ideals";
+import { postActivityIfShared } from "@/models/community";
 
 export function WeightModal({
   open,
@@ -27,9 +29,10 @@ export function WeightModal({
   onClose: () => void;
 }) {
   const units = useUnits();
+  const { profile } = useUnitsContext();
   const { user } = useAuth();
   const { message } = App.useApp();
-  const { ideals } = useHealthData();
+  const { ideals, communityPrefs } = useHealthData();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [edited, setEdited] = useState<number | null>(null);
   const [touched, setTouched] = useState(false);
@@ -76,6 +79,13 @@ export function WeightModal({
     const kg = Math.round(toKg(shown, units.weight) * 100) / 100;
     saveDaily(user.uid, dateKey, { weight: kg }).catch(() =>
       message.error("Could not save. Try again."),
+    );
+    postActivityIfShared(
+      user.uid,
+      communityPrefs,
+      profile.name,
+      "weight",
+      `logged weight — ${formatWeight(kg, units.weight)}`,
     );
     message.success(
       navigator.onLine ? "Weight saved" : "Saved offline · will sync",

@@ -6,7 +6,7 @@ import { Grid, theme } from "antd";
 import {
   FileTextOutlined,
   HeartOutlined,
-  IdcardOutlined,
+  TeamOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import type { CSSProperties, ComponentType } from "react";
@@ -26,7 +26,7 @@ const LEFT: NavButton[] = [
 
 const RIGHT: NavButton[] = [
   { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
-  { key: "/profile", label: "Profile", Icon: IdcardOutlined },
+  { key: "/community", label: "Community", Icon: TeamOutlined },
 ];
 
 export function MobileNav() {
