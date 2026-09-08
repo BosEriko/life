@@ -62,6 +62,7 @@ export function DatabasePanel() {
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [mineOnly, setMineOnly] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -76,6 +77,10 @@ export function DatabasePanel() {
 
   const categories = kind === "food" ? FOOD_CATEGORIES : DRINK_CATEGORIES;
   const canAdd = name.trim().length > 0;
+  const visibleFoods =
+    mineOnly && user
+      ? foods.filter((item) => item.addedBy === user.uid)
+      : foods;
 
   function changeKind(next: FoodKind) {
     setKind(next);
@@ -207,16 +212,32 @@ export function DatabasePanel() {
           </Flex>
         </Card>
 
-        <Card size="small" title={`Items · ${foods.length}`}>
+        <Card
+          size="small"
+          title={`Items · ${visibleFoods.length}`}
+          extra={
+            <Segmented
+              size="small"
+              value={mineOnly ? "mine" : "all"}
+              onChange={(value) => setMineOnly(value === "mine")}
+              options={[
+                { label: "All", value: "all" },
+                { label: "Added by me", value: "mine" },
+              ]}
+            />
+          }
+        >
           {!loaded ? (
             <Spin />
-          ) : foods.length === 0 ? (
+          ) : visibleFoods.length === 0 ? (
             <Typography.Text type="secondary">
-              No items yet. Add one above.
+              {mineOnly
+                ? "You haven't added any items yet."
+                : "No items yet. Add one above."}
             </Typography.Text>
           ) : (
             <Flex vertical>
-              {foods.map((item, index) => {
+              {visibleFoods.map((item, index) => {
                 const summary = summaryLine(item);
                 return (
                   <Flex

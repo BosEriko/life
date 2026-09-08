@@ -141,7 +141,12 @@ export function IntakeModal({
 
   const nameOptions = useMemo(() => {
     const byKey = new Map<string, { value: string; label: ReactNode }>();
-    for (const food of foods) {
+    const ordered = [...foods].sort((a, b) => {
+      const aMine = a.addedBy === user?.uid ? 0 : 1;
+      const bMine = b.addedBy === user?.uid ? 0 : 1;
+      return aMine - bMine;
+    });
+    for (const food of ordered) {
       const trimmed = food.name?.trim();
       if (!trimmed) continue;
       const key = trimmed.toLowerCase();
@@ -177,7 +182,7 @@ export function IntakeModal({
       });
     }
     return [...byKey.values()];
-  }, [foods, token]);
+  }, [foods, token, user?.uid]);
 
   function handleNameSelect(value: string) {
     setName(value);

@@ -43,6 +43,7 @@ export type FoodItem = {
   calories: number | null;
   sodium: number | null;
   amount: string | null;
+  addedBy: string | null;
 };
 
 export type FoodInput = {
@@ -70,6 +71,7 @@ export function mapFoodDoc(snap: QueryDocumentSnapshot<DocumentData>): FoodItem 
     calories: (data.calories as number | undefined) ?? null,
     sodium: (data.sodium as number | undefined) ?? null,
     amount: (data.amount as string | undefined) ?? null,
+    addedBy: (data.addedBy as string | undefined) ?? null,
   };
 }
 
