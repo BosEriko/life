@@ -14,15 +14,11 @@ import {
   theme,
   Typography,
 } from "antd";
-import {
-  HeartFilled,
-  HeartOutlined,
-  MessageOutlined,
-} from "@ant-design/icons";
+import { HeartFilled, HeartOutlined, MessageOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon, type IconName } from "@/components/icon";
-import { useUnitsContext } from "@/components/units-provider";
+import { useCommunityAuthorName } from "@/components/use-community-author";
 import {
   addComment,
   addCommunityPost,
@@ -101,7 +97,12 @@ function CommentThread({
         <Spin size="small" />
       ) : (
         comments.map((comment) => (
-          <Flex key={comment.id} align="flex-start" justify="space-between" gap={8}>
+          <Flex
+            key={comment.id}
+            align="flex-start"
+            justify="space-between"
+            gap={8}
+          >
             <Flex vertical style={{ minWidth: 0 }}>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 <Typography.Text strong style={{ fontSize: 12 }}>
@@ -134,11 +135,7 @@ function CommentThread({
           maxLength={1000}
           onPressEnter={send}
         />
-        <Button
-          type="primary"
-          disabled={!text.trim()}
-          onClick={send}
-        >
+        <Button type="primary" disabled={!text.trim()} onClick={send}>
           Send
         </Button>
       </Flex>
@@ -148,12 +145,12 @@ function CommentThread({
 
 export function CommunityFeed() {
   const { user } = useAuth();
-  const { profile } = useUnitsContext();
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const enterToSend = screens.md === true;
-  const name = communityAuthorName(profile.name);
+  const authorName = useCommunityAuthorName();
+  const name = communityAuthorName(authorName);
 
   const [filter, setFilter] = useState<CommunityFilter>("all");
   const [feed, setFeed] = useState<{
@@ -242,7 +239,7 @@ export function CommunityFeed() {
         Community
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
-        One shared feed for the group. Posts show your Profile name (or
+        One shared feed for the group. Posts show your account display name (or
         &ldquo;Someone&rdquo; if it&rsquo;s blank).
       </Typography.Paragraph>
 

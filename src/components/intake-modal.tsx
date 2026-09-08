@@ -27,7 +27,7 @@ import { mergeById } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
-import { useUnitsContext } from "@/components/units-provider";
+import { useCommunityAuthorName } from "@/components/use-community-author";
 import { postActivityIfShared } from "@/models/community";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
@@ -72,7 +72,7 @@ export function IntakeModal({
     cutoff,
     communityPrefs,
   } = useHealthData();
-  const { profile } = useUnitsContext();
+  const authorName = useCommunityAuthorName();
   const history = useHealthHistory(open, cutoff);
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
@@ -196,7 +196,7 @@ export function IntakeModal({
     postActivityIfShared(
       user.uid,
       communityPrefs,
-      profile.name,
+      authorName,
       "food",
       `logged ${nm}`,
     );
@@ -204,7 +204,7 @@ export function IntakeModal({
       postActivityIfShared(
         user.uid,
         communityPrefs,
-        profile.name,
+        authorName,
         "calories",
         `ate ${cal.toLocaleString()} kcal`,
       );
@@ -213,7 +213,7 @@ export function IntakeModal({
       postActivityIfShared(
         user.uid,
         communityPrefs,
-        profile.name,
+        authorName,
         "sodium",
         `${sod.toLocaleString()} mg sodium`,
       );
@@ -320,7 +320,9 @@ export function IntakeModal({
               .includes(input.trim().toLowerCase())
           }
           placeholder={
-            kind === "food" ? "Name (e.g. Chicken adobo)" : "Name (e.g. Iced latte)"
+            kind === "food"
+              ? "Name (e.g. Chicken adobo)"
+              : "Name (e.g. Iced latte)"
           }
           style={{ width: "100%" }}
         />

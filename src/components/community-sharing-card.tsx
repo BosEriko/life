@@ -46,8 +46,8 @@ export function CommunitySharingCard() {
         style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
       >
         When you log one of these, an activity line is posted to the group feed.
-        Posts show your Name above (&ldquo;Someone&rdquo; if it&rsquo;s blank).
-        Text posts are always your choice.
+        Posts show your account display name (&ldquo;Someone&rdquo; if it&rsquo;s
+        blank). Text posts are always your choice.
       </Typography.Paragraph>
       <Flex vertical gap={10}>
         {ROWS.map((row) => (

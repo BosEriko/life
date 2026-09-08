@@ -5,7 +5,7 @@ import { App, Checkbox, DatePicker, Flex, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
-import { useUnitsContext } from "@/components/units-provider";
+import { useCommunityAuthorName } from "@/components/use-community-author";
 import { useHabitDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { relativeDate, todayKey } from "@/models/dailies";
@@ -22,7 +22,7 @@ export function HabitModal({
   const { user } = useAuth();
   const { message } = App.useApp();
   const { communityPrefs } = useHealthData();
-  const { profile } = useUnitsContext();
+  const authorName = useCommunityAuthorName();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [override, setOverride] = useState<Record<string, boolean>>({});
 
@@ -55,7 +55,7 @@ export function HabitModal({
       postActivityIfShared(
         user.uid,
         communityPrefs,
-        profile.name,
+        authorName,
         "habits",
         field === "bath" ? "bathed" : "brushed teeth",
       );

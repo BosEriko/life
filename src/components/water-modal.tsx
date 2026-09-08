@@ -21,7 +21,8 @@ import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
 import { Tip } from "@/components/tip";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
-import { useUnits, useUnitsContext } from "@/components/units-provider";
+import { useCommunityAuthorName } from "@/components/use-community-author";
+import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
   formatVolume,
@@ -51,7 +52,7 @@ export function WaterModal({
   onClose: () => void;
 }) {
   const units = useUnits();
-  const { profile } = useUnitsContext();
+  const authorName = useCommunityAuthorName();
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
@@ -105,7 +106,7 @@ export function WaterModal({
     postActivityIfShared(
       user.uid,
       communityPrefs,
-      profile.name,
+      authorName,
       "water",
       `drank ${formatVolume(ml, units.volume)}`,
     );
@@ -126,7 +127,7 @@ export function WaterModal({
     postActivityIfShared(
       user.uid,
       communityPrefs,
-      profile.name,
+      authorName,
       "water",
       `drank ${formatVolume(payload.ml, units.volume)}`,
     );
