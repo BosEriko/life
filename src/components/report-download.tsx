@@ -183,6 +183,7 @@ export function ReportDownload() {
           badge={{ count: collapsed ? pulsingCount : 0 }}
           tooltip={tip(collapsed ? "Expand menu" : "Collapse menu")}
           onClick={toggleMenuCollapsed}
+          className={collapsed && pulsingCount > 0 ? "bp-pulse" : undefined}
         />
         {screens.md !== false ? (
           <FloatButton
