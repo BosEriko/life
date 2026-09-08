@@ -81,11 +81,15 @@ export function NotesModal({
           placeholder="What's on your mind?"
           autoSize={{ minRows: 3, maxRows: 10 }}
           onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
               handleAdd();
             }
           }}
         />
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          Enter to save · Shift + Enter for a new line
+        </Typography.Text>
         <Button type="primary" disabled={!canAdd} onClick={handleAdd}>
           Add note
         </Button>
