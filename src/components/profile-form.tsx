@@ -17,6 +17,7 @@ import {
 import { DownloadOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { AccountCard } from "@/components/account-card";
 import { CommunitySharingCard } from "@/components/community-sharing-card";
 import { DeleteAccountCard } from "@/components/delete-account-card";
 import { Icon } from "@/components/icon";
@@ -129,7 +130,8 @@ export function ProfileForm() {
   function switchHeightUnit(next: HeightUnit) {
     const values = form.getFieldsValue();
     if (next === "cm") {
-      const feet = typeof values.heightFeet === "number" ? values.heightFeet : 0;
+      const feet =
+        typeof values.heightFeet === "number" ? values.heightFeet : 0;
       const inches =
         typeof values.heightInches === "number" ? values.heightInches : 0;
       form.setFieldsValue({
@@ -216,86 +218,90 @@ export function ProfileForm() {
             alignItems: "start",
           }}
         >
-          <Card
-            size="small"
-            title={
-              <>
-                <Icon name="person" />
-                Personal
-              </>
-            }
-          >
-            <Form.Item name="name" label="Name" style={ITEM_STYLE}>
-              <Input placeholder="Your name" />
-            </Form.Item>
+          <Flex vertical gap={20} style={{ minWidth: 0 }}>
+            <AccountCard />
 
-            <Form.Item name="birthday" label="Birthday" style={ITEM_STYLE}>
-              <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
-            </Form.Item>
+            <Card
+              size="small"
+              title={
+                <>
+                  <Icon name="person" />
+                  Personal
+                </>
+              }
+            >
+              <Form.Item name="name" label="Name" style={ITEM_STYLE}>
+                <Input placeholder="Your name" />
+              </Form.Item>
 
-            <Form.Item label="Height" style={ITEM_STYLE}>
-              {heightUnit === "cm" ? (
-                <Form.Item name="heightCm" noStyle>
-                  <InputNumber
-                    placeholder="Centimetres"
-                    min={0}
-                    max={280}
-                    suffix="cm"
-                    style={{ width: "100%" }}
+              <Form.Item name="birthday" label="Birthday" style={ITEM_STYLE}>
+                <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+              </Form.Item>
+
+              <Form.Item label="Height" style={ITEM_STYLE}>
+                {heightUnit === "cm" ? (
+                  <Form.Item name="heightCm" noStyle>
+                    <InputNumber
+                      placeholder="Centimetres"
+                      min={0}
+                      max={280}
+                      suffix="cm"
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                ) : (
+                  <Flex gap={8} align="center">
+                    <Form.Item name="heightFeet" noStyle>
+                      <InputNumber
+                        placeholder="Feet"
+                        min={0}
+                        max={9}
+                        style={{ flex: 1 }}
+                      />
+                    </Form.Item>
+                    <Form.Item name="heightInches" noStyle>
+                      <InputNumber
+                        placeholder="Inches"
+                        min={0}
+                        max={11}
+                        style={{ flex: 1 }}
+                      />
+                    </Form.Item>
+                  </Flex>
+                )}
+              </Form.Item>
+
+              <Form.Item name="sex" label="Biological sex" style={ITEM_STYLE}>
+                <Select placeholder="Select" options={SEX_OPTIONS} allowClear />
+              </Form.Item>
+
+              <Form.Item
+                name="timezone"
+                label="Timezone"
+                style={{ marginBottom: 0 }}
+              >
+                {tzOptions.length > 0 ? (
+                  <Select
+                    showSearch
+                    placeholder="Select timezone"
+                    options={tzOptions.map((tz) => ({ label: tz, value: tz }))}
+                    allowClear
                   />
-                </Form.Item>
-              ) : (
-                <Flex gap={8} align="center">
-                  <Form.Item name="heightFeet" noStyle>
-                    <InputNumber
-                      placeholder="Feet"
-                      min={0}
-                      max={9}
-                      style={{ flex: 1 }}
-                    />
-                  </Form.Item>
-                  <Form.Item name="heightInches" noStyle>
-                    <InputNumber
-                      placeholder="Inches"
-                      min={0}
-                      max={11}
-                      style={{ flex: 1 }}
-                    />
-                  </Form.Item>
-                </Flex>
-              )}
-            </Form.Item>
+                ) : (
+                  <Input placeholder="e.g. Asia/Manila" />
+                )}
+              </Form.Item>
 
-            <Form.Item name="sex" label="Biological sex" style={ITEM_STYLE}>
-              <Select placeholder="Select" options={SEX_OPTIONS} allowClear />
-            </Form.Item>
-
-            <Form.Item
-              name="timezone"
-              label="Timezone"
-              style={{ marginBottom: 0 }}
-            >
-              {tzOptions.length > 0 ? (
-                <Select
-                  showSearch
-                  placeholder="Select timezone"
-                  options={tzOptions.map((tz) => ({ label: tz, value: tz }))}
-                  allowClear
-                />
-              ) : (
-                <Input placeholder="e.g. Asia/Manila" />
-              )}
-            </Form.Item>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={saving}
-              style={{ marginTop: 20 }}
-            >
-              Save changes
-            </Button>
-          </Card>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={saving}
+                style={{ marginTop: 20 }}
+              >
+                Save changes
+              </Button>
+            </Card>
+          </Flex>
 
           <Flex vertical gap={20} style={{ minWidth: 0 }}>
             <Card
