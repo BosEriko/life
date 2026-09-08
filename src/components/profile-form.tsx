@@ -17,6 +17,7 @@ import {
 import { DownloadOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { DeleteAccountCard } from "@/components/delete-account-card";
 import { Icon } from "@/components/icon";
 import { ReportModal } from "@/components/report-modal";
 import {
@@ -284,53 +285,78 @@ export function ProfileForm() {
                 <Input placeholder="e.g. Asia/Manila" />
               )}
             </Form.Item>
+
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={saving}
+              style={{ marginTop: 20 }}
+            >
+              Save changes
+            </Button>
           </Card>
 
-          <Card
-            size="small"
-            title={
-              <>
-                <Icon name="presets" />
-                Units
-              </>
-            }
-          >
-            <Typography.Paragraph
-              type="secondary"
-              style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
+          <Flex vertical gap={20} style={{ minWidth: 0 }}>
+            <Card
+              size="small"
+              title={
+                <>
+                  <Icon name="presets" />
+                  Units
+                </>
+              }
             >
-              Applied everywhere weight, water, and height are shown.
-            </Typography.Paragraph>
+              <Typography.Paragraph
+                type="secondary"
+                style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
+              >
+                Applied everywhere weight, water, and height are shown.
+              </Typography.Paragraph>
 
-            <Form.Item name="weightUnit" label="Weight" style={ITEM_STYLE}>
-              <Segmented options={WEIGHT_UNIT_OPTIONS} />
-            </Form.Item>
+              <Form.Item name="weightUnit" label="Weight" style={ITEM_STYLE}>
+                <Segmented options={WEIGHT_UNIT_OPTIONS} />
+              </Form.Item>
 
-            <Form.Item name="volumeUnit" label="Water" style={ITEM_STYLE}>
-              <Segmented options={VOLUME_UNIT_OPTIONS} />
-            </Form.Item>
+              <Form.Item name="volumeUnit" label="Water" style={ITEM_STYLE}>
+                <Segmented options={VOLUME_UNIT_OPTIONS} />
+              </Form.Item>
 
-            <Form.Item
-              name="heightUnit"
-              label="Height"
-              style={{ marginBottom: 0 }}
+              <Form.Item
+                name="heightUnit"
+                label="Height"
+                style={{ marginBottom: 0 }}
+              >
+                <Segmented options={HEIGHT_UNIT_OPTIONS} />
+              </Form.Item>
+            </Card>
+
+            <Card
+              size="small"
+              title={
+                <>
+                  <DownloadOutlined style={{ marginRight: 8 }} />
+                  Report
+                </>
+              }
             >
-              <Segmented options={HEIGHT_UNIT_OPTIONS} />
-            </Form.Item>
-          </Card>
+              <Typography.Paragraph
+                type="secondary"
+                style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
+              >
+                A PDF of your history — choose a date range and which fields to
+                include.
+              </Typography.Paragraph>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => setReportOpen(true)}
+              >
+                Download report
+              </Button>
+            </Card>
+
+            <DeleteAccountCard />
+          </Flex>
         </div>
-
-        <Flex gap={12} wrap style={{ marginTop: 20 }}>
-          <Button type="primary" htmlType="submit" loading={saving}>
-            Save changes
-          </Button>
-          <Button
-            icon={<DownloadOutlined />}
-            onClick={() => setReportOpen(true)}
-          >
-            Download report
-          </Button>
-        </Flex>
       </Form>
 
       <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
