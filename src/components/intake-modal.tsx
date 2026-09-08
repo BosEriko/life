@@ -24,6 +24,7 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useHealthHistory } from "@/components/use-health-history";
 import { useDayIntake } from "@/components/use-day-records";
 import { mergeById } from "@/lib/merge-records";
+import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { Tip } from "@/components/tip";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
@@ -36,7 +37,6 @@ import {
   DRINK_CATEGORIES,
   FOOD_CATEGORIES,
   formatIntakeTime,
-  type DailyIntake,
   type IntakeEntry,
   type IntakeKind,
 } from "@/models/intake";
@@ -46,20 +46,12 @@ const KIND_OPTIONS = [
   { label: "Drink", value: "drink" },
 ];
 
-function totalsLine(totals: DailyIntake): string {
+function detailRest(entry: IntakeEntry): string {
   const parts: string[] = [];
-  if (totals.calories > 0) parts.push(`${totals.calories} kcal`);
-  if (totals.sodium > 0) parts.push(`${totals.sodium} mg sodium`);
-  parts.push(`${totals.count} item${totals.count === 1 ? "" : "s"}`);
-  return parts.join(" · ");
-}
-
-function detailLine(entry: IntakeEntry): string {
-  const parts: string[] = [formatIntakeTime(entry.date, entry.time)];
   if (entry.calories != null) parts.push(`${entry.calories} kcal`);
   if (entry.sodium != null) parts.push(`${entry.sodium} mg`);
   if (entry.amount) parts.push(entry.amount);
-  return parts.join(" · ");
+  return parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
 }
 
 export function IntakeModal({
@@ -156,20 +148,19 @@ export function IntakeModal({
       : null,
     ideals.sodium,
   );
-  const totalTip = [
+  const calorieTip =
     calorieStatus === "low" || calorieStatus === "high"
       ? `Calories ${calorieStatus === "high" ? "above" : "below"} your ideal (${rangeText(
           ideals.calories,
         )} kcal)`
-      : null,
+      : undefined;
+  const sodiumTip =
     sodiumStatus === "low" || sodiumStatus === "high"
       ? `Sodium ${sodiumStatus === "high" ? "above" : "below"} your ideal (${rangeText(
           ideals.sodium,
         )} mg)`
-      : null,
-  ]
-    .filter((part): part is string => part != null)
-    .join(" ");
+      : undefined;
+  const eatWindow = ideals.eatingWindow;
 
   function handleAdd() {
     if (!user || category == null || name.trim().length === 0) return;
@@ -347,18 +338,43 @@ export function IntakeModal({
           {relativeDate(dateKey)}
         </Typography.Title>
         {totals && totals.count > 0 ? (
-          <Tip title={totalTip || undefined}>
-            <Typography.Text
-              type={totalTip ? undefined : "secondary"}
-              style={{
-                fontSize: 12,
-                cursor: totalTip ? "help" : undefined,
-                color: totalTip ? token.colorError : undefined,
-              }}
-            >
-              {totalsLine(totals)}
-            </Typography.Text>
-          </Tip>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {totals.calories > 0 ? (
+              <>
+                <Tip title={calorieTip}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{
+                      fontSize: 12,
+                      cursor: calorieTip ? "help" : undefined,
+                      color: calorieTip ? token.colorError : undefined,
+                    }}
+                  >
+                    {totals.calories} kcal
+                  </Typography.Text>
+                </Tip>
+                {" · "}
+              </>
+            ) : null}
+            {totals.sodium > 0 ? (
+              <>
+                <Tip title={sodiumTip}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{
+                      fontSize: 12,
+                      cursor: sodiumTip ? "help" : undefined,
+                      color: sodiumTip ? token.colorError : undefined,
+                    }}
+                  >
+                    {totals.sodium} mg sodium
+                  </Typography.Text>
+                </Tip>
+                {" · "}
+              </>
+            ) : null}
+            {totals.count} item{totals.count === 1 ? "" : "s"}
+          </Typography.Text>
         ) : null}
       </Flex>
 
@@ -404,7 +420,16 @@ export function IntakeModal({
                   ) : null}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {detailLine(entry)}
+                  <span
+                    style={{
+                      color: isOutsideEatingWindow(entry.time, eatWindow)
+                        ? token.colorError
+                        : undefined,
+                    }}
+                  >
+                    {formatIntakeTime(entry.date, entry.time)}
+                  </span>
+                  {detailRest(entry)}
                 </Typography.Text>
                 {entry.note ? (
                   <Typography.Text

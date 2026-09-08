@@ -3,6 +3,8 @@ import { getFirebaseDb } from "@/lib/firebase";
 
 export type IdealRange = { min: number | null; max: number | null };
 
+export type EatingWindow = { start: string | null; end: string | null };
+
 export type IdealKey =
   | "weight"
   | "systolic"
@@ -11,9 +13,12 @@ export type IdealKey =
   | "calories"
   | "sodium";
 
-export type Ideals = Record<IdealKey, IdealRange>;
+export type Ideals = Record<IdealKey, IdealRange> & {
+  eatingWindow: EatingWindow;
+};
 
 const EMPTY_RANGE: IdealRange = { min: null, max: null };
+const EMPTY_WINDOW: EatingWindow = { start: null, end: null };
 
 export const EMPTY_IDEALS: Ideals = {
   weight: EMPTY_RANGE,
@@ -22,6 +27,7 @@ export const EMPTY_IDEALS: Ideals = {
   water: EMPTY_RANGE,
   calories: EMPTY_RANGE,
   sodium: EMPTY_RANGE,
+  eatingWindow: EMPTY_WINDOW,
 };
 
 export type IdealStatus = "ok" | "low" | "high" | "unset";
@@ -36,6 +42,13 @@ function readRange(value: unknown): IdealRange {
     min: typeof raw.min === "number" ? raw.min : null,
     max: typeof raw.max === "number" ? raw.max : null,
   };
+}
+
+function readEatingWindow(value: unknown): EatingWindow {
+  const raw = (value ?? {}) as Partial<EatingWindow>;
+  const clean = (time: unknown) =>
+    typeof time === "string" && /^\d{2}:\d{2}$/.test(time) ? time : null;
+  return { start: clean(raw.start), end: clean(raw.end) };
 }
 
 export function watchIdeals(
@@ -54,6 +67,7 @@ export function watchIdeals(
         water: readRange(data.water),
         calories: readRange(data.calories),
         sodium: readRange(data.sodium),
+        eatingWindow: readEatingWindow(data.eatingWindow),
       });
     },
     onError,

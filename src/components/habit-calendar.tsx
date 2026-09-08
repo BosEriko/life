@@ -7,6 +7,7 @@ import { Icon } from "@/components/icon";
 import { useHealthData } from "@/components/health-data-provider";
 import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
+import { isOutsideEatingWindow } from "@/lib/eating-window";
 import {
   TERRACOTTA,
   TERRACOTTA_DARK,
@@ -25,7 +26,13 @@ type IntakeHabit = "junkFood" | "junkDrink";
 
 type Habit =
   | { key: DailyHabit; label: ReactNode; tone: "good"; source: "daily" }
-  | { key: IntakeHabit; label: ReactNode; tone: "bad"; source: "intake" };
+  | { key: IntakeHabit; label: ReactNode; tone: "bad"; source: "intake" }
+  | {
+      key: "ateOutsideWindow";
+      label: ReactNode;
+      tone: "bad";
+      source: "window";
+    };
 
 const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
   {
@@ -80,6 +87,17 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
         tone: "bad",
         source: "intake",
       },
+      {
+        key: "ateOutsideWindow",
+        label: (
+          <>
+            <Icon name="clock" />
+            Off-window eating
+          </>
+        ),
+        tone: "bad",
+        source: "window",
+      },
     ],
   },
 ];
@@ -98,7 +116,15 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
     null,
   );
 
-  const { dailies, intake: intakeWindow, cutoff, ready } = useHealthData();
+  const {
+    dailies,
+    intake: intakeWindow,
+    ideals,
+    cutoff,
+    ready,
+  } = useHealthData();
+  const eatWindow = ideals.eatingWindow;
+  const hasWindow = !!(eatWindow.start && eatWindow.end);
   const windowStart = throughDate
     .startOf("day")
     .subtract(weeks * 7 - 1, "day")
@@ -127,14 +153,26 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
     [intake],
   );
 
+  const outsideWindowByDate = useMemo(() => {
+    const set = new Set<string>();
+    if (!hasWindow) return set;
+    for (const entry of intake) {
+      if (isOutsideEatingWindow(entry.time, eatWindow)) set.add(entry.date);
+    }
+    return set;
+  }, [intake, hasWindow, eatWindow]);
+
   const isOn = useMemo(() => {
     return (habit: Habit, dateKey: string): boolean => {
       if (habit.source === "daily") {
         return byDate.get(dateKey)?.[habit.key] === true;
       }
+      if (habit.source === "window") {
+        return outsideWindowByDate.has(dateKey);
+      }
       return intakeByDate.get(dateKey)?.[habit.key] === true;
     };
-  }, [byDate, intakeByDate]);
+  }, [byDate, intakeByDate, outsideWindowByDate]);
 
   const days = useMemo(() => {
     const end = throughDate.startOf("day");
@@ -167,13 +205,19 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
           habit.key,
           logged ? `${Math.round((on / logged) * 100)}% consistency` : "—",
         );
+      } else if (habit.source === "window") {
+        let on = 0;
+        for (const date of outsideWindowByDate) {
+          if (visibleDates.has(date)) on += 1;
+        }
+        map.set(habit.key, `${on} ${on === 1 ? "day" : "days"} logged`);
       } else {
         const on = intakeDays.filter((day) => day[habit.key]).length;
         map.set(habit.key, `${on} ${on === 1 ? "day" : "days"} logged`);
       }
     }
     return map;
-  }, [entries, intakeByDate, visibleDates]);
+  }, [entries, intakeByDate, outsideWindowByDate, visibleDates]);
 
   return (
     <div>
@@ -196,7 +240,12 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
         </Card>
       ) : (
         <Flex vertical gap={24}>
-          {HABIT_GROUPS.map((group) => (
+          {HABIT_GROUPS.map((group) => {
+            const habits = group.habits.filter(
+              (habit) => habit.source !== "window" || hasWindow,
+            );
+            if (habits.length === 0) return null;
+            return (
             <Card
               key={group.title}
               styles={{ body: { padding: 28 } }}
@@ -235,7 +284,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
                   onMouseLeave={() => setTip(null)}
                 >
                   <Flex vertical gap={14}>
-                    {group.habits.map((habit) => (
+                    {habits.map((habit) => (
                       <div key={habit.key}>
                         <Flex
                           align="center"
@@ -291,7 +340,8 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
                 </Flex>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </Flex>
       )}
 

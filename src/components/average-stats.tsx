@@ -2,7 +2,6 @@
 
 import {
   useMemo,
-  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -17,6 +16,7 @@ import dayjs from "dayjs";
 import { useHealthData } from "@/components/health-data-provider";
 import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
+import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon, type IconName } from "@/components/icon";
 import { IdealBadge } from "@/components/ideal-badge";
 import { IdealsModal } from "@/components/ideals-modal";
@@ -104,6 +104,7 @@ type StatItem = {
   tip?: string;
   valueNode?: ReactNode;
   delta?: StatDelta;
+  noBadge?: boolean;
 };
 
 type WindowStats = {
@@ -155,8 +156,6 @@ export function AverageStats() {
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const compact = screens.md === false;
-  const railRef = useRef<HTMLDivElement>(null);
-  const [activeIdx, setActiveIdx] = useState(0);
 
   const [range, setRange] = useState<Range>(loadRange);
   const [idealsOpen, setIdealsOpen] = useState(false);
@@ -247,6 +246,27 @@ export function AverageStats() {
       inWindow(dailyNutrition),
     );
   }, [entries, dailyBp, dailyWater, dailyNutrition, range]);
+
+  const eatWindowSet = !!(
+    ideals.eatingWindow.start && ideals.eatingWindow.end
+  );
+  const offWindow = useMemo(() => {
+    const empty = { pct: null as number | null, off: 0, total: 0, logged: 0 };
+    if (!eatWindowSet) return empty;
+    const offDays = new Set<string>();
+    const loggedDays = new Set<string>();
+    for (const entry of withinRange(intakeEntries, range)) {
+      if (!entry.time) continue;
+      loggedDays.add(entry.date);
+      if (isOutsideEatingWindow(entry.time, ideals.eatingWindow)) {
+        offDays.add(entry.date);
+      }
+    }
+    const total = range === "all" ? loggedDays.size : Number(range);
+    const pct = total > 0 ? Math.round((offDays.size / total) * 100) : null;
+    return { pct, off: offDays.size, total, logged: loggedDays.size };
+  }, [intakeEntries, range, ideals, eatWindowSet]);
+  const showOffWindow = eatWindowSet && offWindow.logged > 0;
 
   const items: StatItem[] = useMemo(() => {
     const weightStatus = evaluateIdeal(stats.weight, ideals.weight);
@@ -388,8 +408,36 @@ export function AverageStats() {
             : undefined,
         delta: deltaFor(stats.sodium, prevStats?.sodium, "mg", 0),
       },
+      ...(showOffWindow
+        ? [
+            {
+              label: "Off-window eating",
+              icon: "clock" as IconName,
+              value: offWindow.pct != null ? `${offWindow.pct}%` : "—",
+              status: "ok" as IdealStatus,
+              tip:
+                offWindow.off > 0
+                  ? `Ate outside your window hours on ${offWindow.off} of ${
+                      range === "all"
+                        ? `${offWindow.total} logged days`
+                        : `the last ${range} days`
+                    }.`
+                  : undefined,
+              noBadge: true,
+            } satisfies StatItem,
+          ]
+        : []),
     ];
-  }, [stats, prevStats, ideals, range, units, token]);
+  }, [
+    stats,
+    prevStats,
+    ideals,
+    range,
+    units,
+    token,
+    showOffWindow,
+    offWindow,
+  ]);
 
   return (
     <div>
@@ -436,52 +484,25 @@ export function AverageStats() {
           <Spin />
         </Flex>
       ) : (
-        <>
         <div
-          ref={railRef}
-          className="avg-rail"
-          onScroll={
-            compact
-              ? (event) => {
-                  const el = event.currentTarget;
-                  const idx = Math.round(
-                    el.scrollLeft / (el.clientWidth + RAIL_GAP),
-                  );
-                  setActiveIdx(Math.max(0, Math.min(items.length - 1, idx)));
-                }
-              : undefined
-          }
-          style={
-            compact
-              ? {
-                  marginTop: 12,
-                  display: "flex",
-                  gap: RAIL_GAP,
-                  overflowX: "auto",
-                  scrollSnapType: "x mandatory",
-                  WebkitOverflowScrolling: "touch",
-                }
-              : {
-                  marginTop: 12,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
-                  gap: RAIL_GAP,
-                }
-          }
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gridTemplateColumns: compact
+              ? "repeat(2, minmax(0, 1fr))"
+              : "repeat(6, minmax(0, 1fr))",
+            gap: RAIL_GAP,
+          }}
         >
           {items.map((item, index) => {
             const off = item.status === "low" || item.status === "high";
+            const desktopSpan =
+              items.length === 6 ? "span 2" : index < 2 ? "span 3" : "span 2";
             const tileStyle: CSSProperties = {
-              padding: "12px 14px",
+              padding: compact ? "10px 12px" : "12px 14px",
               borderRadius: token.borderRadiusLG,
               background: token.colorFillTertiary,
-              ...(compact
-                ? {
-                    flex: "0 0 100%",
-                    scrollSnapAlign: "start",
-                    scrollSnapStop: "always",
-                  }
-                : { gridColumn: index < 2 ? "span 3" : "span 2" }),
+              ...(compact ? {} : { gridColumn: desktopSpan }),
             };
             return (
               <div key={item.label} style={tileStyle}>
@@ -493,7 +514,9 @@ export function AverageStats() {
                     <Icon name={item.icon} />
                     {item.label}
                   </Typography.Text>
-                  <IdealBadge status={item.status} />
+                  {compact || item.noBadge ? null : (
+                    <IdealBadge status={item.status} />
+                  )}
                 </Flex>
                 {item.valueNode ? (
                   <Typography.Text
@@ -501,20 +524,10 @@ export function AverageStats() {
                     style={{
                       display: "inline-block",
                       marginTop: 4,
-                      fontSize: 18,
+                      fontSize: compact ? 16 : 18,
                     }}
                   >
                     {item.valueNode}
-                    {off ? (
-                      <Icon
-                        name="alert"
-                        style={{
-                          marginLeft: 6,
-                          marginRight: 0,
-                          color: token.colorError,
-                        }}
-                      />
-                    ) : null}
                   </Typography.Text>
                 ) : (
                   <Tip title={item.tip} placement="bottom">
@@ -523,26 +536,16 @@ export function AverageStats() {
                       style={{
                         display: "inline-block",
                         marginTop: 4,
-                        fontSize: 18,
+                        fontSize: compact ? 16 : 18,
                         cursor: item.tip ? "help" : undefined,
                         color: off ? token.colorError : undefined,
                       }}
                     >
                       {item.value}
-                      {off ? (
-                        <Icon
-                          name="alert"
-                          style={{
-                            marginLeft: 6,
-                            marginRight: 0,
-                            color: token.colorError,
-                          }}
-                        />
-                      ) : null}
                     </Typography.Text>
                   </Tip>
                 )}
-                {item.delta ? (
+                {!compact && item.delta ? (
                   (() => {
                     const deltaColor =
                       item.delta.dir === "up"
@@ -576,42 +579,6 @@ export function AverageStats() {
             );
           })}
         </div>
-
-        {compact ? (
-          <Flex justify="center" gap={6} style={{ marginTop: 10 }}>
-            {items.map((item, i) => (
-              <button
-                key={item.label}
-                type="button"
-                aria-label={`Show ${item.label}`}
-                aria-current={i === activeIdx}
-                onClick={() => {
-                  const el = railRef.current;
-                  if (el) {
-                    el.scrollTo({
-                      left: i * (el.clientWidth + RAIL_GAP),
-                      behavior: "smooth",
-                    });
-                  }
-                }}
-                style={{
-                  width: i === activeIdx ? 18 : 6,
-                  height: 6,
-                  padding: 0,
-                  border: "none",
-                  borderRadius: 999,
-                  cursor: "pointer",
-                  background:
-                    i === activeIdx
-                      ? token.colorPrimary
-                      : token.colorFillSecondary,
-                  transition: "width 0.2s, background 0.2s",
-                }}
-              />
-            ))}
-          </Flex>
-        ) : null}
-        </>
       )}
 
       <IdealsModal

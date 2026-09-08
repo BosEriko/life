@@ -260,6 +260,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     water: clean(idealsData.water),
     calories: clean(idealsData.calories),
     sodium: clean(idealsData.sodium),
+    eatingWindow: clean(idealsData.eatingWindow),
   };
 
   const presets = presetsSnap.docs.map((doc) => {

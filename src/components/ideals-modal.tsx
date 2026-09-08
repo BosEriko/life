@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { App, Flex, Form, InputNumber, Modal, Typography } from "antd";
+import {
+  App,
+  Flex,
+  Form,
+  InputNumber,
+  Modal,
+  TimePicker,
+  Typography,
+} from "antd";
+import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { Icon, type IconName } from "@/components/icon";
 import { saveIdeals, type IdealKey, type Ideals } from "@/models/ideals";
 import { useUnits } from "@/components/units-provider";
 import {
@@ -16,16 +26,21 @@ import {
   weightSuffix,
 } from "@/lib/units";
 
-const ROWS: { key: IdealKey; label: string }[] = [
-  { key: "weight", label: "Weight" },
-  { key: "systolic", label: "BP systolic" },
-  { key: "diastolic", label: "BP diastolic" },
-  { key: "water", label: "Water" },
-  { key: "calories", label: "Calories" },
-  { key: "sodium", label: "Sodium" },
+const ROWS: { key: IdealKey; label: string; icon: IconName }[] = [
+  { key: "weight", label: "Weight", icon: "weight" },
+  { key: "systolic", label: "BP systolic", icon: "bp" },
+  { key: "diastolic", label: "BP diastolic", icon: "bp" },
+  { key: "water", label: "Water", icon: "water" },
+  { key: "calories", label: "Calories", icon: "calories" },
+  { key: "sodium", label: "Sodium", icon: "sodium" },
 ];
 
-type FormShape = Record<IdealKey, { min: number | null; max: number | null }>;
+type FormShape = Record<
+  IdealKey,
+  { min: number | null; max: number | null }
+> & {
+  eatingWindow: [Dayjs | null, Dayjs | null] | null;
+};
 
 export function IdealsModal({
   open,
@@ -83,6 +98,13 @@ export function IdealsModal({
         max: toDisplay(key, ideals[key].max),
       };
     }
+    shaped.eatingWindow =
+      ideals.eatingWindow.start && ideals.eatingWindow.end
+        ? [
+            dayjs(`2000-01-01T${ideals.eatingWindow.start}`),
+            dayjs(`2000-01-01T${ideals.eatingWindow.end}`),
+          ]
+        : null;
     form.setFieldsValue(shaped);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, ideals, form, units]);
@@ -105,6 +127,11 @@ export function IdealsModal({
           ),
         };
       }
+      const win = values.eatingWindow;
+      next.eatingWindow = {
+        start: win?.[0] ? win[0].format("HH:mm") : null,
+        end: win?.[1] ? win[1].format("HH:mm") : null,
+      };
       await saveIdeals(user.uid, next);
       message.success("Ideals saved");
       onClose();
@@ -133,7 +160,12 @@ export function IdealsModal({
         {ROWS.map((row) => (
           <Form.Item
             key={row.key}
-            label={row.label}
+            label={
+              <>
+                <Icon name={row.icon} />
+                {row.label}
+              </>
+            }
             style={{ marginBottom: 12 }}
           >
             <Flex gap={8} align="center">
@@ -160,6 +192,26 @@ export function IdealsModal({
             </Flex>
           </Form.Item>
         ))}
+
+        <Form.Item
+          name="eatingWindow"
+          label={
+            <>
+              <Icon name="clock" />
+              Eating window
+            </>
+          }
+          style={{ marginBottom: 0 }}
+          extra="Hours you aim to eat within, e.g. intermittent fasting."
+        >
+          <TimePicker.RangePicker
+            format="HH:mm"
+            minuteStep={15}
+            needConfirm={false}
+            order={false}
+            style={{ width: "100%" }}
+          />
+        </Form.Item>
       </Form>
     </Modal>
   );

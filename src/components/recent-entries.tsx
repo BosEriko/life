@@ -186,9 +186,10 @@ export function RecentEntries() {
                           cursor: diaTip ? "help" : undefined,
                         }}
                       >
-                        {bp.diastolic} mmHg
+                        {bp.diastolic}
                       </Typography.Text>
-                    </Tip>
+                    </Tip>{" "}
+                    <Typography.Text strong>mmHg</Typography.Text>
                   </Typography.Text>
                 ) : null}
                 {water ? (
