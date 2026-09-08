@@ -28,7 +28,7 @@ const PRE_STYLE: CSSProperties = {
   background: "rgba(127,127,127,0.12)",
 };
 
-export function DeveloperPanel() {
+export function McpPanel() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
@@ -136,7 +136,7 @@ export function DeveloperPanel() {
       <Flex align="center" gap={10} style={{ marginBottom: 4 }}>
         <CodeOutlined style={{ color: token.colorPrimary, fontSize: 22 }} />
         <Typography.Title level={3} style={{ margin: 0 }}>
-          Developer · MCP
+          MCP
         </Typography.Title>
       </Flex>
       <Typography.Paragraph type="secondary" style={{ margin: "0 0 24px" }}>
