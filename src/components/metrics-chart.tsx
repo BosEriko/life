@@ -19,7 +19,6 @@ import { useUnits } from "@/components/units-provider";
 import { fromKg, fromMl } from "@/lib/units";
 
 type Metric = "weight" | "bp" | "water";
-export type TrendsPreset = "7" | "30" | "90" | "365" | "all";
 
 const METRIC_OPTIONS = [
   { label: "Weight", value: "weight" },
@@ -52,23 +51,17 @@ function saveMetric(metric: Metric) {
 }
 
 export function MetricsChart({
-  throughDate,
-  preset,
+  start,
+  end,
 }: {
-  throughDate: Dayjs;
-  preset: TrendsPreset;
+  start: Dayjs | null;
+  end: Dayjs;
 }) {
   const units = useUnits();
   const { token } = theme.useToken();
   const isDark = useIsDark();
 
   const [metric, setMetric] = useState<Metric>(loadMetric);
-
-  const [start, end] = useMemo<[Dayjs | null, Dayjs]>(() => {
-    const endDate = throughDate.startOf("day");
-    if (preset === "all") return [null, endDate];
-    return [endDate.subtract(Number(preset) - 1, "day"), endDate];
-  }, [preset, throughDate]);
 
   const {
     dailies,
@@ -78,7 +71,7 @@ export function MetricsChart({
     ready,
   } = useHealthData();
   const needHistory =
-    preset === "all" || (start != null && start.format("YYYY-MM-DD") < cutoff);
+    start == null || start.format("YYYY-MM-DD") < cutoff;
   const history = useHealthHistory(needHistory, cutoff);
   const loaded = ready && (!needHistory || history.ready);
 
