@@ -61,6 +61,7 @@ export function DatabasePanel() {
   const [sodium, setSodium] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -108,10 +109,13 @@ export function DatabasePanel() {
 
   async function handleDelete(id: string) {
     if (!user) return;
+    setDeletingId(id);
     try {
       await deleteFood(user, id);
     } catch {
       message.error("Could not delete item.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -212,7 +216,7 @@ export function DatabasePanel() {
             </Typography.Text>
           ) : (
             <Flex vertical>
-              {foods.map((item) => {
+              {foods.map((item, index) => {
                 const summary = summaryLine(item);
                 return (
                   <Flex
@@ -222,7 +226,10 @@ export function DatabasePanel() {
                     gap={8}
                     style={{
                       padding: "10px 0",
-                      borderTop: `1px solid ${token.colorBorderSecondary}`,
+                      borderTop:
+                        index === 0
+                          ? undefined
+                          : `1px solid ${token.colorBorderSecondary}`,
                     }}
                   >
                     <Flex vertical gap={2} style={{ minWidth: 0 }}>
@@ -248,6 +255,7 @@ export function DatabasePanel() {
                     {canDelete ? (
                       <ConfirmDeleteButton
                         ariaLabel={`Delete ${item.name}`}
+                        loading={deletingId === item.id}
                         onConfirm={() => handleDelete(item.id)}
                       />
                     ) : null}

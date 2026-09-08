@@ -10,10 +10,12 @@ export function ConfirmDeleteButton({
   onConfirm,
   ariaLabel = "Delete",
   hint = "Tap again to delete",
+  loading = false,
 }: {
   onConfirm: () => void;
   ariaLabel?: string;
   hint?: string;
+  loading?: boolean;
 }) {
   const [armed, setArmed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -44,6 +46,7 @@ export function ConfirmDeleteButton({
           type="text"
           size="small"
           danger
+          loading={loading}
           aria-label={armed ? "Confirm delete" : ariaLabel}
           icon={armed ? <DeleteFilled /> : <DeleteOutlined />}
           onClick={handleClick}
