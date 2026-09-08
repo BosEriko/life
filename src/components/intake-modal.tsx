@@ -29,7 +29,7 @@ import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { useHealthData } from "@/components/health-data-provider";
 import { useDayIntake } from "@/components/use-day-records";
-import { isOutsideEatingWindow } from "@/lib/eating-window";
+import { eatingWindowSide } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
@@ -222,6 +222,12 @@ export function IntakeModal({
         )} mg)`
       : undefined;
   const eatWindow = ideals.eatingWindow;
+  const eatWindowLabel =
+    eatWindow.start && eatWindow.end
+      ? `${dayjs(`2000-01-01T${eatWindow.start}`).format("h:mm A")}–${dayjs(
+          `2000-01-01T${eatWindow.end}`,
+        ).format("h:mm A")}`
+      : "";
 
   function handleAdd() {
     if (!user || category == null || name.trim().length === 0) return;
@@ -337,7 +343,9 @@ export function IntakeModal({
               .includes(input.trim().toLowerCase())
           }
           placeholder={
-            kind === "food" ? "Name (e.g. Chicken adobo)" : "Name (e.g. Iced latte)"
+            kind === "food"
+              ? "Name (e.g. Chicken adobo)"
+              : "Name (e.g. Iced latte)"
           }
           style={{ width: "100%" }}
         />
@@ -458,68 +466,82 @@ export function IntakeModal({
         </Typography.Text>
       ) : (
         <Flex vertical>
-          {dayEntries.map((entry) => (
-            <Flex
-              key={entry.id}
-              align="flex-start"
-              justify="space-between"
-              gap={8}
-              style={{ padding: "8px 0" }}
-            >
-              <Flex vertical gap={2}>
-                <Typography.Text>
-                  <Icon
-                    name={entry.kind === "drink" ? "drink" : "food"}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Typography.Text strong>
-                    {entry.name || entry.category}
+          {dayEntries.map((entry) => {
+            const windowSide = eatingWindowSide(entry.time, eatWindow);
+            return (
+              <Flex
+                key={entry.id}
+                align="flex-start"
+                justify="space-between"
+                gap={8}
+                style={{ padding: "8px 0" }}
+              >
+                <Flex vertical gap={2}>
+                  <Typography.Text>
+                    <Icon
+                      name={entry.kind === "drink" ? "drink" : "food"}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Typography.Text strong>
+                      {entry.name || entry.category}
+                    </Typography.Text>
+                    {entry.name && entry.category ? (
+                      <Typography.Text type="secondary">
+                        {" "}
+                        · {entry.category}
+                      </Typography.Text>
+                    ) : null}
+                    {entry.junk ? (
+                      <Icon
+                        name="junk"
+                        style={{
+                          marginRight: 0,
+                          marginLeft: 6,
+                          color: token.colorWarning,
+                          opacity: 1,
+                        }}
+                      />
+                    ) : null}
                   </Typography.Text>
-                  {entry.name && entry.category ? (
-                    <Typography.Text type="secondary">
-                      {" "}
-                      · {entry.category}
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    <IdealTip
+                      isAbove={windowSide === "after"}
+                      isBelow={windowSide === "before"}
+                      message={
+                        windowSide
+                          ? `Logged ${windowSide} your eating window${
+                              eatWindowLabel ? ` (${eatWindowLabel})` : ""
+                            }`
+                          : undefined
+                      }
+                    >
+                      <span
+                        style={{
+                          color: windowSide ? token.colorError : undefined,
+                          cursor: windowSide ? "help" : undefined,
+                        }}
+                      >
+                        {formatIntakeTime(entry.date, entry.time)}
+                      </span>
+                    </IdealTip>
+                    {detailRest(entry)}
+                  </Typography.Text>
+                  {entry.note ? (
+                    <Typography.Text
+                      type="secondary"
+                      style={{ fontSize: 12, fontStyle: "italic" }}
+                    >
+                      {entry.note}
                     </Typography.Text>
                   ) : null}
-                  {entry.junk ? (
-                    <Icon
-                      name="junk"
-                      style={{
-                        marginRight: 0,
-                        marginLeft: 6,
-                        color: token.colorWarning,
-                        opacity: 1,
-                      }}
-                    />
-                  ) : null}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  <span
-                    style={{
-                      color: isOutsideEatingWindow(entry.time, eatWindow)
-                        ? token.colorError
-                        : undefined,
-                    }}
-                  >
-                    {formatIntakeTime(entry.date, entry.time)}
-                  </span>
-                  {detailRest(entry)}
-                </Typography.Text>
-                {entry.note ? (
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 12, fontStyle: "italic" }}
-                  >
-                    {entry.note}
-                  </Typography.Text>
-                ) : null}
+                </Flex>
+                <ConfirmDeleteButton
+                  ariaLabel="Delete entry"
+                  onConfirm={() => handleDelete(entry.id)}
+                />
               </Flex>
-              <ConfirmDeleteButton
-                ariaLabel="Delete entry"
-                onConfirm={() => handleDelete(entry.id)}
-              />
-            </Flex>
-          ))}
+            );
+          })}
         </Flex>
       )}
     </Modal>
