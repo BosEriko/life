@@ -21,7 +21,6 @@ import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
 import { Tip } from "@/components/tip";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
-import { useCommunityAuthorName } from "@/components/use-community-author";
 import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
@@ -40,7 +39,6 @@ import {
   deleteWaterLog,
   formatWaterTime,
 } from "@/models/water";
-import { postActivityIfShared } from "@/models/community";
 
 const FALLBACK_AMOUNTS = [500, 1000];
 
@@ -52,11 +50,10 @@ export function WaterModal({
   onClose: () => void;
 }) {
   const units = useUnits();
-  const authorName = useCommunityAuthorName();
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const { presets, ideals, communityPrefs } = useHealthData();
+  const { presets, ideals } = useHealthData();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [amount, setAmount] = useState<number | null>(null);
@@ -103,13 +100,6 @@ export function WaterModal({
       time: dayjs().format("HH:mm"),
       label: label ?? null,
     }).catch(() => message.error("Could not add water."));
-    postActivityIfShared(
-      user.uid,
-      communityPrefs,
-      authorName,
-      "water",
-      `drank ${formatVolume(ml, units.volume)}`,
-    );
   }
 
   function handleAdd() {
@@ -123,13 +113,6 @@ export function WaterModal({
     setTime(dayjs());
     addWaterLog(user.uid, payload).catch(() =>
       message.error("Could not add water."),
-    );
-    postActivityIfShared(
-      user.uid,
-      communityPrefs,
-      authorName,
-      "water",
-      `drank ${formatVolume(payload.ml, units.volume)}`,
     );
   }
 

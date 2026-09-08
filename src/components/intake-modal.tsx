@@ -27,8 +27,6 @@ import { mergeById } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
-import { useCommunityAuthorName } from "@/components/use-community-author";
-import { postActivityIfShared } from "@/models/community";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText } from "@/models/ideals";
@@ -66,13 +64,7 @@ export function IntakeModal({
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const {
-    intake: intakeWindow,
-    ideals,
-    cutoff,
-    communityPrefs,
-  } = useHealthData();
-  const authorName = useCommunityAuthorName();
+  const { intake: intakeWindow, ideals, cutoff } = useHealthData();
   const history = useHealthHistory(open, cutoff);
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
@@ -193,32 +185,6 @@ export function IntakeModal({
     });
     done.catch(() => message.error("Could not add entry."));
 
-    postActivityIfShared(
-      user.uid,
-      communityPrefs,
-      authorName,
-      "food",
-      `logged ${nm}`,
-    );
-    if (cal != null) {
-      postActivityIfShared(
-        user.uid,
-        communityPrefs,
-        authorName,
-        "calories",
-        `ate ${cal.toLocaleString()} kcal`,
-      );
-    }
-    if (sod != null) {
-      postActivityIfShared(
-        user.uid,
-        communityPrefs,
-        authorName,
-        "sodium",
-        `${sod.toLocaleString()} mg sodium`,
-      );
-    }
-
     const missing: ("calories" | "sodium")[] = [];
     if (cal == null) missing.push("calories");
     if (sod == null) missing.push("sodium");
@@ -320,9 +286,7 @@ export function IntakeModal({
               .includes(input.trim().toLowerCase())
           }
           placeholder={
-            kind === "food"
-              ? "Name (e.g. Chicken adobo)"
-              : "Name (e.g. Iced latte)"
+            kind === "food" ? "Name (e.g. Chicken adobo)" : "Name (e.g. Iced latte)"
           }
           style={{ width: "100%" }}
         />

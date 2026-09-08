@@ -28,7 +28,6 @@ import {
   faTooth,
   faTriangleExclamation,
   faUser,
-  faUsers,
   faUtensils,
   faWeightScale,
 } from "@fortawesome/free-solid-svg-icons";
@@ -58,7 +57,6 @@ const ICONS = {
   bath: faBath,
   brush: faTooth,
   target: faBullseye,
-  community: faUsers,
   alert: faTriangleExclamation,
   presets: faSliders,
   person: faUser,

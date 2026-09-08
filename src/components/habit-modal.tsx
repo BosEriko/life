@@ -4,13 +4,10 @@ import { useState } from "react";
 import { App, Checkbox, DatePicker, Flex, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { useHealthData } from "@/components/health-data-provider";
-import { useCommunityAuthorName } from "@/components/use-community-author";
 import { useHabitDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { saveHabits } from "@/models/habits";
-import { postActivityIfShared } from "@/models/community";
 
 export function HabitModal({
   open,
@@ -21,8 +18,6 @@ export function HabitModal({
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
-  const { communityPrefs } = useHealthData();
-  const authorName = useCommunityAuthorName();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [override, setOverride] = useState<Record<string, boolean>>({});
 
@@ -51,15 +46,6 @@ export function HabitModal({
     saveHabits(user.uid, dateKey, patch).catch(() =>
       message.error("Could not save."),
     );
-    if (value) {
-      postActivityIfShared(
-        user.uid,
-        communityPrefs,
-        authorName,
-        "habits",
-        field === "bath" ? "bathed" : "brushed teeth",
-      );
-    }
     message.success(navigator.onLine ? "Saved" : "Saved offline · will sync");
   }
 

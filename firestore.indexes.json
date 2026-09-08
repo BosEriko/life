@@ -1,14 +1,5 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "community",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "metric", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    }
-  ],
+  "indexes": [],
   "fieldOverrides": [
     {
       "collectionGroup": "mcpKeys",

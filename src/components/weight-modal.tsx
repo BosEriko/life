@@ -8,11 +8,9 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useDailyDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
-import { useCommunityAuthorName } from "@/components/use-community-author";
 import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
-  formatWeight,
   fromKg,
   toKg,
   weightStep,
@@ -20,7 +18,6 @@ import {
 } from "@/lib/units";
 import { saveDaily, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText } from "@/models/ideals";
-import { postActivityIfShared } from "@/models/community";
 
 export function WeightModal({
   open,
@@ -30,10 +27,9 @@ export function WeightModal({
   onClose: () => void;
 }) {
   const units = useUnits();
-  const authorName = useCommunityAuthorName();
   const { user } = useAuth();
   const { message } = App.useApp();
-  const { ideals, communityPrefs } = useHealthData();
+  const { ideals } = useHealthData();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [edited, setEdited] = useState<number | null>(null);
   const [touched, setTouched] = useState(false);
@@ -46,12 +42,11 @@ export function WeightModal({
   const savedKg = entry?.weight ?? null;
 
   const savedDisplay =
-    savedKg != null
-      ? Math.round(fromKg(savedKg, units.weight) * 10) / 10
-      : null;
+    savedKg != null ? Math.round(fromKg(savedKg, units.weight) * 10) / 10 : null;
   const shown = touched ? edited : savedDisplay;
 
-  const shownKg = typeof shown === "number" ? toKg(shown, units.weight) : null;
+  const shownKg =
+    typeof shown === "number" ? toKg(shown, units.weight) : null;
   const evalStatus = evaluateIdeal(shownKg, ideals.weight);
   const off = evalStatus === "low" || evalStatus === "high";
   const rangeLabel = rangeText(
@@ -81,13 +76,6 @@ export function WeightModal({
     const kg = Math.round(toKg(shown, units.weight) * 100) / 100;
     saveDaily(user.uid, dateKey, { weight: kg }).catch(() =>
       message.error("Could not save. Try again."),
-    );
-    postActivityIfShared(
-      user.uid,
-      communityPrefs,
-      authorName,
-      "weight",
-      `logged weight — ${formatWeight(kg, units.weight)}`,
     );
     message.success(
       navigator.onLine ? "Weight saved" : "Saved offline · will sync",
@@ -139,7 +127,10 @@ export function WeightModal({
               min={1}
               step={weightStep(units.weight)}
               prefix={
-                <Icon name="weight" style={{ marginRight: 0, opacity: 0.45 }} />
+                <Icon
+                  name="weight"
+                  style={{ marginRight: 0, opacity: 0.45 }}
+                />
               }
               suffix={weightSuffix(units.weight)}
               placeholder={units.weight === "lb" ? "160" : "72.5"}

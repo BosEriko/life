@@ -19,11 +19,6 @@ import { watchWaterLogs, type WaterLog } from "@/models/water";
 import { watchIntake, type IntakeEntry } from "@/models/intake";
 import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/ideals";
 import { watchWaterPresets, type WaterPreset } from "@/models/presets";
-import {
-  EMPTY_PREFS,
-  watchCommunityPrefs,
-  type CommunityPrefs,
-} from "@/models/community";
 
 type HealthData = {
   dailies: DailyEntry[];
@@ -33,7 +28,6 @@ type HealthData = {
   intake: IntakeEntry[];
   ideals: Ideals;
   presets: WaterPreset[];
-  communityPrefs: CommunityPrefs;
   cutoff: string;
   ready: boolean;
 };
@@ -46,7 +40,6 @@ const HealthDataContext = createContext<HealthData>({
   intake: [],
   ideals: EMPTY_IDEALS,
   presets: [],
-  communityPrefs: EMPTY_PREFS,
   cutoff: "",
   ready: false,
 });
@@ -66,8 +59,6 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const [intake, setIntake] = useState<IntakeEntry[]>([]);
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
   const [presets, setPresets] = useState<WaterPreset[]>([]);
-  const [communityPrefs, setCommunityPrefs] =
-    useState<CommunityPrefs>(EMPTY_PREFS);
   const [ready, setReady] = useState(false);
   const seen = useRef({
     dailies: false,
@@ -153,7 +144,6 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       ),
       watchIdeals(user.uid, setIdeals, () => {}),
       watchWaterPresets(user.uid, setPresets, () => {}),
-      watchCommunityPrefs(user.uid, setCommunityPrefs, () => {}),
     ];
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, [user, cutoff, message]);
@@ -167,7 +157,6 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       intake,
       ideals,
       presets,
-      communityPrefs,
       cutoff,
       ready,
     }),
@@ -179,7 +168,6 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       intake,
       ideals,
       presets,
-      communityPrefs,
       cutoff,
       ready,
     ],
