@@ -15,12 +15,14 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { getFirebaseDb } from "@/lib/firebase";
 import { mapDailyDoc, type DailyEntry } from "@/models/dailies";
+import { mapHabitDoc, type HabitEntry } from "@/models/habits";
 import { mapBpDoc, type BpReading } from "@/models/bp";
 import { mapWaterDoc, type WaterLog } from "@/models/water";
 import { mapIntakeDoc, type IntakeEntry } from "@/models/intake";
 
 type HistoryData = {
   dailies: DailyEntry[];
+  habits: HabitEntry[];
   bpReadings: BpReading[];
   waterLogs: WaterLog[];
   intake: IntakeEntry[];
@@ -30,6 +32,7 @@ export type HealthHistory = HistoryData & { ready: boolean };
 
 const EMPTY_DATA: HistoryData = {
   dailies: [],
+  habits: [],
   bpReadings: [],
   waterLogs: [],
   intake: [],
@@ -62,13 +65,14 @@ async function loadHistory(uid: string, cutoff: string): Promise<HistoryData> {
       where("date", "<", cutoff),
       orderBy("date", "desc"),
     );
-  const [dailies, bpReadings, waterLogs, intake] = await Promise.all([
+  const [dailies, habits, bpReadings, waterLogs, intake] = await Promise.all([
     pull(slice("dailies"), mapDailyDoc),
+    pull(slice("habits"), mapHabitDoc),
     pull(slice("bpReadings"), mapBpDoc),
     pull(slice("waterLogs"), mapWaterDoc),
     pull(slice("intake"), mapIntakeDoc),
   ]);
-  return { dailies, bpReadings, waterLogs, intake };
+  return { dailies, habits, bpReadings, waterLogs, intake };
 }
 
 export function useHealthHistory(

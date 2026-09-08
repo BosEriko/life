@@ -9,6 +9,7 @@ import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { useUnits } from "@/components/units-provider";
 import { todayKey, type DailyEntry } from "@/models/dailies";
+import { type HabitEntry } from "@/models/habits";
 import { dailyBpAverages } from "@/models/bp";
 import { dailyWaterTotals } from "@/models/water";
 import { dailyIntake } from "@/models/intake";
@@ -83,6 +84,7 @@ export function ReportModal({
 
   const {
     dailies,
+    habits,
     bpReadings: bpWindow,
     waterLogs: waterWindow,
     intake: intakeWindow,
@@ -95,6 +97,15 @@ export function ReportModal({
     () => mergeByDate(dailies, history.dailies),
     [dailies, history.dailies],
   );
+  const habitEntries = useMemo(
+    () => mergeByDate(habits, history.habits),
+    [habits, history.habits],
+  );
+  const habitByDate = useMemo(() => {
+    const map = new Map<string, HabitEntry>();
+    for (const entry of habitEntries) map.set(entry.date, entry);
+    return map;
+  }, [habitEntries]);
   const bpReadings = useMemo(
     () => mergeById(bpWindow, history.bpReadings),
     [bpWindow, history.bpReadings],
@@ -115,14 +126,25 @@ export function ReportModal({
     [intakeEntries],
   );
 
-  const rows = useMemo(
-    () =>
-      withinRange(
-        [...entries].sort((a, b) => a.date.localeCompare(b.date)),
-        range,
+  const rows = useMemo(() => {
+    const byDate = new Map<string, DailyEntry>();
+    for (const entry of entries) byDate.set(entry.date, entry);
+    for (const habit of habitEntries) {
+      if (!byDate.has(habit.date)) {
+        byDate.set(habit.date, {
+          date: habit.date,
+          weight: null,
+          updatedAt: null,
+        });
+      }
+    }
+    return withinRange(
+      Array.from(byDate.values()).sort((a, b) =>
+        a.date.localeCompare(b.date),
       ),
-    [entries, range],
-  );
+      range,
+    );
+  }, [entries, habitEntries, range]);
   const bpRows = useMemo(
     () => withinRange(Array.from(dailyBp.values()), range),
     [dailyBp, range],
@@ -219,12 +241,17 @@ export function ReportModal({
       if (has("bath"))
         summaryBody.push([
           "Bath days",
-          String(rows.filter((entry) => entry.bath).length),
+          String(
+            rows.filter((entry) => habitByDate.get(entry.date)?.bath).length,
+          ),
         ]);
       if (has("brush"))
         summaryBody.push([
           "Brush days",
-          String(rows.filter((entry) => entry.brushTeeth).length),
+          String(
+            rows.filter((entry) => habitByDate.get(entry.date)?.brushTeeth)
+              .length,
+          ),
         ]);
 
       autoTable(doc, {
@@ -248,6 +275,7 @@ export function ReportModal({
           bp: DayBp,
           water: DayWater,
           intake: DayIntake,
+          habit: HabitEntry | undefined,
         ) => string;
       };
 
@@ -296,12 +324,14 @@ export function ReportModal({
       if (has("bath"))
         columns.push({
           header: "Bath",
-          cell: (entry) => (entry.bath ? "Y" : ""),
+          cell: (_entry, _bp, _water, _intake, habit) =>
+            habit?.bath ? "Y" : "",
         });
       if (has("brush"))
         columns.push({
           header: "Brush",
-          cell: (entry) => (entry.brushTeeth ? "Y" : ""),
+          cell: (_entry, _bp, _water, _intake, habit) =>
+            habit?.brushTeeth ? "Y" : "",
         });
 
       autoTable(doc, {
@@ -311,7 +341,10 @@ export function ReportModal({
           const bp = dailyBp.get(entry.date);
           const water = dailyWater.get(entry.date);
           const intake = dailyIntakeMap.get(entry.date);
-          return columns.map((column) => column.cell(entry, bp, water, intake));
+          const habit = habitByDate.get(entry.date);
+          return columns.map((column) =>
+            column.cell(entry, bp, water, intake, habit),
+          );
         }),
         styles: { fontSize: 8, cellPadding: 1.5, overflow: "linebreak" },
         headStyles: { fillColor: [46, 125, 79] },

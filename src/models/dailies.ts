@@ -19,15 +19,11 @@ import { getFirebaseDb } from "@/lib/firebase";
 export type DailyEntry = {
   date: string;
   weight: number | null;
-  bath: boolean | null;
-  brushTeeth: boolean | null;
   updatedAt: Timestamp | null;
 };
 
 export type DailyInput = {
   weight?: number;
-  bath?: boolean;
-  brushTeeth?: boolean;
 };
 
 function dailiesCollection(uid: string) {
@@ -60,8 +56,6 @@ export async function saveDaily(uid: string, date: string, input: DailyInput) {
     updatedAt: serverTimestamp(),
   };
   if (input.weight !== undefined) payload.weight = input.weight;
-  if (input.bath !== undefined) payload.bath = input.bath;
-  if (input.brushTeeth !== undefined) payload.brushTeeth = input.brushTeeth;
 
   await setDoc(dailyDocRef(uid, date), payload, { merge: true });
 }
@@ -73,8 +67,6 @@ export function mapDailyDoc(
   return {
     date: data.date as string,
     weight: (data.weight as number | undefined) ?? null,
-    bath: (data.bath as boolean | undefined) ?? null,
-    brushTeeth: (data.brushTeeth as boolean | undefined) ?? null,
     updatedAt: (data.updatedAt as Timestamp | undefined) ?? null,
   };
 }

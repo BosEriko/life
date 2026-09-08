@@ -53,3 +53,43 @@ confirm the build still lists `/` and `/summary` as static (`○`), nothing regr
   `=== true` / `=== false` / `!== true`, never a bare truthy check.
 - Spot-check the mobile bottom nav, the FAB circle menu, modals (they cap height and scroll
   their body on small screens), and the habit heatmap (13 weeks mobile / 26 desktop).
+
+## 5. Firestore query cost — keep reads cheap
+
+Firestore bills per document read, and every extra `onSnapshot` is another live channel.
+The invariant: **the number of live listeners on a page tracks the number of distinct
+collections in use, not the number of components on the page.** Each collection has exactly
+one shared listener; adding widgets that read the same data adds zero listeners. Whatever
+that collection count is today, it must not start scaling with component count.
+
+**The rules**
+- **One live listener per collection, owned by `HealthDataProvider`
+  (`src/components/health-data-provider.tsx`).** Components read `useHealthData()`. A
+  component must not open its own `watch*` / `onSnapshot` for `dailies`, `habits`,
+  `bpReadings`, `waterLogs`, `intake`, `ideals`, or `presets`. Two listeners on the same
+  collection = a bug.
+- **Every list listener is bounded by the rolling date window**
+  (`where("date", ">=", cutoff)` from `src/lib/health-window.ts`, **no `limit`** — the date
+  bound self-limits as history grows). Never pass `limit = null` / an unbounded query, and
+  never a fixed `limit(2000)`-style cap on a live listener.
+- **Anything older than the window loads once, on demand, not live** — `useHealthHistory`
+  (`src/components/use-health-history.ts`) does a cache-first one-shot `getDocs` for
+  `date < cutoff`, module-cached for the session, merged with the window via
+  `src/lib/merge-records.ts`. Use it for "All" / "1Y" ranges, Summary, the PDF, and
+  far-back heatmap paging. It is display-only — never put an editable surface behind it.
+- **Editing modals subscribe to a single day**, via `use-day-records.ts`
+  (`where("date", "==", day)` or the day doc), gated on the modal being `open`. This is the
+  only place a component opens its own listener, and it's one tiny query.
+- **Adding a new collection?** Follow the same shape: add it to the provider (windowed
+  listener) + `useHealthHistory` (deep slice) + `use-day-records` (if it's editable per
+  day), expose it on the context, and consume it via `useHealthData()`. Do not add a
+  bespoke listener in the consuming component.
+- **Keep every query single-field on `date`** (`where("date", …)` + `orderBy("date")` on
+  the *same* field) so it's served by the automatic index — no `firestore.indexes.json`
+  entry, no composite index.
+- **`src/lib/export-data.ts` (server, `firebase-admin`)** uses windowed `where("date", …)`
+  + `limit` per collection. Never scan a whole collection there either.
+
+**Before you write `onSnapshot` / `getDocs` / `watch*` anywhere outside the provider and
+the two hooks above, stop** and route it through `useHealthData()` / `useHealthHistory` /
+`use-day-records` instead. If you truly can't, say why in the PR.

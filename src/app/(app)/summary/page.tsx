@@ -12,6 +12,7 @@ import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { useUnits } from "@/components/units-provider";
 import { formatVolume, formatWeight } from "@/lib/units";
 import { type DailyEntry } from "@/models/dailies";
+import { type HabitEntry } from "@/models/habits";
 import { formatWaterTime, type WaterLog } from "@/models/water";
 import { formatBpTime, type BpReading } from "@/models/bp";
 import { formatIntakeTime, type IntakeEntry } from "@/models/intake";
@@ -43,6 +44,7 @@ export default function SummaryPage() {
 
   const {
     dailies,
+    habits: habitsWindow,
     bpReadings,
     waterLogs,
     intake: intakeWindow,
@@ -55,6 +57,10 @@ export default function SummaryPage() {
   const daily = useMemo(
     () => mergeByDate(dailies, history.dailies),
     [dailies, history.dailies],
+  );
+  const habits = useMemo(
+    () => mergeByDate(habitsWindow, history.habits),
+    [habitsWindow, history.habits],
   );
   const water = useMemo(
     () => mergeById(waterLogs, history.waterLogs),
@@ -79,16 +85,20 @@ export default function SummaryPage() {
           value == null ? "—" : formatWeight(value, units.weight),
         width: 130,
       },
-      { title: "Bath", dataIndex: "bath", render: doneLabel, width: 120 },
-      {
-        title: "Brushed teeth",
-        dataIndex: "brushTeeth",
-        render: doneLabel,
-        width: 150,
-      },
     ],
     [units.weight],
   );
+
+  const habitColumns: TableProps<HabitEntry>["columns"] = [
+    { title: "Date", dataIndex: "date", render: dateLabel, width: 150 },
+    { title: "Bath", dataIndex: "bath", render: doneLabel, width: 120 },
+    {
+      title: "Brushed teeth",
+      dataIndex: "brushTeeth",
+      render: doneLabel,
+      width: 150,
+    },
+  ];
 
   const waterColumns: TableProps<WaterLog>["columns"] = [
     { title: "Date", dataIndex: "date", render: dateLabel, width: 150 },
@@ -172,7 +182,12 @@ export default function SummaryPage() {
     {
       key: "daily",
       label: "Daily",
-      children: table(daily, dailyColumns, "date", dataReady, 550),
+      children: table(daily, dailyColumns, "date", dataReady, 300),
+    },
+    {
+      key: "habits",
+      label: "Habits",
+      children: table(habits, habitColumns, "date", dataReady, 420),
     },
     {
       key: "water",
@@ -191,7 +206,8 @@ export default function SummaryPage() {
     },
   ];
 
-  const total = daily.length + water.length + bp.length + intake.length;
+  const total =
+    daily.length + habits.length + water.length + bp.length + intake.length;
 
   return (
     <div>

@@ -13,7 +13,7 @@ import {
   TERRACOTTA_DARK,
   useIsDark,
 } from "@/components/theme-provider";
-import { type DailyEntry } from "@/models/dailies";
+import { type HabitEntry } from "@/models/habits";
 import { dailyIntake, type DailyIntake } from "@/models/intake";
 
 const WEEKS = 26;
@@ -21,11 +21,11 @@ const WEEKS_SM = 13;
 const CELL = 11;
 const GAP = 3;
 
-type DailyHabit = "bath" | "brushTeeth";
+type HygieneHabit = "bath" | "brushTeeth";
 type IntakeHabit = "junkFood" | "junkDrink";
 
 type Habit =
-  | { key: DailyHabit; label: ReactNode; tone: "good"; source: "daily" }
+  | { key: HygieneHabit; label: ReactNode; tone: "good"; source: "habit" }
   | { key: IntakeHabit; label: ReactNode; tone: "bad"; source: "intake" }
   | {
       key: "ateOutsideWindow";
@@ -47,7 +47,7 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
           </>
         ),
         tone: "good",
-        source: "daily",
+        source: "habit",
       },
       {
         key: "brushTeeth",
@@ -58,7 +58,7 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
           </>
         ),
         tone: "good",
-        source: "daily",
+        source: "habit",
       },
     ],
   },
@@ -117,7 +117,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   );
 
   const {
-    dailies,
+    habits,
     intake: intakeWindow,
     ideals,
     cutoff,
@@ -134,8 +134,8 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   const loaded = ready && (!needHistory || history.ready);
 
   const entries = useMemo(
-    () => mergeByDate(dailies, history.dailies),
-    [dailies, history.dailies],
+    () => mergeByDate(habits, history.habits),
+    [habits, history.habits],
   );
   const intake = useMemo(
     () => mergeById(intakeWindow, history.intake),
@@ -143,7 +143,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   );
 
   const byDate = useMemo(() => {
-    const map = new Map<string, DailyEntry>();
+    const map = new Map<string, HabitEntry>();
     for (const entry of entries) map.set(entry.date, entry);
     return map;
   }, [entries]);
@@ -164,7 +164,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
 
   const isOn = useMemo(() => {
     return (habit: Habit, dateKey: string): boolean => {
-      if (habit.source === "daily") {
+      if (habit.source === "habit") {
         return byDate.get(dateKey)?.[habit.key] === true;
       }
       if (habit.source === "window") {
@@ -197,7 +197,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
       visibleDates.has(day.date),
     );
     for (const habit of ALL_HABITS) {
-      if (habit.source === "daily") {
+      if (habit.source === "habit") {
         const on = visibleEntries.filter(
           (entry) => entry[habit.key] === true,
         ).length;

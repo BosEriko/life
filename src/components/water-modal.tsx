@@ -218,23 +218,26 @@ export function WaterModal({
           {relativeDate(dateKey)}
         </Typography.Title>
         {dayLogs.length > 0 ? (
-          <IdealTip
-            isAbove={totalEval === "high"}
-            isBelow={totalEval === "low"}
-            message={totalTip}
-          >
-            <Typography.Text
-              type={totalTip ? undefined : "secondary"}
-              style={{
-                fontSize: 12,
-                cursor: totalTip ? "help" : undefined,
-                color: totalTip ? token.colorError : undefined,
-              }}
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Total{" "}
+            <IdealTip
+              isAbove={totalEval === "high"}
+              isBelow={totalEval === "low"}
+              message={totalTip}
             >
-              Total {formatVolume(dailyTotalMl, units.volume)} · {dayLogs.length}{" "}
-              drink{dayLogs.length === 1 ? "" : "s"}
-            </Typography.Text>
-          </IdealTip>
+              <Typography.Text
+                type="secondary"
+                style={{
+                  fontSize: 12,
+                  cursor: totalTip ? "help" : undefined,
+                  color: totalTip ? token.colorError : undefined,
+                }}
+              >
+                {formatVolume(dailyTotalMl, units.volume)}
+              </Typography.Text>
+            </IdealTip>{" "}
+            · {dayLogs.length} drink{dayLogs.length === 1 ? "" : "s"}
+          </Typography.Text>
         ) : null}
       </Flex>
 

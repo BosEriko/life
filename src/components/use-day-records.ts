@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { watchDailyDoc, type DailyEntry } from "@/models/dailies";
+import { watchHabitDoc, type HabitEntry } from "@/models/habits";
 import { watchBpForDate, type BpReading } from "@/models/bp";
 import { watchWaterForDate, type WaterLog } from "@/models/water";
 import { watchIntakeForDate, type IntakeEntry } from "@/models/intake";
@@ -25,6 +26,30 @@ export function useDailyDoc(
     if (!enabled || !user || !dateKey) return;
     const key = dateKey;
     return watchDailyDoc(
+      user.uid,
+      key,
+      (entry) => setState({ key, entry }),
+      () => {},
+    );
+  }, [enabled, user, dateKey]);
+
+  return enabled && state?.key === dateKey ? state.entry : null;
+}
+
+export function useHabitDoc(
+  dateKey: string,
+  enabled: boolean,
+): HabitEntry | null {
+  const { user } = useAuth();
+  const [state, setState] = useState<{
+    key: string;
+    entry: HabitEntry | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !user || !dateKey) return;
+    const key = dateKey;
+    return watchHabitDoc(
       user.uid,
       key,
       (entry) => setState({ key, entry }),

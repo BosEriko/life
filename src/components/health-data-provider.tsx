@@ -13,6 +13,7 @@ import { App } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { healthWindowCutoff } from "@/lib/health-window";
 import { watchDailies, type DailyEntry } from "@/models/dailies";
+import { watchHabits, type HabitEntry } from "@/models/habits";
 import { watchBpReadings, type BpReading } from "@/models/bp";
 import { watchWaterLogs, type WaterLog } from "@/models/water";
 import { watchIntake, type IntakeEntry } from "@/models/intake";
@@ -21,6 +22,7 @@ import { watchWaterPresets, type WaterPreset } from "@/models/presets";
 
 type HealthData = {
   dailies: DailyEntry[];
+  habits: HabitEntry[];
   bpReadings: BpReading[];
   waterLogs: WaterLog[];
   intake: IntakeEntry[];
@@ -32,6 +34,7 @@ type HealthData = {
 
 const HealthDataContext = createContext<HealthData>({
   dailies: [],
+  habits: [],
   bpReadings: [],
   waterLogs: [],
   intake: [],
@@ -50,13 +53,20 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const { message } = App.useApp();
   const [cutoff] = useState(healthWindowCutoff);
   const [dailies, setDailies] = useState<DailyEntry[]>([]);
+  const [habits, setHabits] = useState<HabitEntry[]>([]);
   const [bpReadings, setBpReadings] = useState<BpReading[]>([]);
   const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
   const [intake, setIntake] = useState<IntakeEntry[]>([]);
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
   const [presets, setPresets] = useState<WaterPreset[]>([]);
   const [ready, setReady] = useState(false);
-  const seen = useRef({ dailies: false, bp: false, water: false, intake: false });
+  const seen = useRef({
+    dailies: false,
+    habits: false,
+    bp: false,
+    water: false,
+    intake: false,
+  });
   const errored = useRef(false);
 
   useEffect(() => {
@@ -64,7 +74,13 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
     const marks = seen.current;
     const markSeen = (key: keyof typeof marks) => {
       marks[key] = true;
-      if (marks.dailies && marks.bp && marks.water && marks.intake) {
+      if (
+        marks.dailies &&
+        marks.habits &&
+        marks.bp &&
+        marks.water &&
+        marks.intake
+      ) {
         setReady(true);
       }
     };
@@ -81,6 +97,16 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
         (next) => {
           setDailies(next);
           markSeen("dailies");
+        },
+        fail,
+        null,
+        cutoff,
+      ),
+      watchHabits(
+        user.uid,
+        (next) => {
+          setHabits(next);
+          markSeen("habits");
         },
         fail,
         null,
@@ -125,6 +151,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<HealthData>(
     () => ({
       dailies,
+      habits,
       bpReadings,
       waterLogs,
       intake,
@@ -133,7 +160,17 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       cutoff,
       ready,
     }),
-    [dailies, bpReadings, waterLogs, intake, ideals, presets, cutoff, ready],
+    [
+      dailies,
+      habits,
+      bpReadings,
+      waterLogs,
+      intake,
+      ideals,
+      presets,
+      cutoff,
+      ready,
+    ],
   );
 
   return (

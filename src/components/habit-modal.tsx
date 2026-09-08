@@ -4,9 +4,10 @@ import { useState } from "react";
 import { App, Checkbox, DatePicker, Flex, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { useDailyDoc } from "@/components/use-day-records";
+import { useHabitDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
-import { relativeDate, saveDaily, todayKey } from "@/models/dailies";
+import { relativeDate, todayKey } from "@/models/dailies";
+import { saveHabits } from "@/models/habits";
 
 export function HabitModal({
   open,
@@ -22,7 +23,7 @@ export function HabitModal({
 
   const dateKey = date.format("YYYY-MM-DD");
 
-  const entry = useDailyDoc(dateKey, open);
+  const entry = useHabitDoc(dateKey, open);
 
   const bath = override.bath ?? entry?.bath ?? false;
   const brushTeeth = override.brushTeeth ?? entry?.brushTeeth ?? false;
@@ -42,7 +43,7 @@ export function HabitModal({
     if (!user) return;
     setOverride((prev) => ({ ...prev, [field]: value }));
     const patch = field === "bath" ? { bath: value } : { brushTeeth: value };
-    saveDaily(user.uid, dateKey, patch).catch(() =>
+    saveHabits(user.uid, dateKey, patch).catch(() =>
       message.error("Could not save."),
     );
     message.success(navigator.onLine ? "Saved" : "Saved offline · will sync");

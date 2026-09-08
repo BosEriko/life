@@ -86,6 +86,13 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
   if (from) dailiesQuery = dailiesQuery.where("date", ">=", from);
   if (to) dailiesQuery = dailiesQuery.where("date", "<=", to);
 
+  let habitsQuery = userRef
+    .collection("habits")
+    .orderBy("date", "desc")
+    .limit(limit);
+  if (from) habitsQuery = habitsQuery.where("date", ">=", from);
+  if (to) habitsQuery = habitsQuery.where("date", "<=", to);
+
   let bpQuery = userRef
     .collection("bpReadings")
     .orderBy("date", "desc")
@@ -116,6 +123,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
 
   const [
     dailiesSnap,
+    habitsSnap,
     bpSnap,
     waterSnap,
     intakeSnap,
@@ -125,6 +133,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     profileSnap,
   ] = await Promise.all([
     dailiesQuery.get(),
+    habitsQuery.get(),
     bpQuery.get(),
     waterQuery.get(),
     intakeQuery.get(),
@@ -225,14 +234,25 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     })),
   );
 
-  const dailies = dailiesSnap.docs
-    .map((doc) => {
-      const d = doc.data();
-      const bp = bpByDate.get(doc.id);
-      const water = waterByDate.get(doc.id);
-      const meals = intakeByDate.get(doc.id);
+  const dailyDataById = new Map<string, Record<string, unknown>>();
+  for (const doc of dailiesSnap.docs) dailyDataById.set(doc.id, doc.data());
+  const habitDataById = new Map<string, Record<string, unknown>>();
+  for (const doc of habitsSnap.docs) habitDataById.set(doc.id, doc.data());
+
+  const dailyDates = new Set<string>([
+    ...dailyDataById.keys(),
+    ...habitDataById.keys(),
+  ]);
+
+  const dailies = Array.from(dailyDates)
+    .map((date) => {
+      const d = dailyDataById.get(date) ?? {};
+      const h = habitDataById.get(date);
+      const bp = bpByDate.get(date);
+      const water = waterByDate.get(date);
+      const meals = intakeByDate.get(date);
       return {
-        date: doc.id,
+        date,
         weight: clean(d.weight),
         systolic: bp ? bp.systolic : null,
         diastolic: bp ? bp.diastolic : null,
@@ -245,8 +265,8 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
         calories: meals ? meals.calories : 0,
         sodium: meals ? meals.sodium : 0,
         intakeCount: meals ? meals.count : 0,
-        bath: clean(d.bath),
-        brushTeeth: clean(d.brushTeeth),
+        bath: h ? clean(h.bath) : null,
+        brushTeeth: h ? clean(h.brushTeeth) : null,
         updatedAt: toIso(d.updatedAt),
       };
     })
