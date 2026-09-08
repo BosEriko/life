@@ -1,7 +1,16 @@
 "use client";
 
 import { useRef, useState, type ComponentRef } from "react";
-import { App, Button, DatePicker, Flex, Input, Modal, Typography } from "antd";
+import {
+  App,
+  Button,
+  DatePicker,
+  Flex,
+  Grid,
+  Input,
+  Modal,
+  Typography,
+} from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
@@ -19,6 +28,8 @@ export function NotesModal({
 }) {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const screens = Grid.useBreakpoint();
+  const enterToSave = screens.md === true;
   const [date, setDate] = useState<Dayjs>(() => initialDate ?? dayjs());
   const [text, setText] = useState("");
   const textRef = useRef<ComponentRef<typeof Input.TextArea>>(null);
@@ -80,16 +91,22 @@ export function NotesModal({
           onChange={(event) => setText(event.target.value)}
           placeholder="What's on your mind?"
           autoSize={{ minRows: 3, maxRows: 10 }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              handleAdd();
-            }
-          }}
+          onKeyDown={
+            enterToSave
+              ? (event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    handleAdd();
+                  }
+                }
+              : undefined
+          }
         />
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Enter to save · Shift + Enter for a new line
-        </Typography.Text>
+        {enterToSave ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Enter to save · Shift + Enter for a new line
+          </Typography.Text>
+        ) : null}
         <Button type="primary" disabled={!canAdd} onClick={handleAdd}>
           Add note
         </Button>
