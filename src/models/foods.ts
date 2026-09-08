@@ -1,8 +1,6 @@
 import {
   addDoc,
   collection,
-  deleteDoc,
-  doc,
   onSnapshot,
   orderBy,
   query,
@@ -10,6 +8,7 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
+import type { User } from "firebase/auth";
 import { getFirebaseDb } from "@/lib/firebase";
 
 export type FoodKind = "food" | "drink";
@@ -101,6 +100,14 @@ export async function addFood(uid: string, input: FoodInput) {
   await addDoc(foodsCollection(), payload);
 }
 
-export async function deleteFood(id: string) {
-  await deleteDoc(doc(foodsCollection(), id));
+export async function deleteFood(user: User, id: string) {
+  const token = await user.getIdToken();
+  const res = await fetch(`/api/foods/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? `Request failed (${res.status}).`);
+  }
 }

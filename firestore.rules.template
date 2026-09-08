@@ -12,6 +12,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /admins/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
     match /adminAlerts/{doc} {
       allow read: if request.auth != null
         && request.auth.token.email == 'bos@eriko.ph';
@@ -22,7 +27,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.addedBy == request.auth.uid;
-      allow update, delete: if request.auth != null;
+      allow update, delete: if false;
     }
 
     match /{document=**} {

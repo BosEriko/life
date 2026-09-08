@@ -15,9 +15,11 @@ import {
   theme,
   Typography,
 } from "antd";
-import { DatabaseOutlined, DeleteOutlined } from "@ant-design/icons";
+import { DatabaseOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon } from "@/components/icon";
+import { useIsAdmin } from "@/components/use-is-admin";
 import {
   addFood,
   deleteFood,
@@ -46,6 +48,7 @@ export function DatabasePanel() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
+  const canDelete = useIsAdmin();
 
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -106,7 +109,7 @@ export function DatabasePanel() {
   async function handleDelete(id: string) {
     if (!user) return;
     try {
-      await deleteFood(id);
+      await deleteFood(user, id);
     } catch {
       message.error("Could not delete item.");
     }
@@ -242,14 +245,12 @@ export function DatabasePanel() {
                         </Typography.Text>
                       ) : null}
                     </Flex>
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      icon={<DeleteOutlined />}
-                      aria-label={`Delete ${item.name}`}
-                      onClick={() => handleDelete(item.id)}
-                    />
+                    {canDelete ? (
+                      <ConfirmDeleteButton
+                        ariaLabel={`Delete ${item.name}`}
+                        onConfirm={() => handleDelete(item.id)}
+                      />
+                    ) : null}
                   </Flex>
                 );
               })}

@@ -20,10 +20,16 @@ export async function GET(request: Request) {
     const db = getAdminDb();
     const { users } = await getAdminAuth().listUsers(1000);
 
-    const refs = users.map((user) => db.doc(`claudeAccess/${user.uid}`));
-    const snaps = refs.length ? await db.getAll(...refs) : [];
-    const enabledByUid = new Map(
-      snaps.map((snap) => [snap.id, snap.get("enabled") === true]),
+    const claudeRefs = users.map((user) => db.doc(`claudeAccess/${user.uid}`));
+    const claudeSnaps = claudeRefs.length ? await db.getAll(...claudeRefs) : [];
+    const claudeByUid = new Map(
+      claudeSnaps.map((snap) => [snap.id, snap.get("enabled") === true]),
+    );
+
+    const adminRefs = users.map((user) => db.doc(`admins/${user.uid}`));
+    const adminSnaps = adminRefs.length ? await db.getAll(...adminRefs) : [];
+    const adminByUid = new Map(
+      adminSnaps.map((snap) => [snap.id, snap.get("admin") === true]),
     );
 
     const rows = users
@@ -31,7 +37,10 @@ export async function GET(request: Request) {
         uid: user.uid,
         email: user.email ?? null,
         displayName: user.displayName ?? null,
-        claudeEnabled: enabledByUid.get(user.uid) ?? false,
+        claudeEnabled: claudeByUid.get(user.uid) ?? false,
+        isAdmin:
+          user.email?.toLowerCase() === ADMIN_EMAIL ||
+          (adminByUid.get(user.uid) ?? false),
         createdAt: user.metadata.creationTime ?? null,
       }))
       .sort((a, b) => {
@@ -51,7 +60,7 @@ export async function POST(request: Request) {
   const admin = await adminFromRequest(request);
   if (!admin) return Response.json({ error: "Forbidden" }, { status: 403 });
 
-  let body: { uid?: unknown; enabled?: unknown };
+  let body: { uid?: unknown; enabled?: unknown; admin?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -60,16 +69,54 @@ export async function POST(request: Request) {
 
   const uid = typeof body.uid === "string" ? body.uid : "";
   if (!uid) return Response.json({ error: "Missing uid" }, { status: 400 });
-  const enabled = body.enabled === true;
 
   try {
-    await getAdminDb()
-      .doc(`claudeAccess/${uid}`)
-      .set(
-        { enabled, updatedAt: FieldValue.serverTimestamp() },
-        { merge: true },
+    const db = getAdminDb();
+    const result: Record<string, unknown> = { uid };
+    const writes: Promise<unknown>[] = [];
+
+    if (typeof body.enabled === "boolean") {
+      writes.push(
+        db
+          .doc(`claudeAccess/${uid}`)
+          .set(
+            { enabled: body.enabled, updatedAt: FieldValue.serverTimestamp() },
+            { merge: true },
+          ),
       );
-    return Response.json({ uid, enabled });
+      result.enabled = body.enabled;
+    }
+
+    if (typeof body.admin === "boolean") {
+      const target = await getAdminAuth()
+        .getUser(uid)
+        .catch(() => null);
+      if (
+        target?.email?.toLowerCase() === ADMIN_EMAIL &&
+        body.admin === false
+      ) {
+        return Response.json(
+          { error: "The owner is always an admin." },
+          { status: 400 },
+        );
+      }
+      writes.push(
+        db
+          .doc(`admins/${uid}`)
+          .set(
+            { admin: body.admin, updatedAt: FieldValue.serverTimestamp() },
+            { merge: true },
+          ),
+      );
+      result.admin = body.admin;
+    }
+
+    if (writes.length === 0) {
+      return Response.json({ error: "Nothing to update" }, { status: 400 });
+    }
+
+    await Promise.all(writes);
+    return Response.json(result);
   } catch (error) {
     return fail(error);
   }

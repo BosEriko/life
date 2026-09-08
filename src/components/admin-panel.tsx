@@ -9,6 +9,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { testClaudeConnection } from "@/models/claude-integration";
 import {
   listAdminUsers,
+  setUserAdmin,
   setUserClaudeAccess,
   type AdminUser,
 } from "@/models/admin";
@@ -22,6 +23,7 @@ export function AdminPanel() {
   const [rows, setRows] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<Record<string, boolean>>({});
+  const [adminPending, setAdminPending] = useState<Record<string, boolean>>({});
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
@@ -73,6 +75,30 @@ export function AdminPanel() {
     }
   }
 
+  async function toggleAdmin(row: AdminUser, next: boolean) {
+    if (!user) return;
+    setAdminPending((prev) => ({ ...prev, [row.uid]: true }));
+    setRows((prev) =>
+      prev.map((item) =>
+        item.uid === row.uid ? { ...item, isAdmin: next } : item,
+      ),
+    );
+    try {
+      await setUserAdmin(user, row.uid, next);
+    } catch (error) {
+      setRows((prev) =>
+        prev.map((item) =>
+          item.uid === row.uid ? { ...item, isAdmin: !next } : item,
+        ),
+      );
+      message.error(
+        error instanceof Error ? error.message : "Could not update that user.",
+      );
+    } finally {
+      setAdminPending((prev) => ({ ...prev, [row.uid]: false }));
+    }
+  }
+
   async function handleTest() {
     if (!user) return;
     setTesting(true);
@@ -103,6 +129,19 @@ export function AdminPanel() {
       ),
     },
     {
+      title: "Admin",
+      dataIndex: "isAdmin",
+      width: 110,
+      render: (value: boolean, row) => (
+        <Switch
+          checked={value}
+          loading={adminPending[row.uid]}
+          disabled={isAdminEmail(row.email)}
+          onChange={(next) => toggleAdmin(row, next)}
+        />
+      ),
+    },
+    {
       title: "Claude autofill",
       dataIndex: "claudeEnabled",
       width: 140,
@@ -130,8 +169,9 @@ export function AdminPanel() {
             Admin
           </Typography.Title>
           <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            Grant or revoke Claude autofill per user. Enabled users get calories
-            and sodium estimated when they leave those fields blank.
+            Make someone an admin (admins can delete entries from the shared food
+            Database), or grant Claude autofill so calories and sodium are
+            estimated when those fields are left blank.
           </Typography.Paragraph>
         </div>
         <Button size="small" loading={testing} onClick={handleTest}>

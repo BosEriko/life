@@ -5,6 +5,7 @@ export type AdminUser = {
   email: string | null;
   displayName: string | null;
   claudeEnabled: boolean;
+  isAdmin: boolean;
   createdAt: string | null;
 };
 
@@ -35,6 +36,23 @@ export async function setUserClaudeAccess(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ uid, enabled }),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+}
+
+export async function setUserAdmin(
+  user: User,
+  uid: string,
+  admin: boolean,
+): Promise<void> {
+  const token = await user.getIdToken();
+  const res = await fetch("/api/admin/users", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ uid, admin }),
   });
   if (!res.ok) throw new Error(await readError(res));
 }
