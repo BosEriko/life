@@ -3,31 +3,13 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Grid, theme } from "antd";
-import {
-  FileTextOutlined,
-  HeartOutlined,
-  IdcardOutlined,
-  UnorderedListOutlined,
-} from "@ant-design/icons";
-import type { CSSProperties, ComponentType } from "react";
 import { Icon } from "@/components/icon";
+import { NAV, type NavItem } from "@/components/nav-items";
 import { NotesModal } from "@/components/notes-modal";
 
-type NavButton = {
-  key: string;
-  label: string;
-  Icon: ComponentType<{ style?: CSSProperties }>;
-};
-
-const LEFT: NavButton[] = [
-  { key: "/", label: "Health", Icon: HeartOutlined },
-  { key: "/notes", label: "Notes", Icon: FileTextOutlined },
-];
-
-const RIGHT: NavButton[] = [
-  { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
-  { key: "/profile", label: "Profile", Icon: IdcardOutlined },
-];
+const SPLIT = Math.ceil(NAV.length / 2);
+const LEFT = NAV.slice(0, SPLIT);
+const RIGHT = NAV.slice(SPLIT);
 
 export function MobileNav() {
   const screens = Grid.useBreakpoint();
@@ -38,7 +20,7 @@ export function MobileNav() {
 
   if (screens.md !== false) return null;
 
-  const flatButton = (item: NavButton) => {
+  const flatButton = (item: NavItem) => {
     const active = pathname === item.key;
     return (
       <button

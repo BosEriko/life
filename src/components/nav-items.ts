@@ -1,4 +1,5 @@
 import {
+  DatabaseOutlined,
   FileTextOutlined,
   HeartOutlined,
   UnorderedListOutlined,
@@ -15,4 +16,5 @@ export const NAV: NavItem[] = [
   { key: "/", label: "Health", Icon: HeartOutlined },
   { key: "/notes", label: "Notes", Icon: FileTextOutlined },
   { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
+  { key: "/database", label: "Database", Icon: DatabaseOutlined },
 ];
