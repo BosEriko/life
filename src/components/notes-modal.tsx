@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { App, Button, DatePicker, Flex, Input, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -21,6 +21,7 @@ export function NotesModal({
   const { message } = App.useApp();
   const [date, setDate] = useState<Dayjs>(() => initialDate ?? dayjs());
   const [text, setText] = useState("");
+  const textRef = useRef<ComponentRef<typeof Input.TextArea>>(null);
 
   const canAdd = text.trim().length > 0;
 
@@ -55,6 +56,9 @@ export function NotesModal({
       }
       footer={null}
       onCancel={handleClose}
+      afterOpenChange={(opened) => {
+        if (opened) textRef.current?.focus();
+      }}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         Jot down anything. Everything lands on the Notes page.
@@ -71,6 +75,7 @@ export function NotesModal({
           style={{ width: "100%" }}
         />
         <Input.TextArea
+          ref={textRef}
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder="What's on your mind?"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type ComponentRef } from "react";
 import {
   App,
   Button,
@@ -58,6 +58,7 @@ export function WaterModal({
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [amount, setAmount] = useState<number | null>(null);
   const [presetsOpen, setPresetsOpen] = useState(false);
+  const amountRef = useRef<ComponentRef<typeof InputNumber>>(null);
 
   function handleClose() {
     setDate(dayjs());
@@ -134,6 +135,9 @@ export function WaterModal({
       }
       footer={null}
       onCancel={handleClose}
+      afterOpenChange={(opened) => {
+        if (opened) amountRef.current?.focus();
+      }}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         Log each drink. Tap a container to log it now, or enter a custom amount.
@@ -193,6 +197,7 @@ export function WaterModal({
         </Flex>
         <Flex gap={8} align="center">
           <InputNumber
+            ref={amountRef}
             placeholder="Amount"
             min={volumeDecimals(units.volume) > 0 ? 0.01 : 1}
             step={volumeStep(units.volume)}

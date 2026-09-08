@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type ComponentRef } from "react";
 import {
   App,
   Button,
@@ -58,6 +58,7 @@ export function BpModal({
   const [diastolic, setDiastolic] = useState<number | null>(null);
   const [posture, setPosture] = useState<BpPosture>("sitting");
   const [arm, setArm] = useState<BpArm>("left");
+  const systolicRef = useRef<ComponentRef<typeof InputNumber>>(null);
 
   function handleClose() {
     setDate(dayjs());
@@ -142,6 +143,9 @@ export function BpModal({
       }
       footer={null}
       onCancel={handleClose}
+      afterOpenChange={(opened) => {
+        if (opened) systolicRef.current?.focus();
+      }}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         Log each reading. Add as many as you take in a day — statistics use the
@@ -170,6 +174,7 @@ export function BpModal({
         </Flex>
         <Flex gap={8} align="center">
           <InputNumber
+            ref={systolicRef}
             placeholder="Systolic"
             min={1}
             precision={0}

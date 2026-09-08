@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { App, DatePicker, Flex, InputNumber, Modal, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -33,6 +33,7 @@ export function WeightModal({
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [edited, setEdited] = useState<number | null>(null);
   const [touched, setTouched] = useState(false);
+  const weightRef = useRef<ComponentRef<typeof InputNumber>>(null);
 
   const dateKey = date.format("YYYY-MM-DD");
 
@@ -96,6 +97,9 @@ export function WeightModal({
       okButtonProps={{ disabled: typeof shown !== "number" || shown <= 0 }}
       onOk={handleSave}
       onCancel={handleClose}
+      afterOpenChange={(opened) => {
+        if (opened) weightRef.current?.focus();
+      }}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         One reading per day. Pick a date to review or update it.
@@ -118,6 +122,7 @@ export function WeightModal({
         >
           <div>
             <InputNumber
+              ref={weightRef}
               style={{ width: "100%" }}
               min={1}
               step={weightStep(units.weight)}

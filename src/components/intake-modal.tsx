@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type ComponentRef } from "react";
 import {
   App,
   AutoComplete,
@@ -76,6 +76,7 @@ export function IntakeModal({
   const [sodium, setSodium] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const nameRef = useRef<ComponentRef<typeof AutoComplete>>(null);
 
   const dateKey = date.format("YYYY-MM-DD");
   const canAdd = category != null && name.trim().length > 0;
@@ -227,6 +228,9 @@ export function IntakeModal({
       }
       footer={null}
       onCancel={handleClose}
+      afterOpenChange={(opened) => {
+        if (opened) nameRef.current?.focus();
+      }}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         Log what you eat and drink. Mark it junk to count toward the habit
@@ -272,6 +276,7 @@ export function IntakeModal({
         />
 
         <AutoComplete
+          ref={nameRef}
           options={nameOptions}
           value={name}
           onChange={(value) => setName(value)}
