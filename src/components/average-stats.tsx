@@ -104,6 +104,7 @@ type StatItem = {
   status: IdealStatus;
   tip?: string;
   neutralTip?: string;
+  valueColor?: string;
   valueNode?: ReactNode;
   delta?: StatDelta;
   noBadge?: boolean;
@@ -425,6 +426,12 @@ export function AverageStats() {
               icon: "clock" as IconName,
               value: offWindow.pct != null ? `${offWindow.pct}%` : "—",
               status: "ok" as IdealStatus,
+              valueColor:
+                offWindow.pct != null && offWindow.pct > 0
+                  ? `color-mix(in srgb, ${token.colorError} ${
+                      Math.round(offWindow.pct / 20) * 20
+                    }%, ${token.colorText})`
+                  : undefined,
               neutralTip:
                 offWindow.off > 0
                   ? `Ate outside your window hours on ${offWindow.off} of ${
@@ -548,6 +555,7 @@ export function AverageStats() {
                         marginTop: 4,
                         fontSize: compact ? 16 : 18,
                         cursor: "help",
+                        color: item.valueColor,
                       }}
                     >
                       {item.value}
