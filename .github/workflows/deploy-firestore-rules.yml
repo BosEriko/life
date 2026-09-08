@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - firestore.rules.template
+      - firestore.rules
       - firestore.indexes.json
       - firebase.json
       - .github/workflows/deploy-firestore-rules.yml
@@ -21,8 +21,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - run: cp firestore.rules.template firestore.rules
 
       - run: npx --yes firebase-tools deploy --only firestore --project life-boseriko-com --non-interactive --token "$FIREBASE_TOKEN"
         env:

@@ -81,4 +81,5 @@ npm run lint
 ```
 
 `NEXT_PUBLIC_FIREBASE_*` in `.env.local` holds the client Firebase config (public
-by design). `npm run rules:build` compiles `firestore.rules` from the template.
+by design). `firestore.rules` is committed and deployed by the
+`deploy-firestore-rules` workflow on push to `main`.

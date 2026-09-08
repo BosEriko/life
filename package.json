@@ -9,8 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "rules:build": "cp firestore.rules.template firestore.rules"
+    "lint": "eslint"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.7",
