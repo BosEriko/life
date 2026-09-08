@@ -170,13 +170,35 @@ export function ReportModal({
       const weightUnit = weightSuffix(units.weight);
       const volumeUnit = volumeSuffix(units.volume);
 
+      // brand mark: rasterize the app icon (public/icon.svg) into the header
+      try {
+        const iconUri = await new Promise<string>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 160;
+            canvas.height = 160;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return reject(new Error("no 2d context"));
+            ctx.drawImage(img, 0, 0, 160, 160);
+            resolve(canvas.toDataURL("image/png"));
+          };
+          img.onerror = () => reject(new Error("icon failed to load"));
+          img.src = "/icon.svg";
+        });
+        doc.addImage(iconUri, "PNG", 14, 11, 11, 11);
+      } catch {
+        doc.setFillColor(46, 125, 79);
+        doc.roundedRect(14, 11, 11, 11, 2.6, 2.6, "F");
+      }
+
       doc.setFontSize(16);
-      doc.text("Life Tracker Report", 14, 18);
+      doc.text("Life Tracker Report", 29, 18);
       doc.setFontSize(10);
       doc.setTextColor(110);
-      if (user?.email) doc.text(user.email, 14, 25);
-      doc.text(RANGE_LABEL[range], 14, 30);
-      doc.textWithLink(`Generated ${generatedAt} · ${siteUrl}`, 14, 35, {
+      if (user?.email) doc.text(user.email, 14, 27);
+      doc.text(RANGE_LABEL[range], 14, 32);
+      doc.textWithLink(`Generated ${generatedAt} · ${siteUrl}`, 14, 37, {
         url: siteUrl,
       });
       doc.setTextColor(0);
