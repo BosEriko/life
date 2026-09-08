@@ -143,15 +143,20 @@ export function DeleteAccountCard() {
             disabled={busy || expired}
             status={expired ? "error" : undefined}
           />
-          <Flex gap={8} style={{ marginTop: 14 }} align="center">
+          <Flex gap={8} style={{ marginTop: 14 }}>
+            <Button onClick={cancel} disabled={busy}>
+              Cancel
+            </Button>
             {expired ? (
-              <Button danger loading={busy} onClick={startChallenge}>
+              <Button
+                danger
+                type="primary"
+                loading={busy}
+                onClick={startChallenge}
+              >
                 Start over
               </Button>
             ) : null}
-            <Button type="text" onClick={cancel} disabled={busy}>
-              Cancel
-            </Button>
           </Flex>
         </>
       )}
