@@ -15,9 +15,10 @@ import {
   theme,
   Typography,
 } from "antd";
-import { DatabaseOutlined } from "@ant-design/icons";
+import { DatabaseOutlined, EditOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { FoodEditModal } from "@/components/food-edit-modal";
 import { Icon } from "@/components/icon";
 import { useIsAdmin } from "@/components/use-is-admin";
 import {
@@ -48,7 +49,7 @@ export function DatabasePanel() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const canDelete = useIsAdmin();
+  const isAdmin = useIsAdmin();
 
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -63,6 +64,7 @@ export function DatabasePanel() {
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [mineOnly, setMineOnly] = useState(true);
+  const [editing, setEditing] = useState<FoodItem | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -81,6 +83,9 @@ export function DatabasePanel() {
     mineOnly && user
       ? foods.filter((item) => item.addedBy === user.uid)
       : foods;
+
+  const canManage = (item: FoodItem) =>
+    isAdmin || (user != null && item.addedBy === user.uid);
 
   function changeKind(next: FoodKind) {
     setKind(next);
@@ -116,7 +121,7 @@ export function DatabasePanel() {
     if (!user) return;
     setDeletingId(id);
     try {
-      await deleteFood(user, id);
+      await deleteFood(id);
     } catch {
       message.error("Could not delete item.");
     } finally {
@@ -273,12 +278,21 @@ export function DatabasePanel() {
                         </Typography.Text>
                       ) : null}
                     </Flex>
-                    {canDelete ? (
-                      <ConfirmDeleteButton
-                        ariaLabel={`Delete ${item.name}`}
-                        loading={deletingId === item.id}
-                        onConfirm={() => handleDelete(item.id)}
-                      />
+                    {canManage(item) ? (
+                      <Flex align="center" gap={2} style={{ flexShrink: 0 }}>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<EditOutlined />}
+                          aria-label={`Edit ${item.name}`}
+                          onClick={() => setEditing(item)}
+                        />
+                        <ConfirmDeleteButton
+                          ariaLabel={`Delete ${item.name}`}
+                          loading={deletingId === item.id}
+                          onConfirm={() => handleDelete(item.id)}
+                        />
+                      </Flex>
                     ) : null}
                   </Flex>
                 );
@@ -287,6 +301,14 @@ export function DatabasePanel() {
           )}
         </Card>
       </Flex>
+
+      {editing ? (
+        <FoodEditModal
+          key={editing.id}
+          item={editing}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </div>
   );
 }

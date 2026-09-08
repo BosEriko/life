@@ -1,14 +1,16 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
   type DocumentData,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
-import type { User } from "firebase/auth";
 import { getFirebaseDb } from "@/lib/firebase";
 
 export type FoodKind = "food" | "drink";
@@ -102,14 +104,19 @@ export async function addFood(uid: string, input: FoodInput) {
   await addDoc(foodsCollection(), payload);
 }
 
-export async function deleteFood(user: User, id: string) {
-  const token = await user.getIdToken();
-  const res = await fetch(`/api/foods/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+export async function updateFood(id: string, input: FoodInput) {
+  await updateDoc(doc(foodsCollection(), id), {
+    name: input.name,
+    kind: input.kind,
+    category: input.category,
+    junk: input.junk,
+    calories: input.calories ?? null,
+    sodium: input.sodium ?? null,
+    amount: input.amount ?? null,
+    updatedAt: serverTimestamp(),
   });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? `Request failed (${res.status}).`);
-  }
+}
+
+export async function deleteFood(id: string) {
+  await deleteDoc(doc(foodsCollection(), id));
 }
