@@ -8,6 +8,7 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
+import { Tip } from "@/components/tip";
 import {
   TERRACOTTA,
   TERRACOTTA_DARK,
@@ -142,6 +143,19 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
     [intakeWindow, history.intake],
   );
 
+  const last7 = useMemo(
+    () =>
+      new Set(
+        Array.from({ length: 7 }, (_, index) =>
+          throughDate
+            .startOf("day")
+            .subtract(index, "day")
+            .format("YYYY-MM-DD"),
+        ),
+      ),
+    [throughDate],
+  );
+
   const byDate = useMemo(() => {
     const map = new Map<string, HabitEntry>();
     for (const entry of entries) map.set(entry.date, entry);
@@ -188,23 +202,17 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
   );
 
   const figures = useMemo(() => {
-    const visibleEntries = entries.filter((entry) =>
-      visibleDates.has(entry.date),
-    );
-    const logged = visibleEntries.length;
     const map = new Map<string, string>();
     const intakeDays = Array.from(intakeByDate.values()).filter((day) =>
       visibleDates.has(day.date),
     );
     for (const habit of ALL_HABITS) {
       if (habit.source === "habit") {
-        const on = visibleEntries.filter(
-          (entry) => entry[habit.key] === true,
-        ).length;
-        map.set(
-          habit.key,
-          logged ? `${Math.round((on / logged) * 100)}% consistency` : "—",
-        );
+        let on = 0;
+        for (const date of last7) {
+          if (byDate.get(date)?.[habit.key] === true) on += 1;
+        }
+        map.set(habit.key, `${Math.round((on / 7) * 100)}% consistency`);
       } else if (habit.source === "window") {
         let on = 0;
         for (const date of outsideWindowByDate) {
@@ -217,7 +225,7 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
       }
     }
     return map;
-  }, [entries, intakeByDate, outsideWindowByDate, visibleDates]);
+  }, [byDate, last7, intakeByDate, outsideWindowByDate, visibleDates]);
 
   return (
     <div>
@@ -298,12 +306,23 @@ export function HabitCalendar({ throughDate }: { throughDate: Dayjs }) {
                           >
                             {habit.label}
                           </Typography.Text>
-                          <Typography.Text
-                            type="secondary"
-                            style={{ fontSize: 12 }}
+                          <Tip
+                            placement="left"
+                            title={
+                              habit.source === "habit"
+                                ? "How many of the last 7 days you did this, out of 7."
+                                : habit.source === "window"
+                                  ? `Days with any eating outside your window, over the ${weeks} weeks shown.`
+                                  : `Days with junk logged, over the ${weeks} weeks shown.`
+                            }
                           >
-                            {figures.get(habit.key)}
-                          </Typography.Text>
+                            <Typography.Text
+                              type="secondary"
+                              style={{ fontSize: 12, cursor: "help" }}
+                            >
+                              {figures.get(habit.key)}
+                            </Typography.Text>
+                          </Tip>
                         </Flex>
                         <div
                           style={{
