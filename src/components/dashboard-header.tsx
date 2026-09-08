@@ -2,34 +2,35 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Button, Dropdown, Flex, Grid, theme, Typography } from "antd";
+import { Button, Dropdown, Flex, Grid, theme } from "antd";
 import type { MenuProps } from "antd";
 import {
-  BulbFilled,
-  BulbOutlined,
   IdcardOutlined,
   LogoutOutlined,
   MenuOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { NAV } from "@/components/nav-items";
-import { useThemeMode } from "@/components/theme-provider";
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
-  const { isDark, setMode } = useThemeMode();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const router = useRouter();
   const pathname = usePathname();
   const compact = screens.md === false;
 
-  const today = dayjs().format("dddd, MMMM D, YYYY");
+  const emailItems: MenuProps["items"] = user?.email
+    ? [
+        { key: "email", label: user.email, disabled: true },
+        { type: "divider" },
+      ]
+    : [];
 
   const accountItems: MenuProps["items"] = [
+    ...emailItems,
     {
       key: "profile",
       icon: <IdcardOutlined />,
@@ -46,17 +47,7 @@ export function DashboardHeader() {
   ];
 
   const mobileItems: MenuProps["items"] = [
-    ...(user?.email
-      ? [{ key: "email", label: user.email, disabled: true }]
-      : []),
-    { key: "date", label: today, disabled: true },
-    { type: "divider" },
-    {
-      key: "theme",
-      icon: isDark ? <BulbFilled /> : <BulbOutlined />,
-      label: isDark ? "Light mode" : "Dark mode",
-      onClick: () => setMode(isDark ? "light" : "dark"),
-    },
+    ...emailItems,
     {
       key: "profile",
       icon: <IdcardOutlined />,
@@ -191,39 +182,13 @@ export function DashboardHeader() {
             <Button icon={<MenuOutlined />} aria-label="Menu" />
           </Dropdown>
         ) : (
-          <Flex align="center" gap={12} wrap justify="flex-end">
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {today}
-            </Typography.Text>
-
-            {user?.email ? (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {user.email}
-              </Typography.Text>
-            ) : null}
-
-            <Button
-              type="text"
-              size="small"
-              aria-label={
-                isDark ? "Switch to light mode" : "Switch to dark mode"
-              }
-              icon={isDark ? <BulbFilled /> : <BulbOutlined />}
-              onClick={() => setMode(isDark ? "light" : "dark")}
-            />
-
-            <Dropdown
-              trigger={["click"]}
-              placement="bottomRight"
-              menu={{ items: accountItems }}
-            >
-              <Button
-                size="small"
-                icon={<UserOutlined />}
-                aria-label="Account"
-              />
-            </Dropdown>
-          </Flex>
+          <Dropdown
+            trigger={["click"]}
+            placement="bottomRight"
+            menu={{ items: accountItems }}
+          >
+            <Button size="small" icon={<UserOutlined />} aria-label="Account" />
+          </Dropdown>
         )}
       </Flex>
     </header>

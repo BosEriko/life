@@ -2,17 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import { Button, Flex, Grid, theme, Typography } from "antd";
+import { BulbFilled, BulbOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { useThemeMode } from "@/components/theme-provider";
+import { Tip } from "@/components/tip";
 import { isAdminEmail } from "@/lib/admin";
 
 export function AppFooter() {
   const { token } = theme.useToken();
   const router = useRouter();
   const { user } = useAuth();
+  const { isDark, setMode } = useThemeMode();
   const screens = Grid.useBreakpoint();
   const compact = screens.md === false;
   const admin = isAdminEmail(user?.email);
+  const today = dayjs().format("dddd, MMMM D, YYYY");
 
   const links = user
     ? [
@@ -76,6 +82,10 @@ export function AppFooter() {
           </Typography.Text>
         </Flex>
 
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {today}
+        </Typography.Text>
+
         <Flex align="center" gap={4} wrap>
           {links.map((link) => (
             <Button
@@ -87,6 +97,17 @@ export function AppFooter() {
               {link.label}
             </Button>
           ))}
+          <Tip title={isDark ? "Light mode" : "Dark mode"}>
+            <Button
+              type="text"
+              size="small"
+              aria-label={
+                isDark ? "Switch to light mode" : "Switch to dark mode"
+              }
+              icon={isDark ? <BulbFilled /> : <BulbOutlined />}
+              onClick={() => setMode(isDark ? "light" : "dark")}
+            />
+          </Tip>
         </Flex>
       </Flex>
     </footer>
