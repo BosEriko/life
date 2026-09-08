@@ -35,12 +35,28 @@ const ROWS: { key: IdealKey; label: string; icon: IconName }[] = [
   { key: "sodium", label: "Sodium", icon: "sodium" },
 ];
 
+type TimeRange = [string, string] | null;
+
 type FormShape = Record<
   IdealKey,
   { min: number | null; max: number | null }
 > & {
-  eatingWindow: [Dayjs | null, Dayjs | null] | null;
+  eatingWindow: TimeRange;
 };
+
+function timesToDayjs(value: TimeRange): [Dayjs, Dayjs] | null {
+  return value && value[0] && value[1]
+    ? [dayjs(`2000-01-01T${value[0]}`), dayjs(`2000-01-01T${value[1]}`)]
+    : null;
+}
+
+function dayjsToTimes(
+  value: [Dayjs | null, Dayjs | null] | null,
+): TimeRange {
+  return value && value[0] && value[1]
+    ? [value[0].format("HH:mm"), value[1].format("HH:mm")]
+    : null;
+}
 
 export function IdealsModal({
   open,
@@ -100,10 +116,7 @@ export function IdealsModal({
     }
     shaped.eatingWindow =
       ideals.eatingWindow.start && ideals.eatingWindow.end
-        ? [
-            dayjs(`2000-01-01T${ideals.eatingWindow.start}`),
-            dayjs(`2000-01-01T${ideals.eatingWindow.end}`),
-          ]
+        ? [ideals.eatingWindow.start, ideals.eatingWindow.end]
         : null;
     form.setFieldsValue(shaped);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,8 +142,8 @@ export function IdealsModal({
       }
       const win = values.eatingWindow;
       next.eatingWindow = {
-        start: win?.[0] ? win[0].format("HH:mm") : null,
-        end: win?.[1] ? win[1].format("HH:mm") : null,
+        start: win?.[0] ?? null,
+        end: win?.[1] ?? null,
       };
       await saveIdeals(user.uid, next);
       message.success("Ideals saved");
@@ -203,6 +216,10 @@ export function IdealsModal({
           }
           style={{ marginBottom: 0 }}
           extra="Hours you aim to eat within, e.g. intermittent fasting."
+          getValueProps={(value: TimeRange) => ({
+            value: timesToDayjs(value),
+          })}
+          normalize={dayjsToTimes}
         >
           <TimePicker.RangePicker
             format="HH:mm"
