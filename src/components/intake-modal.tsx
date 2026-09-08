@@ -26,7 +26,7 @@ import { useDayIntake } from "@/components/use-day-records";
 import { mergeById } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
-import { Tip } from "@/components/tip";
+import { IdealTip } from "@/components/ideal-tip";
 import { requestIntakeEnrichment } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText } from "@/models/ideals";
@@ -341,7 +341,11 @@ export function IntakeModal({
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {totals.calories > 0 ? (
               <>
-                <Tip title={calorieTip}>
+                <IdealTip
+                  isAbove={calorieStatus === "high"}
+                  isBelow={calorieStatus === "low"}
+                  message={calorieTip}
+                >
                   <Typography.Text
                     type="secondary"
                     style={{
@@ -352,13 +356,17 @@ export function IntakeModal({
                   >
                     {totals.calories} kcal
                   </Typography.Text>
-                </Tip>
+                </IdealTip>
                 {" · "}
               </>
             ) : null}
             {totals.sodium > 0 ? (
               <>
-                <Tip title={sodiumTip}>
+                <IdealTip
+                  isAbove={sodiumStatus === "high"}
+                  isBelow={sodiumStatus === "low"}
+                  message={sodiumTip}
+                >
                   <Typography.Text
                     type="secondary"
                     style={{
@@ -369,7 +377,7 @@ export function IntakeModal({
                   >
                     {totals.sodium} mg sodium
                   </Typography.Text>
-                </Tip>
+                </IdealTip>
                 {" · "}
               </>
             ) : null}

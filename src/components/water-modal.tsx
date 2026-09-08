@@ -18,6 +18,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { useHealthData } from "@/components/health-data-provider";
 import { useDayWater } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
+import { IdealTip } from "@/components/ideal-tip";
 import { Tip } from "@/components/tip";
 import { WaterPresetsModal } from "@/components/water-presets-modal";
 import { useUnits } from "@/components/units-provider";
@@ -217,7 +218,11 @@ export function WaterModal({
           {relativeDate(dateKey)}
         </Typography.Title>
         {dayLogs.length > 0 ? (
-          <Tip title={totalTip}>
+          <IdealTip
+            isAbove={totalEval === "high"}
+            isBelow={totalEval === "low"}
+            message={totalTip}
+          >
             <Typography.Text
               type={totalTip ? undefined : "secondary"}
               style={{
@@ -229,7 +234,7 @@ export function WaterModal({
               Total {formatVolume(dailyTotalMl, units.volume)} · {dayLogs.length}{" "}
               drink{dayLogs.length === 1 ? "" : "s"}
             </Typography.Text>
-          </Tip>
+          </IdealTip>
         ) : null}
       </Flex>
 

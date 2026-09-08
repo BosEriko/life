@@ -20,6 +20,7 @@ import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon, type IconName } from "@/components/icon";
 import { IdealBadge } from "@/components/ideal-badge";
 import { IdealsModal } from "@/components/ideals-modal";
+import { IdealTip } from "@/components/ideal-tip";
 import { Tip } from "@/components/tip";
 import { todayKey, type DailyEntry } from "@/models/dailies";
 import { dailyBpAverages, type DailyBp } from "@/models/bp";
@@ -102,6 +103,7 @@ type StatItem = {
   value: string;
   status: IdealStatus;
   tip?: string;
+  neutralTip?: string;
   valueNode?: ReactNode;
   delta?: StatDelta;
   noBadge?: boolean;
@@ -337,7 +339,11 @@ export function AverageStats() {
         valueNode:
           stats.systolic != null && stats.diastolic != null ? (
             <>
-              <Tip title={sysAvgTip} placement="bottom">
+              <IdealTip
+                isAbove={sysStatus === "high"}
+                isBelow={sysStatus === "low"}
+                message={sysAvgTip}
+              >
                 <span
                   style={{
                     color: sysAvgTip ? token.colorError : undefined,
@@ -346,9 +352,13 @@ export function AverageStats() {
                 >
                   {Math.round(stats.systolic)}
                 </span>
-              </Tip>
+              </IdealTip>
               /
-              <Tip title={diaAvgTip} placement="bottom">
+              <IdealTip
+                isAbove={diaStatus === "high"}
+                isBelow={diaStatus === "low"}
+                message={diaAvgTip}
+              >
                 <span
                   style={{
                     color: diaAvgTip ? token.colorError : undefined,
@@ -357,7 +367,7 @@ export function AverageStats() {
                 >
                   {Math.round(stats.diastolic)}
                 </span>
-              </Tip>{" "}
+              </IdealTip>{" "}
               mmHg
             </>
           ) : undefined,
@@ -415,7 +425,7 @@ export function AverageStats() {
               icon: "clock" as IconName,
               value: offWindow.pct != null ? `${offWindow.pct}%` : "—",
               status: "ok" as IdealStatus,
-              tip:
+              neutralTip:
                 offWindow.off > 0
                   ? `Ate outside your window hours on ${offWindow.off} of ${
                       range === "all"
@@ -529,21 +539,39 @@ export function AverageStats() {
                   >
                     {item.valueNode}
                   </Typography.Text>
-                ) : (
-                  <Tip title={item.tip} placement="bottom">
+                ) : item.neutralTip ? (
+                  <Tip title={item.neutralTip} placement="bottom">
                     <Typography.Text
                       strong
                       style={{
                         display: "inline-block",
                         marginTop: 4,
                         fontSize: compact ? 16 : 18,
-                        cursor: item.tip ? "help" : undefined,
-                        color: off ? token.colorError : undefined,
+                        cursor: "help",
                       }}
                     >
                       {item.value}
                     </Typography.Text>
                   </Tip>
+                ) : (
+                  <IdealTip
+                    isAbove={item.status === "high"}
+                    isBelow={item.status === "low"}
+                    message={item.tip}
+                  >
+                    <Typography.Text
+                      strong
+                      style={{
+                        display: "inline-block",
+                        marginTop: 4,
+                        fontSize: compact ? 16 : 18,
+                        cursor: off ? "help" : undefined,
+                        color: off ? token.colorError : undefined,
+                      }}
+                    >
+                      {item.value}
+                    </Typography.Text>
+                  </IdealTip>
                 )}
                 {!compact && item.delta ? (
                   (() => {

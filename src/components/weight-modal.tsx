@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useDailyDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
-import { Tip } from "@/components/tip";
+import { IdealTip } from "@/components/ideal-tip";
 import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
@@ -111,7 +111,11 @@ export function WeightModal({
           maxDate={dayjs(todayKey())}
           style={{ width: "100%" }}
         />
-        <Tip title={tip} placement={evalStatus === "low" ? "bottom" : "top"}>
+        <IdealTip
+          isAbove={evalStatus === "high"}
+          isBelow={evalStatus === "low"}
+          message={tip}
+        >
           <div>
             <InputNumber
               style={{ width: "100%" }}
@@ -133,7 +137,7 @@ export function WeightModal({
               }}
             />
           </div>
-        </Tip>
+        </IdealTip>
       </Flex>
     </Modal>
   );

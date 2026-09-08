@@ -9,7 +9,7 @@ import { dailyBpAverages } from "@/models/bp";
 import { dailyWaterTotals } from "@/models/water";
 import { dailyIntake } from "@/models/intake";
 import { Icon } from "@/components/icon";
-import { Tip } from "@/components/tip";
+import { IdealTip, idealTipProps } from "@/components/ideal-tip";
 import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
@@ -20,24 +20,9 @@ import {
   volumeSuffix,
   weightSuffix,
 } from "@/lib/units";
-import {
-  evaluateIdeal,
-  rangeText,
-  type IdealRange,
-  type IdealStatus,
-} from "@/models/ideals";
+import { evaluateIdeal } from "@/models/ideals";
 
 const DAYS = 7;
-
-function idealTip(
-  label: string,
-  status: IdealStatus,
-  range: IdealRange,
-  unit: string,
-) {
-  if (status !== "low" && status !== "high") return undefined;
-  return `${label} ${status === "high" ? "above" : "below"} your ideal (${rangeText(range)} ${unit}).`;
-}
 
 export function RecentEntries() {
   const units = useUnits();
@@ -83,7 +68,7 @@ export function RecentEntries() {
             const bp = dailyBp.get(entry.date);
             const water = dailyWater.get(entry.date);
             const meals = dailyMeals.get(entry.date);
-            const calorieTip = idealTip(
+            const calorieTip = idealTipProps(
               "Calories",
               evaluateIdeal(
                 meals && meals.calories > 0 ? meals.calories : null,
@@ -92,7 +77,7 @@ export function RecentEntries() {
               ideals.calories,
               "kcal",
             );
-            const sodiumTip = idealTip(
+            const sodiumTip = idealTipProps(
               "Sodium",
               evaluateIdeal(
                 meals && meals.sodium > 0 ? meals.sodium : null,
@@ -101,40 +86,34 @@ export function RecentEntries() {
               ideals.sodium,
               "mg",
             );
-            const weightStatus = evaluateIdeal(entry.weight, ideals.weight);
-            const weightTip = idealTip(
+            const weightTip = idealTipProps(
               "Weight",
-              weightStatus,
+              evaluateIdeal(entry.weight, ideals.weight),
               convertRange(ideals.weight, (value) =>
                 fromKg(value, units.weight),
               ),
               weightSuffix(units.weight),
             );
-            const waterStatus = evaluateIdeal(water?.ml ?? null, ideals.water);
-            const waterTip = idealTip(
+            const waterTip = idealTipProps(
               "Water",
-              waterStatus,
+              evaluateIdeal(water?.ml ?? null, ideals.water),
               convertRange(ideals.water, (value) =>
                 fromMl(value, units.volume),
               ),
               volumeSuffix(units.volume),
             );
-            const sysTip = bp
-              ? idealTip(
-                  "Systolic",
-                  evaluateIdeal(bp.systolic, ideals.systolic),
-                  ideals.systolic,
-                  "mmHg",
-                )
-              : undefined;
-            const diaTip = bp
-              ? idealTip(
-                  "Diastolic",
-                  evaluateIdeal(bp.diastolic, ideals.diastolic),
-                  ideals.diastolic,
-                  "mmHg",
-                )
-              : undefined;
+            const sysTip = idealTipProps(
+              "Systolic",
+              bp ? evaluateIdeal(bp.systolic, ideals.systolic) : "unset",
+              ideals.systolic,
+              "mmHg",
+            );
+            const diaTip = idealTipProps(
+              "Diastolic",
+              bp ? evaluateIdeal(bp.diastolic, ideals.diastolic) : "unset",
+              ideals.diastolic,
+              "mmHg",
+            );
             return (
             <Flex
               key={entry.date}
@@ -150,94 +129,94 @@ export function RecentEntries() {
                 {entry.weight != null ? (
                   <Typography.Text type="secondary">
                     <Icon name="weight" style={{ marginRight: 4 }} />
-                    <Tip title={weightTip}>
+                    <IdealTip {...weightTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: weightTip ? token.colorError : undefined,
-                          cursor: weightTip ? "help" : undefined,
+                          color: weightTip.off ? token.colorError : undefined,
+                          cursor: weightTip.off ? "help" : undefined,
                         }}
                       >
                         {formatWeight(entry.weight, units.weight)}
                       </Typography.Text>
-                    </Tip>
+                    </IdealTip>
                   </Typography.Text>
                 ) : null}
                 {bp ? (
                   <Typography.Text type="secondary">
                     <Icon name="bp" style={{ marginRight: 4 }} />
-                    <Tip title={sysTip}>
+                    <IdealTip {...sysTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: sysTip ? token.colorError : undefined,
-                          cursor: sysTip ? "help" : undefined,
+                          color: sysTip.off ? token.colorError : undefined,
+                          cursor: sysTip.off ? "help" : undefined,
                         }}
                       >
                         {bp.systolic}
                       </Typography.Text>
-                    </Tip>
+                    </IdealTip>
                     /
-                    <Tip title={diaTip}>
+                    <IdealTip {...diaTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: diaTip ? token.colorError : undefined,
-                          cursor: diaTip ? "help" : undefined,
+                          color: diaTip.off ? token.colorError : undefined,
+                          cursor: diaTip.off ? "help" : undefined,
                         }}
                       >
                         {bp.diastolic}
                       </Typography.Text>
-                    </Tip>{" "}
+                    </IdealTip>{" "}
                     <Typography.Text strong>mmHg</Typography.Text>
                   </Typography.Text>
                 ) : null}
                 {water ? (
                   <Typography.Text type="secondary">
                     <Icon name="water" style={{ marginRight: 4 }} />
-                    <Tip title={waterTip}>
+                    <IdealTip {...waterTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: waterTip ? token.colorError : undefined,
-                          cursor: waterTip ? "help" : undefined,
+                          color: waterTip.off ? token.colorError : undefined,
+                          cursor: waterTip.off ? "help" : undefined,
                         }}
                       >
                         {formatVolume(water.ml, units.volume)}
                       </Typography.Text>
-                    </Tip>
+                    </IdealTip>
                   </Typography.Text>
                 ) : null}
                 {meals && meals.calories > 0 ? (
                   <Typography.Text type="secondary">
                     <Icon name="calories" style={{ marginRight: 4 }} />
-                    <Tip title={calorieTip}>
+                    <IdealTip {...calorieTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: calorieTip ? token.colorError : undefined,
-                          cursor: calorieTip ? "help" : undefined,
+                          color: calorieTip.off ? token.colorError : undefined,
+                          cursor: calorieTip.off ? "help" : undefined,
                         }}
                       >
                         {meals.calories} kcal
                       </Typography.Text>
-                    </Tip>
+                    </IdealTip>
                   </Typography.Text>
                 ) : null}
                 {meals && meals.sodium > 0 ? (
                   <Typography.Text type="secondary">
                     <Icon name="sodium" style={{ marginRight: 4 }} />
-                    <Tip title={sodiumTip}>
+                    <IdealTip {...sodiumTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: sodiumTip ? token.colorError : undefined,
-                          cursor: sodiumTip ? "help" : undefined,
+                          color: sodiumTip.off ? token.colorError : undefined,
+                          cursor: sodiumTip.off ? "help" : undefined,
                         }}
                       >
                         {meals.sodium} mg
                       </Typography.Text>
-                    </Tip>
+                    </IdealTip>
                   </Typography.Text>
                 ) : null}
               </Flex>

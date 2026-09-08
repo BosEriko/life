@@ -19,9 +19,9 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { useHealthData } from "@/components/health-data-provider";
 import { useDayBp } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
-import { Tip } from "@/components/tip";
+import { IdealTip, idealTipProps } from "@/components/ideal-tip";
 import { relativeDate, todayKey } from "@/models/dailies";
-import { evaluateIdeal, rangeText, type IdealRange } from "@/models/ideals";
+import { evaluateIdeal } from "@/models/ideals";
 import {
   addBpReading,
   dailyBpAverages,
@@ -40,18 +40,6 @@ const ARM_OPTIONS = [
   { label: "Left arm", value: "left" },
   { label: "Right arm", value: "right" },
 ];
-
-function metricTip(
-  value: number,
-  range: IdealRange,
-  label: "Systolic" | "Diastolic",
-): string | undefined {
-  const status = evaluateIdeal(value, range);
-  if (status !== "low" && status !== "high") return undefined;
-  return `${label} ${status === "high" ? "above" : "below"} your ideal (${rangeText(
-    range,
-  )} mmHg)`;
-}
 
 export function BpModal({
   open,
@@ -100,12 +88,22 @@ export function BpModal({
     [dayReadings, dateKey],
   );
 
-  const avgSysTip = dailyAverage
-    ? metricTip(dailyAverage.systolic, ideals.systolic, "Systolic")
-    : undefined;
-  const avgDiaTip = dailyAverage
-    ? metricTip(dailyAverage.diastolic, ideals.diastolic, "Diastolic")
-    : undefined;
+  const avgSysTip = idealTipProps(
+    "Systolic",
+    dailyAverage
+      ? evaluateIdeal(dailyAverage.systolic, ideals.systolic)
+      : "unset",
+    ideals.systolic,
+    "mmHg",
+  );
+  const avgDiaTip = idealTipProps(
+    "Diastolic",
+    dailyAverage
+      ? evaluateIdeal(dailyAverage.diastolic, ideals.diastolic)
+      : "unset",
+    ideals.diastolic,
+    "mmHg",
+  );
 
   function handleAdd() {
     if (!user || !canAdd) return;
@@ -216,29 +214,29 @@ export function BpModal({
         {dailyAverage && dayReadings.length > 1 ? (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Avg{" "}
-            <Tip title={avgSysTip}>
+            <IdealTip {...avgSysTip}>
               <Typography.Text
                 style={{
                   fontSize: 12,
-                  color: avgSysTip ? token.colorError : undefined,
-                  cursor: avgSysTip ? "help" : undefined,
+                  color: avgSysTip.off ? token.colorError : undefined,
+                  cursor: avgSysTip.off ? "help" : undefined,
                 }}
               >
                 {dailyAverage.systolic}
               </Typography.Text>
-            </Tip>
+            </IdealTip>
             /
-            <Tip title={avgDiaTip}>
+            <IdealTip {...avgDiaTip}>
               <Typography.Text
                 style={{
                   fontSize: 12,
-                  color: avgDiaTip ? token.colorError : undefined,
-                  cursor: avgDiaTip ? "help" : undefined,
+                  color: avgDiaTip.off ? token.colorError : undefined,
+                  cursor: avgDiaTip.off ? "help" : undefined,
                 }}
               >
                 {dailyAverage.diastolic}
               </Typography.Text>
-            </Tip>{" "}
+            </IdealTip>{" "}
             mmHg
           </Typography.Text>
         ) : null}
@@ -251,15 +249,17 @@ export function BpModal({
       ) : (
         <Flex vertical>
           {dayReadings.map((reading) => {
-            const sysTip = metricTip(
-              reading.systolic,
-              ideals.systolic,
+            const sysTip = idealTipProps(
               "Systolic",
+              evaluateIdeal(reading.systolic, ideals.systolic),
+              ideals.systolic,
+              "mmHg",
             );
-            const diaTip = metricTip(
-              reading.diastolic,
-              ideals.diastolic,
+            const diaTip = idealTipProps(
               "Diastolic",
+              evaluateIdeal(reading.diastolic, ideals.diastolic),
+              ideals.diastolic,
+              "mmHg",
             );
             return (
               <Flex
@@ -271,29 +271,29 @@ export function BpModal({
               >
                 <Flex vertical gap={2}>
                   <Typography.Text>
-                    <Tip title={sysTip}>
+                    <IdealTip {...sysTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: sysTip ? token.colorError : undefined,
-                          cursor: sysTip ? "help" : undefined,
+                          color: sysTip.off ? token.colorError : undefined,
+                          cursor: sysTip.off ? "help" : undefined,
                         }}
                       >
                         {reading.systolic}
                       </Typography.Text>
-                    </Tip>
+                    </IdealTip>
                     /
-                    <Tip title={diaTip}>
+                    <IdealTip {...diaTip}>
                       <Typography.Text
                         strong
                         style={{
-                          color: diaTip ? token.colorError : undefined,
-                          cursor: diaTip ? "help" : undefined,
+                          color: diaTip.off ? token.colorError : undefined,
+                          cursor: diaTip.off ? "help" : undefined,
                         }}
                       >
                         {reading.diastolic}
                       </Typography.Text>
-                    </Tip>{" "}
+                    </IdealTip>{" "}
                     mmHg · {formatBpTime(reading.date, reading.time)}
                   </Typography.Text>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
