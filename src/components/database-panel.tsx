@@ -57,7 +57,6 @@ export function DatabasePanel() {
   const [calories, setCalories] = useState<number | null>(null);
   const [sodium, setSodium] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -92,14 +91,12 @@ export function DatabasePanel() {
         calories,
         sodium,
         amount: amount.trim() ? amount.trim() : null,
-        note: note.trim() ? note.trim() : null,
       });
       setName("");
       setJunk(false);
       setCalories(null);
       setSodium(null);
       setAmount("");
-      setNote("");
     } catch {
       message.error("Could not add item.");
     } finally {
@@ -192,13 +189,6 @@ export function DatabasePanel() {
               onPressEnter={handleAdd}
             />
 
-            <Input
-              placeholder="Note (optional)"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              onPressEnter={handleAdd}
-            />
-
             <Button
               type="primary"
               loading={busy}
@@ -250,14 +240,6 @@ export function DatabasePanel() {
                           style={{ fontSize: 13 }}
                         >
                           {summary}
-                        </Typography.Text>
-                      ) : null}
-                      {item.note ? (
-                        <Typography.Text
-                          type="secondary"
-                          style={{ fontSize: 12 }}
-                        >
-                          {item.note}
                         </Typography.Text>
                       ) : null}
                     </Flex>

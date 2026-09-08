@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState, type ComponentRef } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+} from "react";
 import {
   App,
   AutoComplete,
@@ -21,9 +28,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { useHealthData } from "@/components/health-data-provider";
-import { useHealthHistory } from "@/components/use-health-history";
 import { useDayIntake } from "@/components/use-day-records";
-import { mergeById } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
@@ -40,6 +45,7 @@ import {
   type IntakeEntry,
   type IntakeKind,
 } from "@/models/intake";
+import { watchFoods, type FoodItem } from "@/models/foods";
 
 const KIND_OPTIONS = [
   { label: "Food", value: "food" },
@@ -54,6 +60,15 @@ function detailRest(entry: IntakeEntry): string {
   return parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
 }
 
+function foodSummary(food: FoodItem): string {
+  const parts: string[] = [];
+  if (food.category) parts.push(food.category);
+  if (food.calories != null) parts.push(`${food.calories} kcal`);
+  if (food.sodium != null) parts.push(`${food.sodium} mg`);
+  if (food.amount) parts.push(food.amount);
+  return parts.join(" · ");
+}
+
 export function IntakeModal({
   open,
   onClose,
@@ -64,8 +79,7 @@ export function IntakeModal({
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const { intake: intakeWindow, ideals, cutoff } = useHealthData();
-  const history = useHealthHistory(open, cutoff);
+  const { ideals } = useHealthData();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [kind, setKind] = useState<IntakeKind>("food");
@@ -76,7 +90,13 @@ export function IntakeModal({
   const [sodium, setSodium] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [foods, setFoods] = useState<FoodItem[]>([]);
   const nameRef = useRef<ComponentRef<typeof AutoComplete>>(null);
+
+  useEffect(() => {
+    if (!user || !open) return;
+    return watchFoods(user.uid, setFoods, () => {});
+  }, [user, open]);
 
   const dateKey = date.format("YYYY-MM-DD");
   const canAdd = category != null && name.trim().length > 0;
@@ -119,24 +139,59 @@ export function IntakeModal({
     [dayEntries, dateKey],
   );
 
-  const nameHistory = useMemo(
-    () => mergeById(intakeWindow, history.intake),
-    [intakeWindow, history.intake],
-  );
-
   const nameOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const out: { value: string }[] = [];
-    for (const entry of nameHistory) {
-      const trimmed = entry.name?.trim();
+    const byKey = new Map<string, { value: string; label: ReactNode }>();
+    for (const food of foods) {
+      const trimmed = food.name?.trim();
       if (!trimmed) continue;
       const key = trimmed.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({ value: trimmed });
+      if (byKey.has(key)) continue;
+      const summary = foodSummary(food);
+      byKey.set(key, {
+        value: trimmed,
+        label: (
+          <Flex justify="space-between" gap={8}>
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {trimmed}
+            </span>
+            {summary ? (
+              <span
+                style={{
+                  color: token.colorTextTertiary,
+                  fontSize: 12,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                {summary}
+              </span>
+            ) : null}
+          </Flex>
+        ),
+      });
     }
-    return out;
-  }, [nameHistory]);
+    return [...byKey.values()];
+  }, [foods, token]);
+
+  function handleNameSelect(value: string) {
+    setName(value);
+    const food = foods.find(
+      (item) => item.name.trim().toLowerCase() === value.trim().toLowerCase(),
+    );
+    if (!food) return;
+    setKind(food.kind);
+    setCategory(food.category ? food.category : null);
+    setJunk(food.junk);
+    setCalories(food.calories);
+    setSodium(food.sodium);
+    setAmount(food.amount ?? "");
+  }
   const calorieStatus = evaluateIdeal(
     dayEntries.some((entry) => entry.calories != null)
       ? (totals?.calories ?? null)
@@ -265,21 +320,12 @@ export function IntakeModal({
           onChange={(value) => changeKind(value as IntakeKind)}
         />
 
-        <Select
-          placeholder={
-            kind === "food" ? "What kind of food?" : "What kind of drink?"
-          }
-          options={categoryOptions}
-          value={category}
-          onChange={setCategory}
-          style={{ width: "100%" }}
-        />
-
         <AutoComplete
           ref={nameRef}
           options={nameOptions}
           value={name}
           onChange={(value) => setName(value)}
+          onSelect={handleNameSelect}
           filterOption={(input, option) =>
             (option?.value ?? "")
               .toLowerCase()
@@ -288,6 +334,16 @@ export function IntakeModal({
           placeholder={
             kind === "food" ? "Name (e.g. Chicken adobo)" : "Name (e.g. Iced latte)"
           }
+          style={{ width: "100%" }}
+        />
+
+        <Select
+          placeholder={
+            kind === "food" ? "What kind of food?" : "What kind of drink?"
+          }
+          options={categoryOptions}
+          value={category}
+          onChange={setCategory}
           style={{ width: "100%" }}
         />
 

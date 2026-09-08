@@ -44,7 +44,6 @@ export type FoodItem = {
   calories: number | null;
   sodium: number | null;
   amount: string | null;
-  note: string | null;
 };
 
 export type FoodInput = {
@@ -55,7 +54,6 @@ export type FoodInput = {
   calories?: number | null;
   sodium?: number | null;
   amount?: string | null;
-  note?: string | null;
 };
 
 function foodsCollection(uid: string) {
@@ -73,7 +71,6 @@ export function mapFoodDoc(snap: QueryDocumentSnapshot<DocumentData>): FoodItem 
     calories: (data.calories as number | undefined) ?? null,
     sodium: (data.sodium as number | undefined) ?? null,
     amount: (data.amount as string | undefined) ?? null,
-    note: (data.note as string | undefined) ?? null,
   };
 }
 
@@ -101,7 +98,6 @@ export async function addFood(uid: string, input: FoodInput) {
   if (input.calories != null) payload.calories = input.calories;
   if (input.sodium != null) payload.sodium = input.sodium;
   if (input.amount != null) payload.amount = input.amount;
-  if (input.note != null) payload.note = input.note;
   await addDoc(foodsCollection(uid), payload);
 }
 
