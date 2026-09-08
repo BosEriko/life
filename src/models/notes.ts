@@ -8,6 +8,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
   type QueryConstraint,
   type Timestamp,
 } from "firebase/firestore";
@@ -80,4 +81,8 @@ export async function addNote(uid: string, input: NoteInput) {
 
 export async function deleteNote(uid: string, id: string) {
   await deleteDoc(doc(notesCollection(uid), id));
+}
+
+export async function moveNoteToDate(uid: string, id: string, date: string) {
+  await updateDoc(doc(notesCollection(uid), id), { date });
 }

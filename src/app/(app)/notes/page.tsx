@@ -15,6 +15,8 @@ import {
   Typography,
 } from "antd";
 import {
+  CalendarFilled,
+  CalendarOutlined,
   ClockCircleOutlined,
   CopyOutlined,
   EditOutlined,
@@ -24,13 +26,16 @@ import {
 } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon } from "@/components/icon";
 import { NotesModal } from "@/components/notes-modal";
+import { Tip } from "@/components/tip";
 import { relativeDate, todayKey } from "@/models/dailies";
 import {
   deleteNote,
   formatNoteTime,
+  moveNoteToDate,
   sortNotes,
   watchNotes,
   type Note,
@@ -70,6 +75,13 @@ export default function NotesPage() {
     );
   }
 
+  function handleMoveToToday(id: string) {
+    if (!user) return;
+    moveNoteToDate(user.uid, id, todayKey()).catch(() =>
+      message.error("Could not move note."),
+    );
+  }
+
   function sharedNoteText(note: Note) {
     const dateLabel = dayjs(note.date).format("MMMM D, YYYY");
     return `${note.text}\n\n${dateLabel} at ${formatNoteTime(note.date, note.time)}`;
@@ -102,6 +114,8 @@ export default function NotesPage() {
     () => sortedNotes.filter((note) => note.date === selectedDateKey),
     [sortedNotes, selectedDateKey],
   );
+
+  const isToday = date.isSame(dayjs(todayKey()), "day");
 
   function changeDay(amount: number) {
     setDate((current) => current.add(amount, "day"));
@@ -201,17 +215,14 @@ export default function NotesPage() {
             <Button
               aria-label="Next day"
               icon={<RightOutlined />}
-              disabled={date.isSame(dayjs(todayKey()), "day")}
+              disabled={isToday}
               onClick={() => changeDay(1)}
             />
             <Button
               icon={
-                <Icon
-                  name="date"
-                  style={{ marginRight: 0, opacity: 1 }}
-                />
+                <Icon name="date" style={{ marginRight: 0, opacity: 1 }} />
               }
-              disabled={date.isSame(dayjs(todayKey()), "day")}
+              disabled={isToday}
               onClick={() => setDate(dayjs(todayKey()))}
             >
               Today
@@ -254,13 +265,26 @@ export default function NotesPage() {
                       </Typography.Text>
                     </Flex>
                     <Flex gap={4}>
-                      <Button
-                        type="text"
-                        size="small"
-                        aria-label="Share note"
-                        icon={<SendOutlined />}
-                        onClick={() => setNoteToShare(note)}
-                      />
+                      {note.date !== todayKey() && (
+                        <ConfirmActionButton
+                          type="text"
+                          size="small"
+                          ariaLabel="Move to today"
+                          hint="Tap again to move this note to today"
+                          icon={<CalendarOutlined />}
+                          armedIcon={<CalendarFilled />}
+                          onConfirm={() => handleMoveToToday(note.id)}
+                        />
+                      )}
+                      <Tip title="Share">
+                        <Button
+                          type="text"
+                          size="small"
+                          aria-label="Share note"
+                          icon={<SendOutlined />}
+                          onClick={() => setNoteToShare(note)}
+                        />
+                      </Tip>
                       <ConfirmDeleteButton
                         ariaLabel="Delete note"
                         onConfirm={() => handleDelete(note.id)}

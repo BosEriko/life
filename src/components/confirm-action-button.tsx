@@ -1,20 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Button } from "antd";
-import { DeleteFilled, DeleteOutlined } from "@ant-design/icons";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Button, type ButtonProps } from "antd";
 import { Tip } from "@/components/tip";
 import { useBottomToast } from "@/components/use-bottom-toast";
 
-export function ConfirmDeleteButton({
+export function ConfirmActionButton({
   onConfirm,
-  ariaLabel = "Delete",
-  hint = "Tap again to delete",
+  hint,
+  idleLabel,
+  armedLabel,
+  icon,
+  armedIcon,
+  ariaLabel,
+  ...buttonProps
 }: {
   onConfirm: () => void;
+  hint: string;
+  idleLabel?: ReactNode;
+  armedLabel?: ReactNode;
+  icon?: ReactNode;
+  armedIcon?: ReactNode;
   ariaLabel?: string;
-  hint?: string;
-}) {
+} & Omit<
+  ButtonProps,
+  "onClick" | "icon" | "danger" | "children" | "aria-label"
+>) {
   const [armed, setArmed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { show, hide, node } = useBottomToast();
@@ -41,13 +52,14 @@ export function ConfirmDeleteButton({
     <>
       <Tip title={ariaLabel}>
         <Button
-          type="text"
-          size="small"
-          danger
-          aria-label={armed ? "Confirm delete" : ariaLabel}
-          icon={armed ? <DeleteFilled /> : <DeleteOutlined />}
+          {...buttonProps}
+          aria-label={ariaLabel}
+          icon={armed ? (armedIcon ?? icon) : icon}
+          danger={armed}
           onClick={handleClick}
-        />
+        >
+          {armed ? armedLabel : idleLabel}
+        </Button>
       </Tip>
       {node}
     </>
