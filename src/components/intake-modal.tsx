@@ -76,6 +76,28 @@ function foodSummary(food: FoodItem): string {
   return parts.join(" · ");
 }
 
+/**
+ * Subsequence fuzzy match. `query` must already be lowercased. Returns a score
+ * (higher = better) or -1 when the query's characters don't all appear in
+ * order.
+ */
+function fuzzyScore(query: string, target: string): number {
+  const text = target.toLowerCase();
+  const exact = text.indexOf(query);
+  if (exact === 0) return 1000;
+  if (exact > 0) return 600 - Math.min(exact, 400);
+
+  let pos = 0;
+  let gaps = 0;
+  for (const char of query) {
+    const found = text.indexOf(char, pos);
+    if (found === -1) return -1;
+    gaps += found - pos;
+    pos = found + 1;
+  }
+  return 300 - Math.min(gaps, 250);
+}
+
 export function IntakeModal({
   open,
   onClose,
@@ -196,6 +218,19 @@ export function IntakeModal({
     }
     return [...byKey.values()];
   }, [foods, token, user?.uid]);
+
+  const visibleNameOptions = useMemo(() => {
+    const query = name.trim().toLowerCase();
+    if (!query) return nameOptions;
+    return nameOptions
+      .map((option) => ({
+        option,
+        score: fuzzyScore(query, option.value),
+      }))
+      .filter((entry) => entry.score >= 0)
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.option);
+  }, [name, nameOptions]);
 
   function handleNameSelect(value: string) {
     setName(value);
@@ -367,15 +402,11 @@ export function IntakeModal({
 
         <AutoComplete
           ref={nameRef}
-          options={nameOptions}
+          options={visibleNameOptions}
           value={name}
           onChange={(value) => setName(value)}
           onSelect={handleNameSelect}
-          filterOption={(input, option) =>
-            (option?.value ?? "")
-              .toLowerCase()
-              .includes(input.trim().toLowerCase())
-          }
+          filterOption={false}
           placeholder={
             kind === "food"
               ? "Name (e.g. Chicken adobo)"
