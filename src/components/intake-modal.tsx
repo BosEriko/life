@@ -24,15 +24,17 @@ import {
   TimePicker,
   Typography,
 } from "antd";
+import { EditOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { useHealthData } from "@/components/health-data-provider";
+import { IntakeEditModal } from "@/components/intake-edit-modal";
 import { useDayIntake } from "@/components/use-day-records";
 import { eatingWindowSide } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
-import { requestIntakeEnrichment } from "@/models/claude-integration";
+import { enrichIntakeIfNeeded } from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText } from "@/models/ideals";
 import {
@@ -91,6 +93,7 @@ export function IntakeModal({
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [foods, setFoods] = useState<FoodItem[]>([]);
+  const [editing, setEditing] = useState<IntakeEntry | null>(null);
   const nameRef = useRef<ComponentRef<typeof AutoComplete>>(null);
 
   useEffect(() => {
@@ -118,6 +121,7 @@ export function IntakeModal({
   function handleClose() {
     setDate(dayjs());
     setKind("food");
+    setEditing(null);
     resetEntry();
     onClose();
   }
@@ -251,26 +255,16 @@ export function IntakeModal({
     });
     done.catch(() => message.error("Could not add entry."));
 
-    const missing: ("calories" | "sodium")[] = [];
-    if (cal == null) missing.push("calories");
-    if (sod == null) missing.push("sodium");
-    if (
-      missing.length > 0 &&
-      typeof navigator !== "undefined" &&
-      navigator.onLine
-    ) {
-      requestIntakeEnrichment(user, {
-        id,
-        kind,
-        name: nm,
-        category,
-        amount: amt,
-        note: nt,
-        calories: cal,
-        sodium: sod,
-        fields: missing,
-      }).catch(() => {});
-    }
+    enrichIntakeIfNeeded(user, {
+      id,
+      kind,
+      name: nm,
+      category,
+      amount: amt,
+      note: nt,
+      calories: cal,
+      sodium: sod,
+    });
 
     resetEntry();
   }
@@ -535,15 +529,32 @@ export function IntakeModal({
                     </Typography.Text>
                   ) : null}
                 </Flex>
-                <ConfirmDeleteButton
-                  ariaLabel="Delete entry"
-                  onConfirm={() => handleDelete(entry.id)}
-                />
+                <Flex align="center" gap={2} style={{ flexShrink: 0 }}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined />}
+                    aria-label="Edit entry"
+                    onClick={() => setEditing(entry)}
+                  />
+                  <ConfirmDeleteButton
+                    ariaLabel="Delete entry"
+                    onConfirm={() => handleDelete(entry.id)}
+                  />
+                </Flex>
               </Flex>
             );
           })}
         </Flex>
       )}
+
+      {editing ? (
+        <IntakeEditModal
+          key={editing.id}
+          item={editing}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </Modal>
   );
 }

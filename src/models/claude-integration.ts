@@ -42,6 +42,47 @@ export async function requestIntakeEnrichment(
   });
 }
 
+/**
+ * Fire-and-forget nutrition top-up for an intake entry. No-ops when nothing is
+ * missing or the client is offline; the server ignores it unless the caller has
+ * Claude autofill enabled.
+ */
+export function enrichIntakeIfNeeded(
+  user: User,
+  entry: {
+    id: string;
+    kind: string;
+    name: string;
+    category: string;
+    amount: string | null;
+    note: string | null;
+    calories: number | null;
+    sodium: number | null;
+  },
+): void {
+  const fields: ("calories" | "sodium")[] = [];
+  if (entry.calories == null) fields.push("calories");
+  if (entry.sodium == null) fields.push("sodium");
+  if (
+    fields.length === 0 ||
+    typeof navigator === "undefined" ||
+    !navigator.onLine
+  ) {
+    return;
+  }
+  requestIntakeEnrichment(user, {
+    id: entry.id,
+    kind: entry.kind,
+    name: entry.name,
+    category: entry.category,
+    amount: entry.amount,
+    note: entry.note,
+    calories: entry.calories,
+    sodium: entry.sodium,
+    fields,
+  }).catch(() => {});
+}
+
 export type FoodEnrichmentRequest = {
   id: string;
   kind: string;

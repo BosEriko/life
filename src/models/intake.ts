@@ -159,6 +159,30 @@ export function addIntake(
   return { id: ref.id, done };
 }
 
+export async function updateIntake(
+  uid: string,
+  id: string,
+  input: IntakeInput,
+) {
+  await setDoc(
+    doc(intakeCollection(uid), id),
+    {
+      date: input.date,
+      time: input.time,
+      kind: input.kind,
+      name: input.name,
+      category: input.category,
+      junk: input.junk,
+      calories: input.calories ?? null,
+      sodium: input.sodium ?? null,
+      amount: input.amount ?? null,
+      note: input.note ?? null,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
 export async function deleteIntake(uid: string, id: string) {
   await deleteDoc(doc(intakeCollection(uid), id));
 }
