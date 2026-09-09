@@ -125,6 +125,7 @@ export function IntakeModal({
   const [editing, setEditing] = useState<IntakeEntry | null>(null);
   const [recalcId, setRecalcId] = useState<string | null>(null);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
+  const [nameOpen, setNameOpen] = useState(false);
   const nameRef = useRef<ComponentRef<typeof AutoComplete>>(null);
 
   useEffect(() => {
@@ -141,6 +142,7 @@ export function IntakeModal({
   function resetEntry() {
     setTime(dayjs());
     setName("");
+    setNameOpen(false);
     setCategory(null);
     setJunk(false);
     setCalories(null);
@@ -404,8 +406,17 @@ export function IntakeModal({
           ref={nameRef}
           options={visibleNameOptions}
           value={name}
+          open={nameOpen}
           onChange={(value) => setName(value)}
-          onSelect={handleNameSelect}
+          onSearch={(value) => setNameOpen(value.trim().length > 0)}
+          onSelect={(value) => {
+            setNameOpen(false);
+            handleNameSelect(value);
+          }}
+          onFocus={() => {
+            if (name.trim().length > 0) setNameOpen(true);
+          }}
+          onBlur={() => setNameOpen(false)}
           filterOption={false}
           placeholder={
             kind === "food"
