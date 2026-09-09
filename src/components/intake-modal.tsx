@@ -32,6 +32,7 @@ import { useHealthData } from "@/components/health-data-provider";
 import { IntakeEditModal } from "@/components/intake-edit-modal";
 import { useDayIntake } from "@/components/use-day-records";
 import { useIsIntelligent } from "@/components/use-is-intelligent";
+import { useOnline } from "@/components/use-online";
 import { eatingWindowSide } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
@@ -87,6 +88,7 @@ export function IntakeModal({
   const { token } = theme.useToken();
   const { ideals } = useHealthData();
   const isIntelligent = useIsIntelligent();
+  const isOnline = useOnline();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [kind, setKind] = useState<IntakeKind>("food");
@@ -100,6 +102,7 @@ export function IntakeModal({
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [editing, setEditing] = useState<IntakeEntry | null>(null);
   const [recalcId, setRecalcId] = useState<string | null>(null);
+  const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const nameRef = useRef<ComponentRef<typeof AutoComplete>>(null);
 
   useEffect(() => {
@@ -262,7 +265,7 @@ export function IntakeModal({
     done.catch(() => message.error("Could not add entry."));
 
     if (isIntelligent) {
-      enrichIntakeIfNeeded(user, {
+      const pending = enrichIntakeIfNeeded(user, {
         id,
         kind,
         name: nm,
@@ -272,6 +275,12 @@ export function IntakeModal({
         calories: cal,
         sodium: sod,
       });
+      if (pending) {
+        setEnrichingId(id);
+        pending.finally(() =>
+          setEnrichingId((current) => (current === id ? null : current)),
+        );
+      }
     }
 
     resetEntry();
@@ -561,13 +570,16 @@ export function IntakeModal({
                   ) : null}
                 </Flex>
                 <Flex align="center" gap={2} style={{ flexShrink: 0 }}>
-                  {isIntelligent &&
+                  {isOnline &&
+                  isIntelligent &&
                   (entry.calories == null || entry.sodium == null) ? (
                     <Button
                       type="text"
                       size="small"
                       icon={<ThunderboltOutlined />}
-                      loading={recalcId === entry.id}
+                      loading={
+                        recalcId === entry.id || enrichingId === entry.id
+                      }
                       aria-label="Recalculate nutrition"
                       onClick={() => handleRecalc(entry)}
                     />

@@ -26,6 +26,7 @@ import { FoodEditModal } from "@/components/food-edit-modal";
 import { Icon } from "@/components/icon";
 import { useIsAdmin } from "@/components/use-is-admin";
 import { useIsIntelligent } from "@/components/use-is-intelligent";
+import { useOnline } from "@/components/use-online";
 import {
   enrichFoodIfNeeded,
   recalcFoodNutrition,
@@ -60,6 +61,7 @@ export function DatabasePanel() {
   const { token } = theme.useToken();
   const isAdmin = useIsAdmin();
   const isIntelligent = useIsIntelligent();
+  const isOnline = useOnline();
 
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -74,6 +76,7 @@ export function DatabasePanel() {
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [recalcId, setRecalcId] = useState<string | null>(null);
+  const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [mineOnly, setMineOnly] = useState(true);
   const [editing, setEditing] = useState<FoodItem | null>(null);
 
@@ -120,7 +123,7 @@ export function DatabasePanel() {
         amount: trimmedAmount,
       });
       if (isIntelligent) {
-        enrichFoodIfNeeded(user, {
+        const pending = enrichFoodIfNeeded(user, {
           id,
           kind,
           name: trimmedName,
@@ -129,6 +132,12 @@ export function DatabasePanel() {
           calories,
           sodium,
         });
+        if (pending) {
+          setEnrichingId(id);
+          pending.finally(() =>
+            setEnrichingId((current) => (current === id ? null : current)),
+          );
+        }
       }
       setName("");
       setJunk(false);
@@ -327,13 +336,16 @@ export function DatabasePanel() {
                     </Flex>
                     {canManage(item) ? (
                       <Flex align="center" gap={2} style={{ flexShrink: 0 }}>
-                        {isIntelligent &&
+                        {isOnline &&
+                        isIntelligent &&
                         (item.calories == null || item.sodium == null) ? (
                           <Button
                             type="text"
                             size="small"
                             icon={<ThunderboltOutlined />}
-                            loading={recalcId === item.id}
+                            loading={
+                              recalcId === item.id || enrichingId === item.id
+                            }
                             aria-label={`Recalculate ${item.name}`}
                             onClick={() => handleRecalc(item)}
                           />

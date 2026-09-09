@@ -111,16 +111,18 @@ type FoodNutritionTarget = Omit<FoodEnrichmentRequest, "fields">;
 export function enrichIntakeIfNeeded(
   user: User,
   entry: IntakeNutritionTarget,
-): void {
+): Promise<EnrichmentResult | undefined> | undefined {
   const fields = missingNutritionFields(entry);
   if (
     fields.length === 0 ||
     typeof navigator === "undefined" ||
     !navigator.onLine
   ) {
-    return;
+    return undefined;
   }
-  requestIntakeEnrichment(user, { ...entry, fields }).catch(() => {});
+  return requestIntakeEnrichment(user, { ...entry, fields }).catch(
+    () => undefined,
+  );
 }
 
 /**
@@ -131,16 +133,16 @@ export function enrichIntakeIfNeeded(
 export function enrichFoodIfNeeded(
   user: User,
   food: FoodNutritionTarget,
-): void {
+): Promise<EnrichmentResult | undefined> | undefined {
   const fields = missingNutritionFields(food);
   if (
     fields.length === 0 ||
     typeof navigator === "undefined" ||
     !navigator.onLine
   ) {
-    return;
+    return undefined;
   }
-  requestFoodEnrichment(user, { ...food, fields }).catch(() => {});
+  return requestFoodEnrichment(user, { ...food, fields }).catch(() => undefined);
 }
 
 /** On-demand recalculation, filling only the still-missing fields. */
