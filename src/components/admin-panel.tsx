@@ -142,9 +142,9 @@ export function AdminPanel() {
       ),
     },
     {
-      title: "Claude autofill",
+      title: "Intelligent",
       dataIndex: "claudeEnabled",
-      width: 140,
+      width: 120,
       render: (enabled: boolean, row) => (
         <Switch
           checked={enabled}
@@ -157,44 +157,45 @@ export function AdminPanel() {
 
   return (
     <div>
-      <Flex
-        align="flex-start"
-        justify="space-between"
-        gap={16}
-        wrap
-        style={{ marginBottom: 16 }}
-      >
-        <div>
-          <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
-            Admin
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            Make someone an admin (admins can delete entries from the shared food
-            Database), or grant Claude autofill so calories and sodium are
-            estimated when those fields are left blank.
-          </Typography.Paragraph>
-        </div>
-        <Button size="small" loading={testing} onClick={handleTest}>
-          Test Anthropic key
-        </Button>
-      </Flex>
+      <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
+        Admin
+      </Typography.Title>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
+        Grant someone intelligence — blank calories and sodium get estimated for
+        them — or make them an admin (admins can manage the shared food
+        Database).
+      </Typography.Paragraph>
 
-      <Card
-        size="small"
-        styles={{ body: { padding: 0 } }}
-        style={{ overflow: "hidden" }}
-      >
-        <Table<AdminUser>
-          className="flush-table"
-          rowKey="uid"
-          size="middle"
-          loading={loading}
-          dataSource={rows}
-          columns={columns}
-          pagination={false}
-          locale={{ emptyText: "No users." }}
-        />
-      </Card>
+      <Flex vertical gap={16}>
+        <Card
+          size="small"
+          styles={{ body: { padding: 0 } }}
+          style={{ overflow: "hidden" }}
+        >
+          <Table<AdminUser>
+            className="flush-table"
+            rowKey="uid"
+            size="middle"
+            loading={loading}
+            dataSource={rows}
+            columns={columns}
+            pagination={false}
+            locale={{ emptyText: "No users." }}
+          />
+        </Card>
+
+        <Card size="small" title="Anthropic key">
+          <Typography.Paragraph
+            type="secondary"
+            style={{ fontSize: 13, marginTop: 0, marginBottom: 12 }}
+          >
+            Check that the Anthropic API key is configured and responding.
+          </Typography.Paragraph>
+          <Button loading={testing} onClick={handleTest}>
+            Test Anthropic key
+          </Button>
+        </Card>
+      </Flex>
     </div>
   );
 }

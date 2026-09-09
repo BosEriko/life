@@ -21,6 +21,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FoodEditModal } from "@/components/food-edit-modal";
 import { Icon } from "@/components/icon";
 import { useIsAdmin } from "@/components/use-is-admin";
+import { useIsIntelligent } from "@/components/use-is-intelligent";
 import { enrichFoodIfNeeded } from "@/models/claude-integration";
 import {
   addFood,
@@ -51,6 +52,7 @@ export function DatabasePanel() {
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const isAdmin = useIsAdmin();
+  const isIntelligent = useIsIntelligent();
 
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -109,15 +111,17 @@ export function DatabasePanel() {
         sodium,
         amount: trimmedAmount,
       });
-      enrichFoodIfNeeded(user, {
-        id,
-        kind,
-        name: trimmedName,
-        category: cat,
-        amount: trimmedAmount,
-        calories,
-        sodium,
-      });
+      if (isIntelligent) {
+        enrichFoodIfNeeded(user, {
+          id,
+          kind,
+          name: trimmedName,
+          category: cat,
+          amount: trimmedAmount,
+          calories,
+          sodium,
+        });
+      }
       setName("");
       setJunk(false);
       setCalories(null);

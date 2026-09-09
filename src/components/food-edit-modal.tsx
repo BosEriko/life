@@ -12,6 +12,7 @@ import {
   Select,
 } from "antd";
 import { useAuth } from "@/components/auth-provider";
+import { useIsIntelligent } from "@/components/use-is-intelligent";
 import { enrichFoodIfNeeded } from "@/models/claude-integration";
 import {
   DRINK_CATEGORIES,
@@ -35,6 +36,7 @@ export function FoodEditModal({
 }) {
   const { message } = App.useApp();
   const { user } = useAuth();
+  const isIntelligent = useIsIntelligent();
   const [name, setName] = useState(item.name);
   const [kind, setKind] = useState<FoodKind>(item.kind);
   const [category, setCategory] = useState<string | undefined>(
@@ -68,7 +70,7 @@ export function FoodEditModal({
       amount: trimmedAmount,
     })
       .then(() => {
-        if (user) {
+        if (user && isIntelligent) {
           enrichFoodIfNeeded(user, {
             id: item.id,
             kind,

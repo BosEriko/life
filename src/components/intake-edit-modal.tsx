@@ -15,6 +15,7 @@ import {
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { useIsIntelligent } from "@/components/use-is-intelligent";
 import { enrichIntakeIfNeeded } from "@/models/claude-integration";
 import { todayKey } from "@/models/dailies";
 import {
@@ -39,6 +40,7 @@ export function IntakeEditModal({
 }) {
   const { message } = App.useApp();
   const { user } = useAuth();
+  const isIntelligent = useIsIntelligent();
 
   const [date, setDate] = useState<Dayjs>(() => dayjs(item.date));
   const [time, setTime] = useState<Dayjs>(() =>
@@ -81,18 +83,20 @@ export function IntakeEditModal({
       note: note.trim() ? note.trim() : null,
     };
     updateIntake(user.uid, item.id, input)
-      .then(() =>
-        enrichIntakeIfNeeded(user, {
-          id: item.id,
-          kind: input.kind,
-          name: input.name,
-          category: input.category,
-          amount: input.amount,
-          note: input.note,
-          calories: input.calories,
-          sodium: input.sodium,
-        }),
-      )
+      .then(() => {
+        if (isIntelligent) {
+          enrichIntakeIfNeeded(user, {
+            id: item.id,
+            kind: input.kind,
+            name: input.name,
+            category: input.category,
+            amount: input.amount,
+            note: input.note,
+            calories: input.calories,
+            sodium: input.sodium,
+          });
+        }
+      })
       .catch(() => message.error("Could not save changes."));
     onClose();
   }

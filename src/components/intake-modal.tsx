@@ -31,6 +31,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { useHealthData } from "@/components/health-data-provider";
 import { IntakeEditModal } from "@/components/intake-edit-modal";
 import { useDayIntake } from "@/components/use-day-records";
+import { useIsIntelligent } from "@/components/use-is-intelligent";
 import { eatingWindowSide } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
@@ -82,6 +83,7 @@ export function IntakeModal({
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const { ideals } = useHealthData();
+  const isIntelligent = useIsIntelligent();
   const [date, setDate] = useState<Dayjs>(() => dayjs());
   const [time, setTime] = useState<Dayjs>(() => dayjs());
   const [kind, setKind] = useState<IntakeKind>("food");
@@ -255,16 +257,18 @@ export function IntakeModal({
     });
     done.catch(() => message.error("Could not add entry."));
 
-    enrichIntakeIfNeeded(user, {
-      id,
-      kind,
-      name: nm,
-      category,
-      amount: amt,
-      note: nt,
-      calories: cal,
-      sodium: sod,
-    });
+    if (isIntelligent) {
+      enrichIntakeIfNeeded(user, {
+        id,
+        kind,
+        name: nm,
+        category,
+        amount: amt,
+        note: nt,
+        calories: cal,
+        sodium: sod,
+      });
+    }
 
     resetEntry();
   }
