@@ -24,7 +24,7 @@ import {
   TimePicker,
   Typography,
 } from "antd";
-import { EditOutlined } from "@ant-design/icons";
+import { EditOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
@@ -35,7 +35,10 @@ import { useIsIntelligent } from "@/components/use-is-intelligent";
 import { eatingWindowSide } from "@/lib/eating-window";
 import { Icon } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
-import { enrichIntakeIfNeeded } from "@/models/claude-integration";
+import {
+  enrichIntakeIfNeeded,
+  recalcIntakeNutrition,
+} from "@/models/claude-integration";
 import { relativeDate, todayKey } from "@/models/dailies";
 import { evaluateIdeal, rangeText } from "@/models/ideals";
 import {
@@ -96,6 +99,7 @@ export function IntakeModal({
   const [note, setNote] = useState("");
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [editing, setEditing] = useState<IntakeEntry | null>(null);
+  const [recalcId, setRecalcId] = useState<string | null>(null);
   const nameRef = useRef<ComponentRef<typeof AutoComplete>>(null);
 
   useEffect(() => {
@@ -278,6 +282,29 @@ export function IntakeModal({
     deleteIntake(user.uid, id).catch(() =>
       message.error("Could not delete entry."),
     );
+  }
+
+  async function handleRecalc(entry: IntakeEntry) {
+    if (!user) return;
+    setRecalcId(entry.id);
+    try {
+      const res = await recalcIntakeNutrition(user, {
+        id: entry.id,
+        kind: entry.kind,
+        name: entry.name,
+        category: entry.category,
+        amount: entry.amount,
+        note: entry.note,
+        calories: entry.calories,
+        sodium: entry.sodium,
+      });
+      if (res.skipped) message.info("Nothing to recalculate.");
+      else message.success("Recalculated");
+    } catch {
+      message.error("Could not recalculate. Try again.");
+    } finally {
+      setRecalcId(null);
+    }
   }
 
   return (
@@ -534,6 +561,17 @@ export function IntakeModal({
                   ) : null}
                 </Flex>
                 <Flex align="center" gap={2} style={{ flexShrink: 0 }}>
+                  {isIntelligent &&
+                  (entry.calories == null || entry.sodium == null) ? (
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ThunderboltOutlined />}
+                      loading={recalcId === entry.id}
+                      aria-label="Recalculate nutrition"
+                      onClick={() => handleRecalc(entry)}
+                    />
+                  ) : null}
                   <Button
                     type="text"
                     size="small"

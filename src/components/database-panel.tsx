@@ -15,14 +15,21 @@ import {
   theme,
   Typography,
 } from "antd";
-import { DatabaseOutlined, EditOutlined } from "@ant-design/icons";
+import {
+  DatabaseOutlined,
+  EditOutlined,
+  ThunderboltOutlined,
+} from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FoodEditModal } from "@/components/food-edit-modal";
 import { Icon } from "@/components/icon";
 import { useIsAdmin } from "@/components/use-is-admin";
 import { useIsIntelligent } from "@/components/use-is-intelligent";
-import { enrichFoodIfNeeded } from "@/models/claude-integration";
+import {
+  enrichFoodIfNeeded,
+  recalcFoodNutrition,
+} from "@/models/claude-integration";
 import {
   addFood,
   deleteFood,
@@ -66,6 +73,7 @@ export function DatabasePanel() {
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [recalcId, setRecalcId] = useState<string | null>(null);
   const [mineOnly, setMineOnly] = useState(true);
   const [editing, setEditing] = useState<FoodItem | null>(null);
 
@@ -143,6 +151,28 @@ export function DatabasePanel() {
       message.error("Could not delete item.");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleRecalc(item: FoodItem) {
+    if (!user) return;
+    setRecalcId(item.id);
+    try {
+      const res = await recalcFoodNutrition(user, {
+        id: item.id,
+        kind: item.kind,
+        name: item.name,
+        category: item.category,
+        amount: item.amount,
+        calories: item.calories,
+        sodium: item.sodium,
+      });
+      if (res.skipped) message.info("Nothing to recalculate.");
+      else message.success("Recalculated");
+    } catch {
+      message.error("Could not recalculate. Try again.");
+    } finally {
+      setRecalcId(null);
     }
   }
 
@@ -297,6 +327,17 @@ export function DatabasePanel() {
                     </Flex>
                     {canManage(item) ? (
                       <Flex align="center" gap={2} style={{ flexShrink: 0 }}>
+                        {isIntelligent &&
+                        (item.calories == null || item.sodium == null) ? (
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<ThunderboltOutlined />}
+                            loading={recalcId === item.id}
+                            aria-label={`Recalculate ${item.name}`}
+                            onClick={() => handleRecalc(item)}
+                          />
+                        ) : null}
                         <Button
                           type="text"
                           size="small"

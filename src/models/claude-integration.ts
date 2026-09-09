@@ -15,6 +15,54 @@ export async function testClaudeConnection(
   return { ok: data.ok === true, error: data.error };
 }
 
+export type NutritionField = "calories" | "sodium";
+
+export type EnrichmentResult = {
+  calories: number | null;
+  sodium: number | null;
+  skipped?: string;
+};
+
+export function missingNutritionFields(entry: {
+  calories: number | null;
+  sodium: number | null;
+}): NutritionField[] {
+  const fields: NutritionField[] = [];
+  if (entry.calories == null) fields.push("calories");
+  if (entry.sodium == null) fields.push("sodium");
+  return fields;
+}
+
+async function postEnrichment(
+  url: string,
+  user: User,
+  payload: unknown,
+): Promise<EnrichmentResult> {
+  const token = await user.getIdToken();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    calories?: number | null;
+    sodium?: number | null;
+    skipped?: string;
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.error ?? `Request failed (${res.status}).`);
+  }
+  return {
+    calories: data.calories ?? null,
+    sodium: data.sodium ?? null,
+    skipped: data.skipped,
+  };
+}
+
 export type IntakeEnrichmentRequest = {
   id: string;
   kind: string;
@@ -24,63 +72,14 @@ export type IntakeEnrichmentRequest = {
   note: string | null;
   calories: number | null;
   sodium: number | null;
-  fields: ("calories" | "sodium")[];
+  fields: NutritionField[];
 };
 
-export async function requestIntakeEnrichment(
+export function requestIntakeEnrichment(
   user: User,
   payload: IntakeEnrichmentRequest,
-): Promise<void> {
-  const token = await user.getIdToken();
-  await fetch("/api/intake/enrich", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
-/**
- * Fire-and-forget nutrition top-up for an intake entry. No-ops when nothing is
- * missing or the client is offline; the server ignores it unless the caller has
- * Claude autofill enabled.
- */
-export function enrichIntakeIfNeeded(
-  user: User,
-  entry: {
-    id: string;
-    kind: string;
-    name: string;
-    category: string;
-    amount: string | null;
-    note: string | null;
-    calories: number | null;
-    sodium: number | null;
-  },
-): void {
-  const fields: ("calories" | "sodium")[] = [];
-  if (entry.calories == null) fields.push("calories");
-  if (entry.sodium == null) fields.push("sodium");
-  if (
-    fields.length === 0 ||
-    typeof navigator === "undefined" ||
-    !navigator.onLine
-  ) {
-    return;
-  }
-  requestIntakeEnrichment(user, {
-    id: entry.id,
-    kind: entry.kind,
-    name: entry.name,
-    category: entry.category,
-    amount: entry.amount,
-    note: entry.note,
-    calories: entry.calories,
-    sodium: entry.sodium,
-    fields,
-  }).catch(() => {});
+): Promise<EnrichmentResult> {
+  return postEnrichment("/api/intake/enrich", user, payload);
 }
 
 export type FoodEnrichmentRequest = {
@@ -91,44 +90,29 @@ export type FoodEnrichmentRequest = {
   amount: string | null;
   calories: number | null;
   sodium: number | null;
-  fields: ("calories" | "sodium")[];
+  fields: NutritionField[];
 };
 
-export async function requestFoodEnrichment(
+export function requestFoodEnrichment(
   user: User,
   payload: FoodEnrichmentRequest,
-): Promise<void> {
-  const token = await user.getIdToken();
-  await fetch("/api/database/enrich", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
+): Promise<EnrichmentResult> {
+  return postEnrichment("/api/database/enrich", user, payload);
 }
 
+type IntakeNutritionTarget = Omit<IntakeEnrichmentRequest, "fields">;
+type FoodNutritionTarget = Omit<FoodEnrichmentRequest, "fields">;
+
 /**
- * Fire-and-forget nutrition top-up for a food-directory entry. No-ops when
- * nothing is missing or the client is offline; the server ignores it unless the
- * caller has Claude autofill enabled.
+ * Fire-and-forget nutrition top-up for an intake entry. No-ops when nothing is
+ * missing or the client is offline; the server ignores it unless the caller is
+ * marked intelligent.
  */
-export function enrichFoodIfNeeded(
+export function enrichIntakeIfNeeded(
   user: User,
-  food: {
-    id: string;
-    kind: string;
-    name: string;
-    category: string;
-    amount: string | null;
-    calories: number | null;
-    sodium: number | null;
-  },
+  entry: IntakeNutritionTarget,
 ): void {
-  const fields: ("calories" | "sodium")[] = [];
-  if (food.calories == null) fields.push("calories");
-  if (food.sodium == null) fields.push("sodium");
+  const fields = missingNutritionFields(entry);
   if (
     fields.length === 0 ||
     typeof navigator === "undefined" ||
@@ -136,14 +120,56 @@ export function enrichFoodIfNeeded(
   ) {
     return;
   }
-  requestFoodEnrichment(user, {
-    id: food.id,
-    kind: food.kind,
-    name: food.name,
-    category: food.category,
-    amount: food.amount,
-    calories: food.calories,
-    sodium: food.sodium,
-    fields,
-  }).catch(() => {});
+  requestIntakeEnrichment(user, { ...entry, fields }).catch(() => {});
+}
+
+/**
+ * Fire-and-forget nutrition top-up for a food-directory entry. No-ops when
+ * nothing is missing or the client is offline; the server ignores it unless the
+ * caller is marked intelligent.
+ */
+export function enrichFoodIfNeeded(
+  user: User,
+  food: FoodNutritionTarget,
+): void {
+  const fields = missingNutritionFields(food);
+  if (
+    fields.length === 0 ||
+    typeof navigator === "undefined" ||
+    !navigator.onLine
+  ) {
+    return;
+  }
+  requestFoodEnrichment(user, { ...food, fields }).catch(() => {});
+}
+
+/** On-demand recalculation, filling only the still-missing fields. */
+export function recalcIntakeNutrition(
+  user: User,
+  entry: IntakeNutritionTarget,
+): Promise<EnrichmentResult> {
+  const fields = missingNutritionFields(entry);
+  if (fields.length === 0) {
+    return Promise.resolve({
+      calories: entry.calories,
+      sodium: entry.sodium,
+      skipped: "already-filled",
+    });
+  }
+  return requestIntakeEnrichment(user, { ...entry, fields });
+}
+
+export function recalcFoodNutrition(
+  user: User,
+  food: FoodNutritionTarget,
+): Promise<EnrichmentResult> {
+  const fields = missingNutritionFields(food);
+  if (fields.length === 0) {
+    return Promise.resolve({
+      calories: food.calories,
+      sodium: food.sodium,
+      skipped: "already-filled",
+    });
+  }
+  return requestFoodEnrichment(user, { ...food, fields });
 }
