@@ -7,7 +7,12 @@ import { rangeText, type IdealRange, type IdealStatus } from "@/models/ideals";
 /**
  * Wraps a value with an "above/below your ideal" hover tooltip.
  * - one of isAbove / isBelow → tooltip shown, placed below when below-ideal.
- * - neither, or both, → no tooltip (children rendered as-is).
+ * - neither, or both, → no tooltip.
+ *
+ * The `<Tip>` wrapper is always rendered (with an empty title when there's
+ * nothing to show) so that toggling the tooltip on/off never swaps the element
+ * type around `children` — swapping it would remount the child and, for an
+ * input, drop focus mid-typing.
  */
 export function IdealTip({
   isAbove = false,
@@ -21,9 +26,11 @@ export function IdealTip({
   children: ReactElement;
 }): ReactElement {
   const show = isAbove !== isBelow && message != null && message !== "";
-  if (!show) return children;
   return (
-    <Tip title={message} placement={isBelow ? "bottom" : "top"}>
+    <Tip
+      title={show ? message : undefined}
+      placement={isBelow ? "bottom" : "top"}
+    >
       {children}
     </Tip>
   );
