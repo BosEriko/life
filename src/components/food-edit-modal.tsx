@@ -11,6 +11,8 @@ import {
   Segmented,
   Select,
 } from "antd";
+import { useAuth } from "@/components/auth-provider";
+import { enrichFoodIfNeeded } from "@/models/claude-integration";
 import {
   DRINK_CATEGORIES,
   FOOD_CATEGORIES,
@@ -32,6 +34,7 @@ export function FoodEditModal({
   onClose: () => void;
 }) {
   const { message } = App.useApp();
+  const { user } = useAuth();
   const [name, setName] = useState(item.name);
   const [kind, setKind] = useState<FoodKind>(item.kind);
   const [category, setCategory] = useState<string | undefined>(
@@ -52,17 +55,34 @@ export function FoodEditModal({
 
   function handleSave() {
     if (!canSave) return;
+    const trimmedName = name.trim();
+    const trimmedAmount = amount.trim() ? amount.trim() : null;
+    const cat = category ?? "";
     updateFood(item.id, {
-      name: name.trim(),
+      name: trimmedName,
       kind,
-      category: category ?? "",
+      category: cat,
       junk,
       calories,
       sodium,
-      amount: amount.trim() ? amount.trim() : null,
-    }).catch(() =>
-      message.error("Could not save. You may not have permission."),
-    );
+      amount: trimmedAmount,
+    })
+      .then(() => {
+        if (user) {
+          enrichFoodIfNeeded(user, {
+            id: item.id,
+            kind,
+            name: trimmedName,
+            category: cat,
+            amount: trimmedAmount,
+            calories,
+            sodium,
+          });
+        }
+      })
+      .catch(() =>
+        message.error("Could not save. You may not have permission."),
+      );
     onClose();
   }
 

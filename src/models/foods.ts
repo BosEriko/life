@@ -89,7 +89,10 @@ export function watchFoods(
   );
 }
 
-export async function addFood(uid: string, input: FoodInput) {
+export async function addFood(
+  uid: string,
+  input: FoodInput,
+): Promise<string> {
   const payload: Record<string, unknown> = {
     name: input.name,
     kind: input.kind,
@@ -101,7 +104,8 @@ export async function addFood(uid: string, input: FoodInput) {
   if (input.calories != null) payload.calories = input.calories;
   if (input.sodium != null) payload.sodium = input.sodium;
   if (input.amount != null) payload.amount = input.amount;
-  await addDoc(foodsCollection(), payload);
+  const ref = await addDoc(foodsCollection(), payload);
+  return ref.id;
 }
 
 export async function updateFood(id: string, input: FoodInput) {

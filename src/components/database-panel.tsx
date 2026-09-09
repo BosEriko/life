@@ -21,6 +21,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FoodEditModal } from "@/components/food-edit-modal";
 import { Icon } from "@/components/icon";
 import { useIsAdmin } from "@/components/use-is-admin";
+import { enrichFoodIfNeeded } from "@/models/claude-integration";
 import {
   addFood,
   deleteFood,
@@ -96,14 +97,26 @@ export function DatabasePanel() {
     if (!user || !canAdd) return;
     setBusy(true);
     try {
-      await addFood(user.uid, {
-        name: name.trim(),
+      const trimmedName = name.trim();
+      const trimmedAmount = amount.trim() ? amount.trim() : null;
+      const cat = category ?? "";
+      const id = await addFood(user.uid, {
+        name: trimmedName,
         kind,
-        category: category ?? "",
+        category: cat,
         junk,
         calories,
         sodium,
-        amount: amount.trim() ? amount.trim() : null,
+        amount: trimmedAmount,
+      });
+      enrichFoodIfNeeded(user, {
+        id,
+        kind,
+        name: trimmedName,
+        category: cat,
+        amount: trimmedAmount,
+        calories,
+        sodium,
       });
       setName("");
       setJunk(false);

@@ -16,7 +16,6 @@ export async function POST(request: Request) {
     name?: unknown;
     category?: unknown;
     amount?: unknown;
-    note?: unknown;
     fields?: unknown;
     calories?: unknown;
     sodium?: unknown;
@@ -33,7 +32,6 @@ export async function POST(request: Request) {
   const name = typeof body.name === "string" ? body.name : "";
   const category = typeof body.category === "string" ? body.category : "";
   const amount = typeof body.amount === "string" ? body.amount : "";
-  const note = typeof body.note === "string" ? body.note : "";
   const knownCalories =
     typeof body.calories === "number" && Number.isFinite(body.calories)
       ? Math.round(body.calories)
@@ -58,8 +56,9 @@ export async function POST(request: Request) {
     return Response.json({ skipped: "no-access" });
   }
 
-  const ref = db.doc(`users/${uid}/intake/${id}`);
-  const current = (await ref.get()).data() ?? {};
+  const ref = db.doc(`foods/${id}`);
+  const current = (await ref.get()).data();
+  if (!current) return Response.json({ skipped: "not-found" });
   const fields = requested.filter(
     (field) => typeof current[field] !== "number",
   );
@@ -71,7 +70,6 @@ export async function POST(request: Request) {
     amount,
     kind,
     category,
-    note,
     knownCalories,
     knownSodium,
   });
