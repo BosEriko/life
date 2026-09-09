@@ -73,7 +73,6 @@ export function DatabasePanel() {
   const [calories, setCalories] = useState<number | null>(null);
   const [sodium, setSodium] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
-  const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [recalcId, setRecalcId] = useState<string | null>(null);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
@@ -106,49 +105,45 @@ export function DatabasePanel() {
     setCategory(undefined);
   }
 
-  async function handleAdd() {
+  function handleAdd() {
     if (!user || !canAdd) return;
-    setBusy(true);
-    try {
-      const trimmedName = name.trim();
-      const trimmedAmount = amount.trim() ? amount.trim() : null;
-      const cat = category ?? "";
-      const id = await addFood(user.uid, {
-        name: trimmedName,
+    const trimmedName = name.trim();
+    const trimmedAmount = amount.trim() ? amount.trim() : null;
+    const cat = category ?? "";
+    const { id, done } = addFood(user.uid, {
+      name: trimmedName,
+      kind,
+      category: cat,
+      junk,
+      calories,
+      sodium,
+      amount: trimmedAmount,
+    });
+    done.catch(() => message.error("Could not add item."));
+
+    if (isIntelligent) {
+      const pending = enrichFoodIfNeeded(user, {
+        id,
         kind,
+        name: trimmedName,
         category: cat,
-        junk,
+        amount: trimmedAmount,
         calories,
         sodium,
-        amount: trimmedAmount,
       });
-      if (isIntelligent) {
-        const pending = enrichFoodIfNeeded(user, {
-          id,
-          kind,
-          name: trimmedName,
-          category: cat,
-          amount: trimmedAmount,
-          calories,
-          sodium,
-        });
-        if (pending) {
-          setEnrichingId(id);
-          pending.finally(() =>
-            setEnrichingId((current) => (current === id ? null : current)),
-          );
-        }
+      if (pending) {
+        setEnrichingId(id);
+        pending.finally(() =>
+          setEnrichingId((current) => (current === id ? null : current)),
+        );
       }
-      setName("");
-      setJunk(false);
-      setCalories(null);
-      setSodium(null);
-      setAmount("");
-    } catch {
-      message.error("Could not add item.");
-    } finally {
-      setBusy(false);
     }
+
+    setName("");
+    setJunk(false);
+    setCalories(null);
+    setSodium(null);
+    setAmount("");
   }
 
   async function handleDelete(id: string) {
@@ -263,7 +258,6 @@ export function DatabasePanel() {
 
             <Button
               type="primary"
-              loading={busy}
               disabled={!canAdd}
               onClick={handleAdd}
               style={{ alignSelf: "flex-start" }}

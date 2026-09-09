@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -7,6 +6,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   type DocumentData,
   type QueryDocumentSnapshot,
@@ -89,10 +89,11 @@ export function watchFoods(
   );
 }
 
-export async function addFood(
+export function addFood(
   uid: string,
   input: FoodInput,
-): Promise<string> {
+): { id: string; done: Promise<void> } {
+  const ref = doc(foodsCollection());
   const payload: Record<string, unknown> = {
     name: input.name,
     kind: input.kind,
@@ -104,8 +105,7 @@ export async function addFood(
   if (input.calories != null) payload.calories = input.calories;
   if (input.sodium != null) payload.sodium = input.sodium;
   if (input.amount != null) payload.amount = input.amount;
-  const ref = await addDoc(foodsCollection(), payload);
-  return ref.id;
+  return { id: ref.id, done: setDoc(ref, payload) };
 }
 
 export async function updateFood(id: string, input: FoodInput) {
