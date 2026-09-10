@@ -16,7 +16,8 @@ import {
 import { dailyBpAverages } from "@/models/bp";
 import { dailyWaterTotals } from "@/models/water";
 import { useUnits } from "@/components/units-provider";
-import { fromKg, fromMl } from "@/lib/units";
+import { convertRange, fromKg, fromMl } from "@/lib/units";
+import type { IdealRange } from "@/models/ideals";
 
 type Metric = "weight" | "bp" | "water";
 
@@ -67,6 +68,7 @@ export function MetricsChart({
     dailies,
     bpReadings: bpWindow,
     waterLogs: waterWindow,
+    ideals,
     cutoff,
     ready,
   } = useHealthData();
@@ -143,6 +145,67 @@ export function MetricsChart({
     return points;
   }, [entries, bpReadings, waterLogs, metric, start, end, units]);
 
+  const idealLines = useMemo<{ value: number; label: string }[]>(() => {
+    const lines: { value: number; label: string }[] = [];
+    const add = (range: IdealRange, prefix: string) => {
+      if (range.min != null) {
+        lines.push({ value: range.min, label: `${prefix}min ${range.min}` });
+      }
+      if (range.max != null) {
+        lines.push({ value: range.max, label: `${prefix}max ${range.max}` });
+      }
+    };
+    if (metric === "weight") {
+      add(convertRange(ideals.weight, (v) => fromKg(v, units.weight)), "");
+    } else if (metric === "water") {
+      add(convertRange(ideals.water, (v) => fromMl(v, units.volume)), "");
+    } else {
+      add(ideals.systolic, "sys ");
+      add(ideals.diastolic, "dia ");
+    }
+    return lines;
+  }, [metric, ideals, units]);
+
+  const yDomain = useMemo(() => {
+    if (data.length === 0) return undefined;
+    const values = [
+      ...data.map((point) => point.value),
+      ...idealLines.map((line) => line.value),
+    ];
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+    const pad = (hi - lo) * 0.08 || 1;
+    return { domainMin: lo - pad, domainMax: hi + pad };
+  }, [data, idealLines]);
+
+  const annotations = useMemo(
+    () =>
+      idealLines.map((line) => ({
+        type: "lineY" as const,
+        data: [line.value],
+        style: {
+          stroke: token.colorTextSecondary,
+          strokeOpacity: 0.4,
+          lineWidth: 1,
+          lineDash: [4, 4] as [number, number],
+        },
+        labels: [
+          {
+            text: line.label,
+            position: "right" as const,
+            textAlign: "end" as const,
+            dx: -4,
+            dy: -4,
+            fill: token.colorTextSecondary,
+            fillOpacity: 0.65,
+            fontSize: 10,
+          },
+        ],
+        tooltip: false,
+      })),
+    [idealLines, token],
+  );
+
   const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const colorRange =
     metric === "weight"
@@ -198,7 +261,8 @@ export function MetricsChart({
           height={280}
           theme={isDark ? "classicDark" : "classic"}
           legend={metric === "bp" ? { color: { position: "top" } } : false}
-          scale={{ color: { range: colorRange } }}
+          scale={{ color: { range: colorRange }, y: yDomain }}
+          annotations={annotations.length > 0 ? annotations : undefined}
           axis={{
             x: {
               tickCount: 6,
