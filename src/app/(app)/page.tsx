@@ -119,17 +119,7 @@ function HealthDashboard() {
         />
       </Flex>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
-          gap: 24,
-          alignItems: "start",
-          paddingBottom: 32,
-        }}
-      >
-        <HabitCalendar throughDate={end} />
+      <div className="home-grid">
         <Flex vertical gap={24} style={{ minWidth: 0 }}>
           <Card
             styles={{ body: { padding: 28 } }}
@@ -152,6 +142,7 @@ function HealthDashboard() {
             <RecentEntries />
           </Card>
         </Flex>
+        <HabitCalendar throughDate={end} />
       </div>
     </>
   );

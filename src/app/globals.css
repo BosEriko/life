@@ -269,3 +269,18 @@ body {
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* homepage: charts 60 / habits 40 on wide screens, single column below */
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 32px;
+}
+
+@media (min-width: 992px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
