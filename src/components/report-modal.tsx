@@ -43,12 +43,14 @@ const FIELDS = [
   { key: "junkDrink", label: "Junk drink" },
   { key: "bath", label: "Bath" },
   { key: "brush", label: "Brush" },
+  { key: "steps", label: "10k steps" },
 ] as const;
 
 type FieldKey = (typeof FIELDS)[number]["key"];
 
 const DEFAULT_FIELDS = FIELDS.map((field) => field.key).filter(
-  (key): key is FieldKey => key !== "bath" && key !== "brush",
+  (key): key is FieldKey =>
+    key !== "bath" && key !== "brush" && key !== "steps",
 );
 
 function mean(values: number[]): number | null {
@@ -275,6 +277,13 @@ export function ReportModal({
               .length,
           ),
         ]);
+      if (has("steps"))
+        summaryBody.push([
+          "10k step days",
+          String(
+            rows.filter((entry) => habitByDate.get(entry.date)?.steps).length,
+          ),
+        ]);
 
       autoTable(doc, {
         startY: 42,
@@ -354,6 +363,12 @@ export function ReportModal({
           header: "Brush",
           cell: (_entry, _bp, _water, _intake, habit) =>
             habit?.brushTeeth ? "Y" : "",
+        });
+      if (has("steps"))
+        columns.push({
+          header: "Steps",
+          cell: (_entry, _bp, _water, _intake, habit) =>
+            habit?.steps ? "Y" : "",
         });
 
       autoTable(doc, {

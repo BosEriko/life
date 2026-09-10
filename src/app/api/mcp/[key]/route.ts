@@ -44,7 +44,7 @@ const TOOLS = [
   {
     name: "get_entries",
     description:
-      "Daily health entries: weight (kg) and the boolean hygiene habits bath/brushTeeth. Each day also carries that day's mean blood pressure (systolic/diastolic mmHg, bpTime, bpReadingCount), total water (ml, waterLogCount), and food/drink summary — junkFood/junkDrink booleans, total calories (kcal), total sodium (mg), intakeCount — all computed from the individual readings/logs. The response also includes bpReadings, waterLogs, and intake — every individual entry in range. Any field may be null.",
+      "Daily health entries: weight (kg) and the boolean habits bath/brushTeeth/steps (steps = hit the 10,000-step goal). Each day also carries that day's mean blood pressure (systolic/diastolic mmHg, bpTime, bpReadingCount), total water (ml, waterLogCount), and food/drink summary — junkFood/junkDrink booleans, total calories (kcal), total sodium (mg), intakeCount — all computed from the individual readings/logs. The response also includes bpReadings, waterLogs, and intake — every individual entry in range. Any field may be null.",
     inputSchema: {
       type: "object",
       properties: {

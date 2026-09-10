@@ -98,6 +98,12 @@ export default function SummaryPage() {
       render: doneLabel,
       width: 150,
     },
+    {
+      title: "10,000 steps",
+      dataIndex: "steps",
+      render: doneLabel,
+      width: 130,
+    },
   ];
 
   const waterColumns: TableProps<WaterLog>["columns"] = [

@@ -22,11 +22,11 @@ const WEEKS_SM = 13;
 const CELL = 11;
 const GAP = 3;
 
-type HygieneHabit = "bath" | "brushTeeth";
+type GoodHabit = "bath" | "brushTeeth" | "steps";
 type IntakeHabit = "junkFood" | "junkDrink";
 
 type Habit =
-  | { key: HygieneHabit; label: ReactNode; tone: "good"; source: "habit" }
+  | { key: GoodHabit; label: ReactNode; tone: "good"; source: "habit" }
   | { key: IntakeHabit; label: ReactNode; tone: "bad"; source: "intake" }
   | {
       key: "ateOutsideWindow";
@@ -56,6 +56,17 @@ const HABIT_GROUPS: { title: string; habits: Habit[] }[] = [
           <>
             <Icon name="brush" />
             Brush
+          </>
+        ),
+        tone: "good",
+        source: "habit",
+      },
+      {
+        key: "steps",
+        label: (
+          <>
+            <Icon name="steps" />
+            10k steps
           </>
         ),
         tone: "good",

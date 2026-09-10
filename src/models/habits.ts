@@ -19,12 +19,14 @@ export type HabitEntry = {
   date: string;
   bath: boolean | null;
   brushTeeth: boolean | null;
+  steps: boolean | null;
   updatedAt: Timestamp | null;
 };
 
 export type HabitInput = {
   bath?: boolean;
   brushTeeth?: boolean;
+  steps?: boolean;
 };
 
 function habitsCollection(uid: string) {
@@ -42,6 +44,7 @@ export async function saveHabits(uid: string, date: string, input: HabitInput) {
   };
   if (input.bath !== undefined) payload.bath = input.bath;
   if (input.brushTeeth !== undefined) payload.brushTeeth = input.brushTeeth;
+  if (input.steps !== undefined) payload.steps = input.steps;
 
   await setDoc(habitDocRef(uid, date), payload, { merge: true });
 }
@@ -54,6 +57,7 @@ export function mapHabitDoc(
     date: data.date as string,
     bath: (data.bath as boolean | undefined) ?? null,
     brushTeeth: (data.brushTeeth as boolean | undefined) ?? null,
+    steps: (data.steps as boolean | undefined) ?? null,
     updatedAt: (data.updatedAt as Timestamp | undefined) ?? null,
   };
 }

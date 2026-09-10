@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useHabitDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { relativeDate, todayKey } from "@/models/dailies";
-import { saveHabits } from "@/models/habits";
+import { saveHabits, type HabitInput } from "@/models/habits";
 
 export function HabitModal({
   open,
@@ -27,6 +27,7 @@ export function HabitModal({
 
   const bath = override.bath ?? entry?.bath ?? false;
   const brushTeeth = override.brushTeeth ?? entry?.brushTeeth ?? false;
+  const steps = override.steps ?? entry?.steps ?? false;
 
   function changeDate(next: Dayjs) {
     setDate(next);
@@ -39,10 +40,10 @@ export function HabitModal({
     onClose();
   }
 
-  function toggle(field: "bath" | "brushTeeth", value: boolean) {
+  function toggle(field: "bath" | "brushTeeth" | "steps", value: boolean) {
     if (!user) return;
     setOverride((prev) => ({ ...prev, [field]: value }));
-    const patch = field === "bath" ? { bath: value } : { brushTeeth: value };
+    const patch: HabitInput = { [field]: value };
     saveHabits(user.uid, dateKey, patch).catch(() =>
       message.error("Could not save."),
     );
@@ -63,7 +64,7 @@ export function HabitModal({
       onCancel={handleClose}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Your daily hygiene. Changes save automatically.
+        Your daily habits. Changes save automatically.
       </Typography.Paragraph>
 
       <Flex vertical gap={14} style={{ marginBottom: 8 }}>
@@ -79,8 +80,8 @@ export function HabitModal({
 
         <Flex vertical gap={6}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            <Icon name="hygiene" />
-            Hygiene · {relativeDate(dateKey)}
+            <Icon name="habits" />
+            {relativeDate(dateKey)}
           </Typography.Text>
           <Flex gap={20} wrap align="center">
             <Checkbox
@@ -94,6 +95,12 @@ export function HabitModal({
               onChange={(event) => toggle("brushTeeth", event.target.checked)}
             >
               Brush
+            </Checkbox>
+            <Checkbox
+              checked={steps}
+              onChange={(event) => toggle("steps", event.target.checked)}
+            >
+              10,000 steps
             </Checkbox>
           </Flex>
         </Flex>

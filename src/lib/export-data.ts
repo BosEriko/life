@@ -267,6 +267,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
         intakeCount: meals ? meals.count : 0,
         bath: h ? clean(h.bath) : null,
         brushTeeth: h ? clean(h.brushTeeth) : null,
+        steps: h ? clean(h.steps) : null,
         updatedAt: toIso(d.updatedAt),
       };
     })
