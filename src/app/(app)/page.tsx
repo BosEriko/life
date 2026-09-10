@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Button, Card, DatePicker, Flex, Segmented, Spin, theme } from "antd";
-import { LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { Card, DatePicker, Flex, Segmented, Spin, theme } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { AverageStats } from "@/components/average-stats";
 import { useAuth } from "@/components/auth-provider";
 import { CreditAlert } from "@/components/credit-alert";
 import { HabitCalendar } from "@/components/habit-calendar";
-import { Icon } from "@/components/icon";
 import { LandingPage } from "@/components/landing-page";
 import { RecentEntries } from "@/components/recent-entries";
 import { todayKey } from "@/models/dailies";
@@ -54,13 +52,6 @@ function HealthDashboard() {
       : PRESET_DAYS.find((n) => today.diff(start, "day") + 1 === Number(n))
     : undefined;
 
-  function nudgeStart(delta: number) {
-    setRange(([current, currentEnd]) => {
-      const next = (current ?? currentEnd).add(delta, "day");
-      return [next.isAfter(currentEnd, "day") ? currentEnd : next, currentEnd];
-    });
-  }
-
   function applyPreset(value: string) {
     if (value === "all") setRange([null, today]);
     else setRange([today.subtract(Number(value) - 1, "day"), today]);
@@ -79,13 +70,8 @@ function HealthDashboard() {
         justify="center"
         gap={8}
         wrap
-        style={{ marginBottom: 48 }}
+        style={{ marginBottom: 24 }}
       >
-        <Button
-          aria-label="Move start date earlier"
-          icon={<LeftOutlined />}
-          onClick={() => nudgeStart(-1)}
-        />
         <DatePicker.RangePicker
           value={[start, end]}
           onChange={(values) => {
@@ -99,19 +85,6 @@ function HealthDashboard() {
           maxDate={today}
           style={{ minWidth: 260 }}
         />
-        <Button
-          aria-label="Move start date later"
-          icon={<RightOutlined />}
-          disabled={start != null && !start.isBefore(end, "day")}
-          onClick={() => nudgeStart(1)}
-        />
-        <Button
-          icon={<Icon name="date" style={{ marginRight: 0, opacity: 1 }} />}
-          disabled={start != null && start.isSame(today, "day") && endIsToday}
-          onClick={() => setRange([today, today])}
-        >
-          Today
-        </Button>
         <Segmented
           options={TREND_RANGE_OPTIONS}
           value={presetValue}
