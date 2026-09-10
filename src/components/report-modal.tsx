@@ -13,7 +13,14 @@ import { type HabitEntry } from "@/models/habits";
 import { dailyBpAverages } from "@/models/bp";
 import { dailyWaterTotals } from "@/models/water";
 import { dailyIntake } from "@/models/intake";
-import { fromKg, volumeSuffix, volumeValue, weightSuffix } from "@/lib/units";
+import {
+  convertRange,
+  fromKg,
+  fromMl,
+  volumeSuffix,
+  volumeValue,
+  weightSuffix,
+} from "@/lib/units";
 
 type Range = "7" | "30" | "90" | "365" | "all";
 
@@ -58,6 +65,20 @@ function mean(values: number[]): number | null {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function idealGuides(
+  range: { min: number | null; max: number | null },
+  prefix: string,
+): { value: number; label: string }[] {
+  const out: { value: number; label: string }[] = [];
+  if (range.min != null) {
+    out.push({ value: range.min, label: `${prefix}min ${range.min}` });
+  }
+  if (range.max != null) {
+    out.push({ value: range.max, label: `${prefix}max ${range.max}` });
+  }
+  return out;
+}
+
 function withinRange<T extends { date: string }>(
   items: T[],
   range: Range,
@@ -90,6 +111,7 @@ export function ReportModal({
     bpReadings: bpWindow,
     waterLogs: waterWindow,
     intake: intakeWindow,
+    ideals,
     cutoff,
   } = useHealthData();
   const needHistory = open && (range === "all" || range === "365");
@@ -400,7 +422,11 @@ export function ReportModal({
 
       let chartsEnd = 20;
 
-      const drawChart = (title: string, rawSeries: ChartSeries[]) => {
+      const drawChart = (
+        title: string,
+        rawSeries: ChartSeries[],
+        guides: { value: number; label: string }[] = [],
+      ) => {
         // oldest date on the left, newest on the right
         const seriesList = rawSeries.map((s) => ({
           ...s,
@@ -424,7 +450,9 @@ export function ReportModal({
         doc.setTextColor(60);
         doc.text(title, left, chartsEnd);
 
-        const values = seriesList.flatMap((s) => s.points.map((p) => p.value));
+        const values = seriesList
+          .flatMap((s) => s.points.map((p) => p.value))
+          .concat(guides.map((g) => g.value));
         let min = values.reduce((m, v) => Math.min(m, v), Infinity);
         let max = values.reduce((m, v) => Math.max(m, v), -Infinity);
         if (min === max) {
@@ -446,6 +474,22 @@ export function ReportModal({
           doc.line(plotLeft, y, plotRight, y);
           doc.setTextColor(150);
           doc.text(value.toFixed(decimals), left, y + 1);
+        }
+
+        // ideal boundary guides
+        if (guides.length) {
+          doc.setDrawColor(140);
+          doc.setLineWidth(0.2);
+          doc.setLineDashPattern([0.8, 0.8], 0);
+          doc.setFontSize(6);
+          doc.setTextColor(140);
+          for (const guide of guides) {
+            const y = toY(guide.value);
+            doc.line(plotLeft, y, plotRight, y);
+            const w = doc.getTextWidth(guide.label);
+            doc.text(guide.label, plotRight - w, y - 0.8);
+          }
+          doc.setLineDashPattern([], 0);
         }
 
         // x axis: up to 7 date ticks
@@ -517,18 +561,35 @@ export function ReportModal({
         doc.text("Trends", 14, chartsEnd);
         chartsEnd += 10;
         if (wantWeightChart)
-          drawChart(`Weight (${weightUnit})`, [
-            { points: weightPoints, color: GREEN },
-          ]);
+          drawChart(
+            `Weight (${weightUnit})`,
+            [{ points: weightPoints, color: GREEN }],
+            idealGuides(
+              convertRange(ideals.weight, (v) => fromKg(v, units.weight)),
+              "",
+            ),
+          );
         if (wantWaterChart)
-          drawChart(`Water (${volumeUnit})`, [
-            { points: waterPoints, color: GREEN },
-          ]);
+          drawChart(
+            `Water (${volumeUnit})`,
+            [{ points: waterPoints, color: GREEN }],
+            idealGuides(
+              convertRange(ideals.water, (v) => fromMl(v, units.volume)),
+              "",
+            ),
+          );
         if (wantBpChart)
-          drawChart("Blood pressure — systolic / diastolic (mmHg)", [
-            { points: sysPoints, color: TERRA },
-            { points: diaPoints, color: GREEN },
-          ]);
+          drawChart(
+            "Blood pressure — systolic / diastolic (mmHg)",
+            [
+              { points: sysPoints, color: TERRA },
+              { points: diaPoints, color: GREEN },
+            ],
+            [
+              ...idealGuides(ideals.systolic, "sys "),
+              ...idealGuides(ideals.diastolic, "dia "),
+            ],
+          );
       }
 
       const pageHeight = doc.internal.pageSize.getHeight();
