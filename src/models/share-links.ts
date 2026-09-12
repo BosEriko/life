@@ -60,8 +60,8 @@ export async function deleteShareLink(
 }
 
 export function inviteUrl(code: string): string {
-  if (typeof window === "undefined") return `/invite/${code}`;
-  return `${window.location.origin}/invite/${code}`;
+  if (typeof window === "undefined") return `/s/${code}`;
+  return `${window.location.origin}/s/${code}`;
 }
 
 export function shareLinkStatus(

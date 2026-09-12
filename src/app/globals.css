@@ -284,3 +284,8 @@ body {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
 }
+
+/* drop the last row's bottom border on a table with no border below it */
+.no-last-row-border .ant-table-tbody > tr:last-child > td {
+  border-bottom: none !important;
+}

@@ -3,11 +3,22 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Card, Flex, Result, Spin, Table, Typography, theme } from "antd";
 import type { TableProps } from "antd";
+import { Line } from "@ant-design/charts";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { Icon } from "@/components/icon";
 import { IdealTip, idealTipProps } from "@/components/ideal-tip";
-import { EMPTY_IDEALS, evaluateIdeal, type Ideals } from "@/models/ideals";
+import {
+  TERRACOTTA,
+  TERRACOTTA_DARK,
+  useIsDark,
+} from "@/components/theme-provider";
+import {
+  EMPTY_IDEALS,
+  evaluateIdeal,
+  type Ideals,
+  type IdealRange,
+} from "@/models/ideals";
 import {
   convertRange,
   DEFAULT_UNITS,
@@ -32,9 +43,6 @@ type DailyRow = {
   calories: number;
   sodium: number;
   intakeCount: number;
-  bath: boolean | null;
-  brushTeeth: boolean | null;
-  steps: boolean | null;
 };
 
 type InvitePayload = {
@@ -88,6 +96,119 @@ function TipValue({
   );
 }
 
+type ChartPoint = { date: string; value: number; series: string };
+type Guide = { value: number; label: string };
+
+function buildGuides(range: IdealRange, prefix: string): Guide[] {
+  const out: Guide[] = [];
+  if (range.min != null) {
+    out.push({ value: range.min, label: `${prefix}min ${range.min}` });
+  }
+  if (range.max != null) {
+    out.push({ value: range.max, label: `${prefix}max ${range.max}` });
+  }
+  return out;
+}
+
+function computeYDomain(
+  points: ChartPoint[],
+  guides: Guide[],
+): { domainMin: number; domainMax: number } | undefined {
+  const values = [
+    ...points.map((point) => point.value),
+    ...guides.map((guide) => guide.value),
+  ];
+  if (values.length === 0) return undefined;
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const pad = (hi - lo) * 0.08 || 1;
+  return { domainMin: lo - pad, domainMax: hi + pad };
+}
+
+function ChartCard({
+  title,
+  points,
+  guides,
+  colorRange,
+  legend,
+  isDark,
+}: {
+  title: string;
+  points: ChartPoint[];
+  guides: Guide[];
+  colorRange: string[];
+  legend: boolean;
+  isDark: boolean;
+}) {
+  const { token } = theme.useToken();
+
+  const annotations = guides.map((line) => ({
+    type: "lineY" as const,
+    data: [line.value],
+    style: {
+      stroke: token.colorTextSecondary,
+      strokeOpacity: 0.4,
+      lineWidth: 1,
+      lineDash: [4, 4] as [number, number],
+    },
+    labels: [
+      {
+        text: line.label,
+        position: "right" as const,
+        textAlign: "end" as const,
+        dx: -4,
+        dy: -4,
+        fill: token.colorTextSecondary,
+        fillOpacity: 0.65,
+        fontSize: 10,
+      },
+    ],
+    tooltip: false,
+  }));
+
+  return (
+    <Card
+      size="small"
+      style={{
+        borderColor: token.colorBorderSecondary,
+        borderRadius: token.borderRadiusLG,
+      }}
+    >
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        {title}
+      </Typography.Text>
+      {points.length < 2 ? (
+        <Flex align="center" justify="center" style={{ height: 180 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Not enough data.
+          </Typography.Text>
+        </Flex>
+      ) : (
+        <Line
+          data={points}
+          xField="date"
+          yField="value"
+          colorField="series"
+          autoFit
+          height={180}
+          theme={isDark ? "classicDark" : "classic"}
+          legend={legend ? { color: { position: "top" } } : false}
+          scale={{ color: { range: colorRange }, y: computeYDomain(points, guides) }}
+          annotations={annotations.length > 0 ? annotations : undefined}
+          axis={{
+            x: {
+              tickCount: 4,
+              labelFormatter: (value: string) => dayjs(value).format("M/D"),
+            },
+            y: { title: null },
+          }}
+          style={{ lineWidth: 2 }}
+        />
+      )}
+    </Card>
+  );
+}
+
 function StatCard({ label, value }: { label: string; value: ReactNode }) {
   const { token } = theme.useToken();
   return (
@@ -118,11 +239,12 @@ function StatCard({ label, value }: { label: string; value: ReactNode }) {
 
 export function InviteViewer({ code }: { code: string }) {
   const { token } = theme.useToken();
+  const isDark = useIsDark();
   const [state, setState] = useState<ViewState>({ status: "loading" });
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/invite/${code}`)
+    fetch(`/api/s/${code}`)
       .then(async (res) => {
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
@@ -244,6 +366,52 @@ export function InviteViewer({ code }: { code: string }) {
     "mg",
   );
 
+  const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
+  const ascending = [...rows].reverse();
+
+  const weightPoints: ChartPoint[] = ascending
+    .filter((row) => row.weight != null)
+    .map((row) => ({
+      date: row.date,
+      value: fromKg(row.weight as number, weightUnit),
+      series: "Weight",
+    }));
+  const waterPoints: ChartPoint[] = ascending
+    .filter((row) => row.water != null)
+    .map((row) => ({
+      date: row.date,
+      value: fromMl(row.water as number, volumeUnit),
+      series: "Water",
+    }));
+  const bpRows = ascending.filter(
+    (row) => row.systolic != null && row.diastolic != null,
+  );
+  const bpPoints: ChartPoint[] = [
+    ...bpRows.map((row) => ({
+      date: row.date,
+      value: row.systolic as number,
+      series: "Systolic",
+    })),
+    ...bpRows.map((row) => ({
+      date: row.date,
+      value: row.diastolic as number,
+      series: "Diastolic",
+    })),
+  ];
+
+  const weightGuides = buildGuides(
+    convertRange(ideals.weight, (v) => fromKg(v, weightUnit)),
+    "",
+  );
+  const waterGuides = buildGuides(
+    convertRange(ideals.water, (v) => fromMl(v, volumeUnit)),
+    "",
+  );
+  const bpGuides = [
+    ...buildGuides(ideals.systolic, "sys "),
+    ...buildGuides(ideals.diastolic, "dia "),
+  ];
+
   const columns: TableProps<DailyRow>["columns"] = [
     {
       title: "Date",
@@ -255,49 +423,129 @@ export function InviteViewer({ code }: { code: string }) {
     {
       title: "Weight",
       dataIndex: "weight",
-      render: (value: number | null) =>
-        value != null ? formatWeight(value, weightUnit) : "—",
+      render: (value: number | null) => {
+        if (value == null) return "—";
+        const tip = idealTipProps(
+          "Weight",
+          evaluateIdeal(value, ideals.weight),
+          convertRange(ideals.weight, (v) => fromKg(v, weightUnit)),
+          weightSuffix(weightUnit),
+        );
+        return (
+          <TipValue
+            text={formatWeight(value, weightUnit)}
+            isAbove={tip.isAbove}
+            isBelow={tip.isBelow}
+            message={tip.message}
+          />
+        );
+      },
     },
     {
       title: "Blood pressure",
       key: "bp",
-      render: (_value, row) =>
-        row.systolic != null && row.diastolic != null
-          ? `${row.systolic}/${row.diastolic} mmHg`
-          : "—",
+      render: (_value, row) => {
+        if (row.systolic == null || row.diastolic == null) return "—";
+        const sysTip = idealTipProps(
+          "Systolic",
+          evaluateIdeal(row.systolic, ideals.systolic),
+          ideals.systolic,
+          "mmHg",
+        );
+        const diaTip = idealTipProps(
+          "Diastolic",
+          evaluateIdeal(row.diastolic, ideals.diastolic),
+          ideals.diastolic,
+          "mmHg",
+        );
+        return (
+          <>
+            <TipValue
+              text={`${row.systolic}`}
+              isAbove={sysTip.isAbove}
+              isBelow={sysTip.isBelow}
+              message={sysTip.message}
+            />
+            /
+            <TipValue
+              text={`${row.diastolic}`}
+              isAbove={diaTip.isAbove}
+              isBelow={diaTip.isBelow}
+              message={diaTip.message}
+            />{" "}
+            mmHg
+          </>
+        );
+      },
     },
     {
       title: "Water",
       dataIndex: "water",
-      render: (value: number | null) =>
-        value != null ? formatVolume(value, volumeUnit) : "—",
+      render: (value: number | null) => {
+        if (value == null) return "—";
+        const tip = idealTipProps(
+          "Water",
+          evaluateIdeal(value, ideals.water),
+          convertRange(ideals.water, (v) => fromMl(v, volumeUnit)),
+          volumeSuffix(volumeUnit),
+        );
+        return (
+          <TipValue
+            text={formatVolume(value, volumeUnit)}
+            isAbove={tip.isAbove}
+            isBelow={tip.isBelow}
+            message={tip.message}
+          />
+        );
+      },
     },
     {
       title: "Calories",
       key: "calories",
-      render: (_value, row) =>
-        row.intakeCount > 0 ? `${row.calories} kcal` : "—",
+      render: (_value, row) => {
+        if (row.intakeCount === 0) return "—";
+        const tip = idealTipProps(
+          "Calories",
+          evaluateIdeal(row.calories, ideals.calories),
+          ideals.calories,
+          "kcal",
+        );
+        return (
+          <>
+            <TipValue
+              text={`${row.calories}`}
+              isAbove={tip.isAbove}
+              isBelow={tip.isBelow}
+              message={tip.message}
+            />{" "}
+            kcal
+          </>
+        );
+      },
     },
     {
       title: "Sodium",
       key: "sodium",
-      render: (_value, row) =>
-        row.intakeCount > 0 ? `${row.sodium} mg` : "—",
-    },
-    {
-      title: "Bath",
-      dataIndex: "bath",
-      render: (value: boolean | null) => (value ? "✓" : ""),
-    },
-    {
-      title: "Brush",
-      dataIndex: "brushTeeth",
-      render: (value: boolean | null) => (value ? "✓" : ""),
-    },
-    {
-      title: "10k steps",
-      dataIndex: "steps",
-      render: (value: boolean | null) => (value ? "✓" : ""),
+      render: (_value, row) => {
+        if (row.intakeCount === 0) return "—";
+        const tip = idealTipProps(
+          "Sodium",
+          evaluateIdeal(row.sodium, ideals.sodium),
+          ideals.sodium,
+          "mg",
+        );
+        return (
+          <>
+            <TipValue
+              text={`${row.sodium}`}
+              isAbove={tip.isAbove}
+              isBelow={tip.isBelow}
+              message={tip.message}
+            />{" "}
+            mg
+          </>
+        );
+      },
     },
   ];
 
@@ -450,6 +698,40 @@ export function InviteViewer({ code }: { code: string }) {
         />
       </div>
 
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
+        <ChartCard
+          title="Weight"
+          points={weightPoints}
+          guides={weightGuides}
+          colorRange={[token.colorPrimary]}
+          legend={false}
+          isDark={isDark}
+        />
+        <ChartCard
+          title="Water"
+          points={waterPoints}
+          guides={waterGuides}
+          colorRange={[token.colorPrimary]}
+          legend={false}
+          isDark={isDark}
+        />
+        <ChartCard
+          title="Blood pressure"
+          points={bpPoints}
+          guides={bpGuides}
+          colorRange={[terracotta, token.colorPrimary]}
+          legend={bpPoints.length > 0}
+          isDark={isDark}
+        />
+      </div>
+
       <Card
         size="small"
         styles={{ body: { padding: 0 } }}
@@ -457,7 +739,7 @@ export function InviteViewer({ code }: { code: string }) {
       >
         <div style={{ overflowX: "auto" }}>
           <Table<DailyRow>
-            className="flush-table"
+            className="flush-table no-last-row-border"
             rowKey="date"
             size="small"
             dataSource={rows}

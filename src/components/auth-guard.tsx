@@ -15,7 +15,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
   const isAuthRoute = AUTH_ROUTES.includes(pathname);
   const isPublicRoute =
-    pathname === "/" || isAuthRoute || pathname.startsWith("/invite/");
+    pathname === "/" || isAuthRoute || pathname.startsWith("/s/");
 
   useEffect(() => {
     if (loading) return;
