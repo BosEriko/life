@@ -23,6 +23,7 @@ export function AppFooter() {
   const links = user
     ? [
         { key: "/mcp", label: "MCP" },
+        { key: "/share", label: "Share" },
         ...(admin ? [{ key: "/admin", label: "Admin" }] : []),
       ]
     : [
