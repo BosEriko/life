@@ -735,18 +735,16 @@ export function InviteViewer({ code }: { code: string }) {
         styles={{ body: { padding: 0 } }}
         style={{ overflow: "hidden" }}
       >
-        <div style={{ overflowX: "auto" }}>
-          <Table<DailyRow>
-            className="flush-table no-last-row-border"
-            rowKey="date"
-            size="small"
-            dataSource={rows}
-            columns={columns}
-            pagination={false}
-            scroll={{ x: 760 }}
-            locale={{ emptyText: "No data in this link yet." }}
-          />
-        </div>
+        <Table<DailyRow>
+          className="flush-table no-last-row-border"
+          rowKey="date"
+          size="small"
+          dataSource={rows}
+          columns={columns}
+          pagination={false}
+          scroll={{ x: 760 }}
+          locale={{ emptyText: "No data in this link yet." }}
+        />
       </Card>
 
       <Typography.Paragraph
