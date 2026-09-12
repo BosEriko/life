@@ -1,17 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Card, Flex, Result, Spin, Table, Typography, theme } from "antd";
 import type { TableProps } from "antd";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { Icon } from "@/components/icon";
+import { IdealTip, idealTipProps } from "@/components/ideal-tip";
+import { EMPTY_IDEALS, evaluateIdeal, type Ideals } from "@/models/ideals";
 import {
+  convertRange,
   DEFAULT_UNITS,
   formatVolume,
   formatWeight,
+  fromKg,
+  fromMl,
   isVolumeUnit,
   isWeightUnit,
+  volumeSuffix,
+  weightSuffix,
   type VolumeUnit,
   type WeightUnit,
 } from "@/lib/units";
@@ -36,6 +43,7 @@ type InvitePayload = {
   volumeUnit: string | null;
   count: number;
   dailies: DailyRow[];
+  ideals: Ideals;
   link: {
     label: string | null;
     expiresAt: number | null;
@@ -53,7 +61,34 @@ function average(values: number[]): number | null {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function TipValue({
+  text,
+  isAbove,
+  isBelow,
+  message,
+}: {
+  text: string;
+  isAbove: boolean;
+  isBelow: boolean;
+  message?: string;
+}) {
+  const { token } = theme.useToken();
+  const off = isAbove || isBelow;
+  return (
+    <IdealTip isAbove={isAbove} isBelow={isBelow} message={message}>
+      <span
+        style={{
+          color: off ? token.colorError : undefined,
+          cursor: off ? "help" : undefined,
+        }}
+      >
+        {text}
+      </span>
+    </IdealTip>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: ReactNode }) {
   const { token } = theme.useToken();
   return (
     <Card
@@ -66,9 +101,17 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
         {label}
       </Typography.Text>
-      <Typography.Title level={4} style={{ margin: "4px 0 0" }}>
+      <div
+        style={{
+          fontSize: 20,
+          fontWeight: 600,
+          lineHeight: 1.3,
+          marginTop: 4,
+          color: token.colorText,
+        }}
+      >
         {value}
-      </Typography.Title>
+      </div>
     </Card>
   );
 }
@@ -113,6 +156,7 @@ export function InviteViewer({ code }: { code: string }) {
     data && isWeightUnit(data.weightUnit) ? data.weightUnit : DEFAULT_UNITS.weight;
   const volumeUnit: VolumeUnit =
     data && isVolumeUnit(data.volumeUnit) ? data.volumeUnit : DEFAULT_UNITS.volume;
+  const ideals: Ideals = data?.ideals ?? EMPTY_IDEALS;
 
   const rows = useMemo(() => {
     if (!data) return [];
@@ -162,6 +206,43 @@ export function InviteViewer({ code }: { code: string }) {
       </Flex>
     );
   }
+
+  const weightTip = idealTipProps(
+    "Weight",
+    evaluateIdeal(stats?.latestWeight ?? null, ideals.weight),
+    convertRange(ideals.weight, (v) => fromKg(v, weightUnit)),
+    weightSuffix(weightUnit),
+  );
+  const sysTip = idealTipProps(
+    "Systolic",
+    evaluateIdeal(stats?.avgSystolic ?? null, ideals.systolic),
+    ideals.systolic,
+    "mmHg",
+  );
+  const diaTip = idealTipProps(
+    "Diastolic",
+    evaluateIdeal(stats?.avgDiastolic ?? null, ideals.diastolic),
+    ideals.diastolic,
+    "mmHg",
+  );
+  const waterTip = idealTipProps(
+    "Water",
+    evaluateIdeal(stats?.avgWater ?? null, ideals.water),
+    convertRange(ideals.water, (v) => fromMl(v, volumeUnit)),
+    volumeSuffix(volumeUnit),
+  );
+  const caloriesTip = idealTipProps(
+    "Calories",
+    evaluateIdeal(stats?.avgCalories ?? null, ideals.calories),
+    ideals.calories,
+    "kcal",
+  );
+  const sodiumTip = idealTipProps(
+    "Sodium",
+    evaluateIdeal(stats?.avgSodium ?? null, ideals.sodium),
+    ideals.sodium,
+    "mg",
+  );
 
   const columns: TableProps<DailyRow>["columns"] = [
     {
@@ -251,11 +332,11 @@ export function InviteViewer({ code }: { code: string }) {
       </Flex>
 
       <Typography.Title level={3} style={{ marginTop: 4, marginBottom: 4 }}>
-        {state.data.ownerName}&apos;s health data
+        {state.data.ownerName}&apos;s last 7 days
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
         {state.data.link.label ? `“${state.data.link.label}” · ` : ""}
-        {state.data.count} day{state.data.count === 1 ? "" : "s"} of data
+        {state.data.count} day{state.data.count === 1 ? "" : "s"} with data
         {state.data.link.remainingUses != null
           ? ` · ${state.data.link.remainingUses} view${
               state.data.link.remainingUses === 1 ? "" : "s"
@@ -279,41 +360,92 @@ export function InviteViewer({ code }: { code: string }) {
         <StatCard
           label="Latest weight"
           value={
-            stats?.latestWeight != null
-              ? formatWeight(stats.latestWeight, weightUnit)
-              : "—"
+            stats?.latestWeight != null ? (
+              <TipValue
+                text={formatWeight(stats.latestWeight, weightUnit)}
+                isAbove={weightTip.isAbove}
+                isBelow={weightTip.isBelow}
+                message={weightTip.message}
+              />
+            ) : (
+              "—"
+            )
           }
         />
         <StatCard
           label="Avg blood pressure"
           value={
-            stats?.avgSystolic != null && stats?.avgDiastolic != null
-              ? `${Math.round(stats.avgSystolic)}/${Math.round(
-                  stats.avgDiastolic,
-                )} mmHg`
-              : "—"
+            stats?.avgSystolic != null && stats?.avgDiastolic != null ? (
+              <>
+                <TipValue
+                  text={`${Math.round(stats.avgSystolic)}`}
+                  isAbove={sysTip.isAbove}
+                  isBelow={sysTip.isBelow}
+                  message={sysTip.message}
+                />
+                /
+                <TipValue
+                  text={`${Math.round(stats.avgDiastolic)}`}
+                  isAbove={diaTip.isAbove}
+                  isBelow={diaTip.isBelow}
+                  message={diaTip.message}
+                />{" "}
+                mmHg
+              </>
+            ) : (
+              "—"
+            )
           }
         />
         <StatCard
           label="Avg water"
           value={
-            stats?.avgWater != null
-              ? formatVolume(stats.avgWater, volumeUnit)
-              : "—"
+            stats?.avgWater != null ? (
+              <TipValue
+                text={formatVolume(stats.avgWater, volumeUnit)}
+                isAbove={waterTip.isAbove}
+                isBelow={waterTip.isBelow}
+                message={waterTip.message}
+              />
+            ) : (
+              "—"
+            )
           }
         />
         <StatCard
           label="Avg calories"
           value={
-            stats?.avgCalories != null
-              ? `${Math.round(stats.avgCalories)} kcal`
-              : "—"
+            stats?.avgCalories != null ? (
+              <>
+                <TipValue
+                  text={`${Math.round(stats.avgCalories)}`}
+                  isAbove={caloriesTip.isAbove}
+                  isBelow={caloriesTip.isBelow}
+                  message={caloriesTip.message}
+                />{" "}
+                kcal
+              </>
+            ) : (
+              "—"
+            )
           }
         />
         <StatCard
           label="Avg sodium"
           value={
-            stats?.avgSodium != null ? `${Math.round(stats.avgSodium)} mg` : "—"
+            stats?.avgSodium != null ? (
+              <>
+                <TipValue
+                  text={`${Math.round(stats.avgSodium)}`}
+                  isAbove={sodiumTip.isAbove}
+                  isBelow={sodiumTip.isBelow}
+                  message={sodiumTip.message}
+                />{" "}
+                mg
+              </>
+            ) : (
+              "—"
+            )
           }
         />
       </div>
@@ -330,7 +462,7 @@ export function InviteViewer({ code }: { code: string }) {
             size="small"
             dataSource={rows}
             columns={columns}
-            pagination={{ pageSize: 20 }}
+            pagination={false}
             scroll={{ x: 760 }}
             locale={{ emptyText: "No data in this link yet." }}
           />

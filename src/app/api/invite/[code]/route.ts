@@ -75,7 +75,7 @@ export async function GET(
     return Response.json({ error: ERROR_TEXT[result.reason] }, { status: 410 });
   }
 
-  const data = await fetchExportData(result.uid, { range: "all" });
+  const data = await fetchExportData(result.uid, { range: "7d" });
 
   return Response.json({
     ownerName: data.profile.name || "Someone",
