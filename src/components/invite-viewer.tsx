@@ -416,7 +416,6 @@ export function InviteViewer({ code }: { code: string }) {
     {
       title: "Date",
       dataIndex: "date",
-      fixed: "left",
       width: 130,
       render: (value: string) => dayjs(value).format("MMM D, YYYY"),
     },
@@ -583,7 +582,6 @@ export function InviteViewer({ code }: { code: string }) {
         {state.data.ownerName}&apos;s last 7 days
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
-        {state.data.link.label ? `“${state.data.link.label}” · ` : ""}
         {state.data.count} day{state.data.count === 1 ? "" : "s"} with data
         {state.data.link.remainingUses != null
           ? ` · ${state.data.link.remainingUses} view${

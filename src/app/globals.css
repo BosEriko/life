@@ -289,3 +289,8 @@ body {
 .no-last-row-border .ant-table-tbody > tr:last-child > td {
   border-bottom: none !important;
 }
+
+/* horizontal-only scroll: never clip rows with a vertical scrollbar */
+.no-last-row-border .ant-table-body {
+  overflow-y: visible !important;
+}
