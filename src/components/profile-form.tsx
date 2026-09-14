@@ -19,6 +19,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { DeleteAccountCard } from "@/components/delete-account-card";
 import { Icon } from "@/components/icon";
+import { MedicalTagsCard } from "@/components/medical-tags-card";
 import { ReportModal } from "@/components/report-modal";
 import {
   EMPTY_PROFILE,
@@ -329,6 +330,8 @@ export function ProfileForm() {
                 <Segmented options={HEIGHT_UNIT_OPTIONS} />
               </Form.Item>
             </Card>
+
+            <MedicalTagsCard />
 
             <Card
               size="small"

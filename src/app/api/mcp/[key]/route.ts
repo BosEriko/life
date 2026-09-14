@@ -176,7 +176,7 @@ const TOOLS = [
   {
     name: "get_profile",
     description:
-      "The user's personal profile: name, birthday, height (feet/inches), biological sex, timezone, their display-unit preferences (weightUnit kg/lb, volumeUnit ml/l/floz, heightUnit ftin/cm), plus derived ageYears and heightTotalInches. Numeric data elsewhere is always canonical (weight kg, water ml, height inches). Any field may be null if not set.",
+      "The user's personal profile: name, birthday, height (feet/inches), biological sex, timezone, their display-unit preferences (weightUnit kg/lb, volumeUnit ml/l/floz, heightUnit ftin/cm), plus derived ageYears and heightTotalInches, and medicalTags — a flexible list of { category, label } pairs such as allergies, medications, or conditions. Numeric data elsewhere is always canonical (weight kg, water ml, height inches). Any field may be null if not set.",
     inputSchema: { type: "object", properties: {} },
   },
 ];
@@ -463,7 +463,7 @@ export async function POST(
       capabilities: { tools: {} },
       serverInfo: { name: "life-tracker", version: "1.0.0" },
       instructions:
-        "Read the user's personal health tracker. Use get_entries for daily weight / hygiene data with each day's mean blood pressure, total water, and food/drink roll-up (junk flags, calories, sodium); get_bp for every individual blood-pressure reading; get_water for every individual water log; get_intake for every individual food/drink log; get_notes for the user's free-text notes; get_ideals for their target ranges; get_presets for their water containers; and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches). search + fetch expose the same data as documents.",
+        "Read the user's personal health tracker. Use get_entries for daily weight / hygiene data with each day's mean blood pressure, total water, and food/drink roll-up (junk flags, calories, sodium); get_bp for every individual blood-pressure reading; get_water for every individual water log; get_intake for every individual food/drink log; get_notes for the user's free-text notes; get_ideals for their target ranges; get_presets for their water containers; and get_profile for their name/birthday/height/sex/timezone (with derived ageYears and heightTotalInches) plus medicalTags — allergies, medications, conditions, etc. search + fetch expose the same data as documents.",
     });
   }
 

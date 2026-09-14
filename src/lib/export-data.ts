@@ -131,6 +131,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     idealsSnap,
     presetsSnap,
     profileSnap,
+    medicalTagsSnap,
   ] = await Promise.all([
     dailiesQuery.get(),
     habitsQuery.get(),
@@ -141,6 +142,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     userRef.collection("ideals").doc("current").get(),
     userRef.collection("presets").orderBy("ml", "asc").get(),
     userRef.collection("profile").doc("current").get(),
+    userRef.collection("medicalTags").orderBy("createdAt", "asc").get(),
   ]);
 
   const bpReadings = bpSnap.docs
@@ -289,6 +291,14 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     return { name: p.name ?? "", ml: p.ml ?? 0 };
   });
 
+  const medicalTags = medicalTagsSnap.docs.map((doc) => {
+    const t = doc.data();
+    return {
+      category: typeof t.category === "string" ? t.category : "",
+      label: typeof t.label === "string" ? t.label : "",
+    };
+  });
+
   const profileData = profileSnap.data() ?? {};
   const heightFeet =
     typeof profileData.heightFeet === "number" ? profileData.heightFeet : null;
@@ -310,6 +320,7 @@ export async function fetchExportData(uid: string, opts: ExportOptions = {}) {
     heightUnit: clean(profileData.heightUnit),
     ageYears: computeAge(birthday),
     heightTotalInches: computeHeightTotalInches(heightFeet, heightInches),
+    medicalTags,
   };
 
   return {
