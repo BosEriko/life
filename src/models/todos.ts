@@ -4,7 +4,7 @@ import {
 } from "firebase/firestore";
 import dayjs from "dayjs";
 import { getFirebaseDb } from "@/lib/firebase";
-import { ACTIVE_TODO_DATE, todoValidation, type Todo, type TodoList } from "@/lib/todos";
+import { ACTIVE_TODO_DATE, todoMovePatch, todoValidation, type Todo, type TodoColumn, type TodoList } from "@/lib/todos";
 
 const todoRef = (uid: string, id: string) => doc(getFirebaseDb(), "users", uid, "todos", id);
 const settingsRef = (uid: string) => doc(getFirebaseDb(), "users", uid, "todoSettings", "current");
@@ -33,6 +33,10 @@ export function restoreTodo(uid: string, id: string) {
   return updateDoc(todoRef(uid, id), {
     status: "todo", date: ACTIVE_TODO_DATE, completedAt: null, updatedAt: new Date().toISOString(),
   });
+}
+
+export function moveTodo(uid: string, todo: Todo, column: TodoColumn) {
+  return updateDoc(todoRef(uid, todo.id), todoMovePatch(todo, column, new Date()));
 }
 
 export function setTodoStatus(uid: string, id: string, status: "todo" | "doing") {

@@ -7,6 +7,7 @@ import type { MenuProps } from "antd";
 import {
   DownOutlined,
   CheckSquareOutlined,
+  ProjectOutlined,
   FileTextOutlined,
   IdcardOutlined,
   LogoutOutlined,
@@ -22,6 +23,7 @@ const JOURNAL_TABS = [
   { href: "/journal/notes", label: "Notes", Icon: FileTextOutlined },
   { href: "/journal/tasks", label: "Tasks", Icon: ScheduleOutlined },
   { href: "/journal/todo", label: "To-do", Icon: CheckSquareOutlined },
+  { href: "/journal/board", label: "Board", Icon: ProjectOutlined },
 ];
 
 export function DashboardHeader() {
@@ -221,7 +223,7 @@ export function DashboardHeader() {
             borderTop: `1px solid ${token.colorSplit}`,
           }}
         >
-          <Flex gap={24} style={{ maxWidth: 1200, margin: "0 auto", paddingInline: 20 }}>
+          <Flex gap={screens.md === true ? 24 : 12} style={{ maxWidth: 1200, margin: "0 auto", paddingInline: screens.md === true ? 20 : 12 }}>
             {JOURNAL_TABS.map(({ href, label, Icon: TabIcon }) => {
               const active = pathname === href;
               return (
@@ -231,12 +233,13 @@ export function DashboardHeader() {
                   aria-current={active ? "page" : undefined}
                   style={{
                     display: "inline-flex",
+                    flexShrink: 0,
                     alignItems: "center",
-                    gap: 8,
+                    gap: screens.md === true ? 8 : 6,
                     minHeight: 44,
                     padding: "0 2px",
                     marginBottom: -1,
-                    fontSize: 13,
+                    fontSize: screens.md === true ? 13 : 12,
                     fontWeight: active ? 800 : 600,
                     color: active ? token.colorPrimary : token.colorTextSecondary,
                     borderBottom: `2px solid ${active ? token.colorPrimary : "transparent"}`,

@@ -67,11 +67,17 @@ test("to-do and list lifecycle self-echo offline, including old unfinished and a
     pending(models.deleteTodoList("user", "project"));
     await waitFor(() => lists.at(-1)?.length === 0);
     assert.equal(todos.todoListId(current(), lists.at(-1)), "inbox");
+    for (const column of ["upcoming", "todo", "doing", "done", "upcoming"]) {
+      pending(models.moveTodo("user", current(), column));
+      await waitFor(() => todos.todoColumn(current(), new Date()) === column);
+      assert.equal(current().title, "Edited");
+      assert.equal(current().date, column === "done" ? dayjs().format("YYYY-MM-DD") : todos.ACTIVE_TODO_DATE);
+    }
     pending(models.saveTodo("user", { ...item, id: "archived", status: "done", date: "2020-01-01", completedAt: "2020-01-01T13:00:00Z" }));
     await waitFor(() => older.at(-1)?.length === 1);
     assert.equal(live.at(-1).some((row) => row.id === "archived"), false);
-    pending(models.restoreTodo("user", "archived"));
-    await waitFor(() => older.at(-1)?.length === 0 && live.at(-1)?.some((row) => row.id === "archived" && row.status === "todo"));
+    pending(models.moveTodo("user", older.at(-1)[0], "doing"));
+    await waitFor(() => older.at(-1)?.length === 0 && live.at(-1)?.some((row) => row.id === "archived" && row.status === "doing" && row.completedAt === null));
     pending(models.deleteTodo("user", "archived"));
     pending(models.deleteTodo("user", "first"));
     await waitFor(() => live.at(-1)?.length === 0);

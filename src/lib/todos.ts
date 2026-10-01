@@ -23,6 +23,24 @@ export type Todo = {
 };
 export type TodoView = "all" | "today" | "upcoming" | "overdue" | "completed";
 export type TodoSort = "due" | "priority" | "newest";
+export type TodoColumn = "upcoming" | "todo" | "doing" | "done";
+
+export function todoColumn(todo: Todo, now: Date): TodoColumn {
+  if (todo.status === "done" || todo.completedAt) return "done";
+  if (todo.status === "doing") return "doing";
+  return todo.dueDate && todo.dueDate > dayjs(now).format("YYYY-MM-DD") ? "upcoming" : "todo";
+}
+
+export function todoMovePatch(todo: Todo, column: TodoColumn, now: Date) {
+  const today = dayjs(now).format("YYYY-MM-DD");
+  return {
+    status: column === "done" ? "done" as const : column === "doing" ? "doing" as const : "todo" as const,
+    dueDate: column === "upcoming" ? dayjs(now).add(1, "day").format("YYYY-MM-DD") : column === "todo" && todo.dueDate && todo.dueDate > today ? today : todo.dueDate,
+    date: column === "done" ? today : ACTIVE_TODO_DATE,
+    completedAt: column === "done" ? now.toISOString() : null,
+    updatedAt: now.toISOString(),
+  };
+}
 
 export function todoListId(todo: Todo, lists: TodoList[]): string {
   return lists.some((list) => list.id === todo.listId) ? todo.listId! : "inbox";

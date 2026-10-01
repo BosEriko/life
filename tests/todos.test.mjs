@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ACTIVE_TODO_DATE, filterTodos, isTodoOverdue, todoListId, todoValidation } from "../src/lib/todos.ts";
+import { ACTIVE_TODO_DATE, filterTodos, isTodoOverdue, todoColumn, todoMovePatch, todoListId, todoValidation } from "../src/lib/todos.ts";
 
 const base = {
   id: "one", date: ACTIVE_TODO_DATE, title: "Plan trip", description: "Book tickets",
@@ -10,6 +10,32 @@ const base = {
 };
 const lists = [{ id: "personal", name: "Personal" }];
 const options = { view: "all", listId: "all", search: "", priority: "all", status: "all", sort: "due", now: new Date(2026, 9, 2, 15) };
+
+test("board columns honor completion first, then progress, then local due dates", () => {
+  assert.equal(todoColumn(base, options.now), "todo");
+  assert.equal(todoColumn({ ...base, dueDate: null }, options.now), "todo");
+  assert.equal(todoColumn({ ...base, dueDate: "2026-10-01" }, options.now), "todo");
+  assert.equal(todoColumn({ ...base, dueDate: "2026-10-03" }, options.now), "upcoming");
+  assert.equal(todoColumn({ ...base, status: "doing", dueDate: "2026-10-03" }, options.now), "doing");
+  assert.equal(todoColumn({ ...base, status: "doing", completedAt: "2020-01-01T00:00:00Z" }, options.now), "done");
+  assert.equal(todoColumn({ ...base, status: "done", dueDate: null }, options.now), "done");
+});
+
+test("every board move lands in its target column without losing task details", () => {
+  for (const todo of [base, { ...base, dueDate: null }, { ...base, dueDate: "2026-11-01", dueTime: "13:00" }, { ...base, status: "doing" }, { ...base, status: "done", date: "2020-01-01", completedAt: "2020-01-01T00:00:00Z" }]) {
+    for (const column of ["upcoming", "todo", "doing", "done"]) {
+      const moved = { ...todo, ...todoMovePatch(todo, column, options.now) };
+      assert.equal(todoColumn(moved, options.now), column);
+      assert.equal(moved.title, todo.title);
+      assert.equal(moved.subtasks, todo.subtasks);
+      assert.equal(moved.dueTime, todo.dueTime);
+      assert.equal(moved.date, column === "done" ? "2026-10-02" : ACTIVE_TODO_DATE);
+      assert.equal(moved.completedAt, column === "done" ? options.now.toISOString() : null);
+    }
+  }
+  assert.equal(todoMovePatch({ ...base, dueDate: "2026-12-01" }, "todo", options.now).dueDate, "2026-10-02");
+  assert.equal(todoMovePatch(base, "upcoming", new Date(2026, 11, 31, 23, 59)).dueDate, "2027-01-01");
+});
 
 test("due dates, local time and completion determine overdue status", () => {
   assert.equal(isTodoOverdue(base, options.now), false);
