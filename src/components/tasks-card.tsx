@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useTaskDay } from "@/components/use-day-records";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { RichText, plainText } from "@/components/rich-text";
 import { taskOccursOn, type Task } from "@/lib/task-schedule";
 import { removeTask, saveTask, setTaskChecked } from "@/models/tasks";
 import { todayKey } from "@/models/dailies";
@@ -45,7 +46,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
           <TimePicker aria-label="Task time" format="HH:mm" needConfirm={false} allowClear={false} value={dayjs(`${draft.startDate}T${draft.time}`)} onChange={(time) => time && patch({ time: time.format("HH:mm") })} style={{ width: 110 }} />
         </Flex>
         <Input aria-label="Task title" placeholder="Task title" prefix={<CheckSquareOutlined style={{ opacity: 0.45 }} />} maxLength={120} value={draft.title} onChange={(event) => patch({ title: event.target.value })} autoFocus />
-        <Input.TextArea aria-label="Task description" placeholder="Description (optional)" maxLength={2000} autoSize={{ minRows: 2, maxRows: 4 }} value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
+        <Input.TextArea aria-label="Task description" placeholder="Description (optional) · **bold**, *italic*, ~~strike~~" maxLength={2000} autoSize={{ minRows: 2, maxRows: 4 }} value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
         <Select aria-label="Task repeat frequency" value={draft.repeat} options={REPEATS.map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))} onChange={(repeat) => patch({ repeat })} />
         <Flex align="center" gap={8} wrap>
           <Typography.Text type="secondary">Repeat every</Typography.Text>
@@ -111,17 +112,17 @@ export function TasksList() {
         const scheduled = taskOccursOn(task, date);
         const checked = !!row?.completed[task.id];
         return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "16px 0", borderTop: `1px solid ${token.colorBorderSecondary}` }}>
-          <Checkbox aria-label={`Complete ${task.title}`} checked={scheduled && checked} disabled={!scheduled || !row || error} onChange={(event) => {
+          <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={scheduled && checked} disabled={!scheduled || !row || error} onChange={(event) => {
             if (user) setTaskChecked(user.uid, date, task.id, event.target.checked).catch(() => message.error("Could not update task."));
           }} />
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
-            <Typography.Text strong delete={scheduled && checked}>{task.title}</Typography.Text>
-            {task.description && <Typography.Paragraph type="secondary" style={{ margin: "4px 0", whiteSpace: "pre-wrap" }}>{task.description}</Typography.Paragraph>}
+            <Typography.Text strong delete={scheduled && checked}><RichText text={task.title} /></Typography.Text>
+            {task.description && <Typography.Paragraph type="secondary" style={{ margin: "4px 0", whiteSpace: "pre-wrap" }}><RichText text={task.description} /></Typography.Paragraph>}
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>{task.time} · Every {task.interval} {UNITS[task.repeat]}{!scheduled ? " · Not scheduled today" : ""}</Typography.Text>
           </div>
           <Flex gap={2}>
-            <Button type="text" size="small" aria-label={`Edit ${task.title}`} icon={<EditOutlined />} onClick={() => setEditing(task)} />
-            <ConfirmDeleteButton ariaLabel={`Delete ${task.title}`} hint="Tap again to delete this recurring task" onConfirm={() => {
+            <Button type="text" size="small" aria-label={`Edit ${plainText(task.title)}`} icon={<EditOutlined />} onClick={() => setEditing(task)} />
+            <ConfirmDeleteButton ariaLabel={`Delete ${plainText(task.title)}`} hint="Tap again to delete this recurring task" onConfirm={() => {
               if (!user) return;
               if (editing?.id === task.id) setEditing(null);
               removeTask(user.uid, task.id).catch(() => message.error("Could not delete task."));

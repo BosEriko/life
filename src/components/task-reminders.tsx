@@ -6,6 +6,7 @@ import { ClockCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
+import { RichText, plainText } from "@/components/rich-text";
 import { overdueTasks } from "@/lib/task-schedule";
 import { setTaskChecked } from "@/models/tasks";
 
@@ -50,16 +51,16 @@ export function TaskReminders({ paused }: { paused: boolean }) {
         {overdue.map((task) => (
           <Flex key={`${date}:${task.id}`} align="flex-start" gap={12}>
             <Checkbox
-              aria-label={`Mark ${task.title} as done`}
+              aria-label={`Mark ${plainText(task.title)} as done`}
               checked={false}
               onChange={() => {
                 if (user) setTaskChecked(user.uid, date, task.id, true).catch(() => message.error("Could not update task."));
               }}
             />
             <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-              <Typography.Text strong>{task.title}</Typography.Text>
+              <Typography.Text strong><RichText text={task.title} /></Typography.Text>
               <div><Typography.Text type="secondary">{task.time}</Typography.Text></div>
-              {task.description && <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap" }}>{task.description}</Typography.Paragraph>}
+              {task.description && <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap" }}><RichText text={task.description} /></Typography.Paragraph>}
             </div>
           </Flex>
         ))}
