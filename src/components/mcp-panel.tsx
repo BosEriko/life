@@ -13,9 +13,10 @@ import {
   theme,
   Typography,
 } from "antd";
-import { CodeOutlined, CopyOutlined, KeyOutlined } from "@ant-design/icons";
+import { CopyOutlined, KeyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/mcp-key";
+import { PageHeading } from "@/components/page-heading";
 
 const KEY_PLACEHOLDER = "<YOUR_MCP_KEY>";
 
@@ -129,20 +130,15 @@ export function McpPanel() {
     borderColor: token.colorBorderSecondary,
     borderRadius: token.borderRadiusLG,
     boxShadow: token.boxShadowTertiary,
+    minWidth: 0,
   };
 
   return (
     <div>
-      <Flex align="center" gap={10} style={{ marginBottom: 4 }}>
-        <CodeOutlined style={{ color: token.colorPrimary, fontSize: 22 }} />
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          MCP
-        </Typography.Title>
-      </Flex>
-      <Typography.Paragraph type="secondary" style={{ margin: "0 0 24px" }}>
-        Connect your entries, targets, and presets to any MCP-capable agent.
-        Your server is read-only.
-      </Typography.Paragraph>
+      <PageHeading
+        title="Connect an AI agent"
+        subtitle="Read-only access to your entries, targets, and presets for any MCP-capable agent."
+      />
 
       <Modal
         open={confirmOpen}
@@ -171,8 +167,9 @@ export function McpPanel() {
         </Typography.Paragraph>
       </Modal>
 
-      <Flex vertical gap={24}>
-        <Card title="Access" style={cardStyle} styles={{ body: { padding: 24 } }}>
+      <div className="split-grid split-grid-even">
+        <Flex vertical gap={16} style={{ minWidth: 0 }}>
+        <Card title="Access" style={cardStyle} styles={{ body: { padding: 20 } }}>
           <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4 }}>
             MCP server URL
           </Typography.Title>
@@ -253,7 +250,7 @@ export function McpPanel() {
         <Card
           title="Connect it"
           style={cardStyle}
-          styles={{ body: { padding: 24 } }}
+          styles={{ body: { padding: 20 } }}
         >
           <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
             Add it as a remote MCP server. Transport is Streamable HTTP with no
@@ -334,11 +331,12 @@ export function McpPanel() {
             ]}
           />
         </Card>
+        </Flex>
 
         <Card
           title="API reference"
           style={cardStyle}
-          styles={{ body: { padding: 24 } }}
+          styles={{ body: { padding: 20 } }}
         >
           <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4 }}>
             Tools
@@ -387,7 +385,7 @@ export function McpPanel() {
             <code>{testCommand}</code>
           </pre>
         </Card>
-      </Flex>
+      </div>
     </div>
   );
 }

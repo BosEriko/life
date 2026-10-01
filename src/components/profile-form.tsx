@@ -36,6 +36,7 @@ import {
   type VolumeUnit,
   type WeightUnit,
 } from "@/lib/units";
+import { PageHeading } from "@/components/page-heading";
 
 type FormShape = {
   name?: string;
@@ -189,13 +190,10 @@ export function ProfileForm() {
 
   return (
     <div>
-      <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
-        Profile
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
-        Personal details used in reports and by anything reading your data
-        through MCP.
-      </Typography.Paragraph>
+      <PageHeading
+        title="Profile"
+        subtitle="Personal details used in reports and by anything reading your data through MCP."
+      />
 
       <Form
         form={form}

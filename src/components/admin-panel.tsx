@@ -13,6 +13,7 @@ import {
   setUserClaudeAccess,
   type AdminUser,
 } from "@/models/admin";
+import { PageHeading } from "@/components/page-heading";
 
 export function AdminPanel() {
   const { user } = useAuth();
@@ -157,14 +158,10 @@ export function AdminPanel() {
 
   return (
     <div>
-      <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
-        Admin
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
-        Grant someone intelligence — blank calories and sodium get estimated for
-        them — or make them an admin (admins can manage the shared food
-        Database).
-      </Typography.Paragraph>
+      <PageHeading
+        title="Admin"
+        subtitle="Grant someone intelligence — blank calories and sodium get estimated for them — or make them an admin (admins can manage the shared food Database)."
+      />
 
       <Flex vertical gap={16}>
         <Card

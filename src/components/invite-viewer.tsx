@@ -33,6 +33,7 @@ import {
   type VolumeUnit,
   type WeightUnit,
 } from "@/lib/units";
+import { PageHeading } from "@/components/page-heading";
 
 type DailyRow = {
   date: string;
@@ -213,21 +214,17 @@ function StatCard({ label, value }: { label: string; value: ReactNode }) {
   const { token } = theme.useToken();
   return (
     <Card
-      size="small"
-      style={{
-        borderColor: token.colorBorderSecondary,
-        borderRadius: token.borderRadiusLG,
-      }}
+      styles={{ body: { padding: 18 } }}
+      style={{ minHeight: 112 }}
     >
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      <Typography.Text type="secondary" strong style={{ fontSize: 12 }}>
         {label}
       </Typography.Text>
       <div
         style={{
-          fontSize: 20,
-          fontWeight: 600,
+          fontSize: 24,
           lineHeight: 1.3,
-          marginTop: 4,
+          marginTop: 18,
           color: token.colorText,
         }}
       >
@@ -549,51 +546,74 @@ export function InviteViewer({ code }: { code: string }) {
   ];
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px" }}>
-      <Flex align="center" gap={10} style={{ marginBottom: 8 }}>
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            flexShrink: 0,
-            borderRadius: 9,
-            background: token.colorPrimary,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+    <>
+      <header
+        style={{
+          background: token.colorBgContainer,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        }}
+      >
+        <Flex
+          align="center"
+          justify="space-between"
+          gap={12}
+          wrap
+          style={{ maxWidth: 1240, margin: "0 auto", padding: "14px 20px", minHeight: 60 }}
         >
-          <Icon
-            name="brand"
-            style={{
-              margin: 0,
-              opacity: 1,
-              color: token.colorTextLightSolid,
-              fontSize: 15,
-            }}
-          />
-        </div>
-        <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-          Life Tracker · shared, read-only
-        </Typography.Text>
-      </Flex>
+          <Flex align="center" gap={10}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                borderRadius: 9,
+                background: token.colorPrimary,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon
+                name="brand"
+                style={{
+                  margin: 0,
+                  opacity: 1,
+                  color: token.colorTextLightSolid,
+                  fontSize: 15,
+                }}
+              />
+            </div>
+            <Typography.Text style={{ fontSize: 15, fontWeight: 800 }}>
+              Life Tracker · shared, read-only
+            </Typography.Text>
+          </Flex>
+          {state.data.link.expiresAt ? (
+            <span
+              style={{
+                padding: "4px 10px",
+                borderRadius: 999,
+                fontSize: 11,
+                background: token.colorFillSecondary,
+                color: token.colorTextSecondary,
+              }}
+            >
+              Expires {dayjs(state.data.link.expiresAt).format("MMM D, h:mm A")}
+            </span>
+          ) : null}
+        </Flex>
+      </header>
 
-      <Typography.Title level={3} style={{ marginTop: 4, marginBottom: 4 }}>
-        {state.data.ownerName}&apos;s last 7 days
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
-        {state.data.count} day{state.data.count === 1 ? "" : "s"} with data
-        {state.data.link.remainingUses != null
-          ? ` · ${state.data.link.remainingUses} view${
-              state.data.link.remainingUses === 1 ? "" : "s"
-            } left`
-          : ""}
-        {state.data.link.expiresAt
-          ? ` · expires ${dayjs(state.data.link.expiresAt).format(
-              "MMM D, YYYY h:mm A",
-            )}`
-          : ""}
-      </Typography.Paragraph>
+    <div style={{ maxWidth: 1240, margin: "0 auto", padding: "32px 20px 40px" }}>
+      <PageHeading
+        title={`${state.data.ownerName}'s last 7 days`}
+        subtitle={`${state.data.count} day${state.data.count === 1 ? "" : "s"} with data${
+          state.data.link.remainingUses != null
+            ? ` · ${state.data.link.remainingUses} view${
+                state.data.link.remainingUses === 1 ? "" : "s"
+              } left`
+            : ""
+        }`}
+      />
 
       <div
         style={{
@@ -754,5 +774,6 @@ export function InviteViewer({ code }: { code: string }) {
         <Link href="/">Life Tracker</Link> — track your own health, free.
       </Typography.Paragraph>
     </div>
+    </>
   );
 }

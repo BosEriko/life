@@ -295,6 +295,23 @@ body {
   }
 }
 
+.split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .split-grid {
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  }
+
+  .split-grid.split-grid-even {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
 /* drop the last row's bottom border on a table with no border below it */
 .no-last-row-border .ant-table-tbody > tr:last-child > td {
   border-bottom: none !important;

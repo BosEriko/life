@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, Card, Flex, Table, Tabs, theme, Typography } from "antd";
-import { DownloadOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { Button, Card, Table, Tabs, theme } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { TableProps } from "antd";
 import { ReportModal } from "@/components/report-modal";
@@ -16,6 +16,7 @@ import { type HabitEntry } from "@/models/habits";
 import { formatWaterTime, type WaterLog } from "@/models/water";
 import { formatBpTime, type BpReading } from "@/models/bp";
 import { formatIntakeTime, type IntakeEntry } from "@/models/intake";
+import { PageHeading } from "@/components/page-heading";
 
 const pagination = {
   defaultPageSize: 25,
@@ -217,26 +218,10 @@ export default function SummaryPage() {
 
   return (
     <div>
-      <Flex
-        align="flex-start"
-        justify="space-between"
-        gap={16}
-        wrap
-        style={{ marginBottom: 24 }}
-      >
-        <div>
-          <Flex align="center" gap={10} style={{ marginBottom: 4 }}>
-            <UnorderedListOutlined
-              style={{ color: token.colorPrimary, fontSize: 22 }}
-            />
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              Summary
-            </Typography.Title>
-          </Flex>
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            Browse your complete history across {total} records.
-          </Typography.Paragraph>
-        </div>
+      <PageHeading
+        title="Summary"
+        subtitle={`Browse your complete history across ${total} records.`}
+        extra={
         <Button
           type="primary"
           icon={<DownloadOutlined />}
@@ -244,7 +229,8 @@ export default function SummaryPage() {
         >
           Download report
         </Button>
-      </Flex>
+        }
+      />
 
       <style>{`
         .flush-tabs .ant-tabs-nav {

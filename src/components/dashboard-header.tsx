@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button, Dropdown, Flex, Grid, theme } from "antd";
 import type { MenuProps } from "antd";
 import {
+  DownOutlined,
   IdcardOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -62,6 +63,47 @@ export function DashboardHeader() {
     },
   ];
 
+  const brand = (
+    <Link
+      href="/"
+      aria-label="Life Tracker home"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 10,
+        textDecoration: "none",
+        color: token.colorText,
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          flexShrink: 0,
+          borderRadius: 10,
+          background: token.colorPrimary,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Icon
+          name="brand"
+          style={{
+            margin: 0,
+            opacity: 1,
+            color: token.colorTextLightSolid,
+            fontSize: 17,
+          }}
+        />
+      </div>
+      <span style={{ fontSize: 17, fontWeight: 800, whiteSpace: "nowrap" }}>
+        Life Tracker
+      </span>
+    </Link>
+  );
+
   return (
     <header
       style={{
@@ -73,102 +115,18 @@ export function DashboardHeader() {
         align="center"
         justify="space-between"
         gap={12}
-        wrap
         style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: compact ? "12px 20px" : "16px 20px",
+          minHeight: compact ? 60 : 72,
+          padding: compact ? "10px 16px" : "12px 32px",
         }}
       >
-        <Flex
-          align="stretch"
-          gap={compact ? 12 : 20}
-          wrap
-          style={{ minWidth: 0 }}
-        >
-          <Link
-            href="/"
-            aria-label="Life Tracker home"
-            style={{
-              display: "inline-flex",
-              textDecoration: "none",
-              color: "inherit",
-              minWidth: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                flexShrink: 0,
-                borderRadius: 10,
-                background: token.colorPrimary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icon
-                name="brand"
-                style={{
-                  margin: 0,
-                  opacity: 1,
-                  color: token.colorTextLightSolid,
-                  fontSize: 17,
-                }}
-              />
-            </div>
-          </Link>
-
-          {user && !compact ? (
-            <Flex align="stretch" gap={4}>
-              {NAV.map((item) => {
-                const active = pathname === item.key;
-                return (
-                  <div
-                    key={item.key}
-                    style={{
-                      position: "relative",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Button
-                      type="text"
-                      aria-current={active ? "page" : undefined}
-                      onClick={() => router.push(item.key)}
-                      style={{
-                        fontWeight: active ? 600 : 400,
-                        color: active ? token.colorPrimary : undefined,
-                      }}
-                    >
-                      {item.label}
-                    </Button>
-                    {active ? (
-                      <span
-                        aria-hidden
-                        style={{
-                          position: "absolute",
-                          left: "50%",
-                          bottom: -16,
-                          transform: "translateX(-50%)",
-                          width: 20,
-                          height: 3,
-                          borderRadius: "3px 3px 0 0",
-                          background: token.colorPrimary,
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                );
-              })}
-            </Flex>
-          ) : null}
-        </Flex>
+        {brand}
 
         {!user ? (
-          <Flex gap={8} wrap justify="flex-end">
-            <Button onClick={() => router.push("/login")}>Sign in</Button>
+          <Flex gap={8} align="center" justify="flex-end">
+            <Button type="text" onClick={() => router.push("/login")}>
+              Sign in
+            </Button>
             <Button type="primary" onClick={() => router.push("/register")}>
               Get started
             </Button>
@@ -182,13 +140,68 @@ export function DashboardHeader() {
             <Button icon={<MenuOutlined />} aria-label="Menu" />
           </Dropdown>
         ) : (
-          <Dropdown
-            trigger={["click"]}
-            placement="bottomRight"
-            menu={{ items: accountItems }}
-          >
-            <Button size="small" icon={<UserOutlined />} aria-label="Account" />
-          </Dropdown>
+          <Flex align="center" gap={28}>
+            <nav aria-label="Primary">
+              <Flex align="center" gap={28}>
+                {NAV.map((item) => {
+                  const active = pathname === item.key;
+                  return (
+                    <Link
+                      key={item.key}
+                      href={item.key}
+                      aria-current={active ? "page" : undefined}
+                      style={{
+                        fontSize: 13,
+                        fontWeight: active ? 800 : 600,
+                        color: active ? token.colorPrimary : token.colorTextSecondary,
+                        textDecoration: "none",
+                        padding: "12px 0",
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </Flex>
+            </nav>
+            <Dropdown
+              trigger={["click"]}
+              placement="bottomRight"
+              menu={{ items: accountItems }}
+            >
+              <button
+                type="button"
+                aria-label="Account"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: 0,
+                  border: 0,
+                  background: "none",
+                  cursor: "pointer",
+                  color: token.colorTextSecondary,
+                }}
+              >
+                <span
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: token.colorPrimaryBg,
+                    color: token.colorPrimary,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <UserOutlined />
+                </span>
+                <DownOutlined style={{ fontSize: 10 }} />
+              </button>
+            </Dropdown>
+          </Flex>
         )}
       </Flex>
     </header>

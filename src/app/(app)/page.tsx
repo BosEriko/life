@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Card, DatePicker, Flex, Segmented, Spin, theme } from "antd";
+import { Button, Card, DatePicker, Flex, Spin, theme, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { AverageStats } from "@/components/average-stats";
 import { useAuth } from "@/components/auth-provider";
 import { CreditAlert } from "@/components/credit-alert";
+import { useHealthData } from "@/components/health-data-provider";
+import { IdealsModal } from "@/components/ideals-modal";
+import { PageHeading } from "@/components/page-heading";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { LandingPage } from "@/components/landing-page";
 import { RecentEntries } from "@/components/recent-entries";
@@ -38,6 +41,8 @@ const MetricsChart = dynamic(
 
 function HealthDashboard() {
   const { token } = theme.useToken();
+  const { ideals } = useHealthData();
+  const [idealsOpen, setIdealsOpen] = useState(false);
   const today = dayjs(todayKey());
   const [range, setRange] = useState<DateRange>(() => {
     const now = dayjs(todayKey());
@@ -61,41 +66,57 @@ function HealthDashboard() {
     <>
       <CreditAlert />
 
-      <div style={{ marginBottom: 16 }}>
-        <AverageStats />
-      </div>
+      <PageHeading
+        title="Health"
+        subtitle="A calm view of your recent days."
+        extra={
+          <Button type="primary" onClick={() => setIdealsOpen(true)}>
+            Set ideal ranges
+          </Button>
+        }
+        marginBottom={18}
+      />
 
-      <Flex
-        align="center"
-        justify="center"
-        gap={8}
-        wrap
-        style={{ marginBottom: 24 }}
-      >
-        <DatePicker.RangePicker
-          value={[start, end]}
-          onChange={(values) => {
-            if (!values) return;
-            setRange([values[0], values[1] ?? today]);
-          }}
-          format="YYYY-MM-DD"
-          allowClear={false}
-          allowEmpty={[true, false]}
-          inputReadOnly
-          maxDate={today}
-          style={{ minWidth: 260 }}
+      <div style={{ marginBottom: 16 }}>
+        <AverageStats
+          controls={
+            <Flex align="center" gap={8} wrap>
+              <Typography.Text type="secondary" strong style={{ fontSize: 12 }}>
+                Trends
+              </Typography.Text>
+              <DatePicker.RangePicker
+                aria-label="Trend date range"
+                value={[start, end]}
+                onChange={(values) => {
+                  if (!values) return;
+                  setRange([values[0], values[1] ?? today]);
+                }}
+                format="MMM D, YYYY"
+                allowClear={false}
+                allowEmpty={[true, false]}
+                inputReadOnly
+                maxDate={today}
+                style={{ width: 270 }}
+              />
+              {TREND_RANGE_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  type={presetValue === option.value ? "primary" : "default"}
+                  aria-pressed={presetValue === option.value}
+                  onClick={() => applyPreset(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </Flex>
+          }
         />
-        <Segmented
-          options={TREND_RANGE_OPTIONS}
-          value={presetValue}
-          onChange={(value) => applyPreset(value as string)}
-        />
-      </Flex>
+      </div>
 
       <div className="home-grid">
         <Flex vertical gap={24} style={{ minWidth: 0 }}>
           <Card
-            styles={{ body: { padding: 28 } }}
+            styles={{ body: { padding: 20 } }}
             style={{
               borderColor: token.colorBorderSecondary,
               borderRadius: token.borderRadiusLG,
@@ -105,7 +126,7 @@ function HealthDashboard() {
             <MetricsChart start={start} end={end} />
           </Card>
           <Card
-            styles={{ body: { padding: 28 } }}
+            styles={{ body: { padding: 20 } }}
             style={{
               borderColor: token.colorBorderSecondary,
               borderRadius: token.borderRadiusLG,
@@ -117,6 +138,12 @@ function HealthDashboard() {
         </Flex>
         <HabitCalendar throughDate={end} />
       </div>
+
+      <IdealsModal
+        open={idealsOpen}
+        onClose={() => setIdealsOpen(false)}
+        ideals={ideals}
+      />
     </>
   );
 }

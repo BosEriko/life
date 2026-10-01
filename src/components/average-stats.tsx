@@ -6,7 +6,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { Button, Flex, Grid, Segmented, Spin, theme, Typography } from "antd";
+import { Flex, Grid, Segmented, Spin, theme, Typography } from "antd";
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -18,8 +18,6 @@ import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon, type IconName } from "@/components/icon";
-import { IdealBadge } from "@/components/ideal-badge";
-import { IdealsModal } from "@/components/ideals-modal";
 import { IdealTip } from "@/components/ideal-tip";
 import { Tip } from "@/components/tip";
 import { todayKey, type DailyEntry } from "@/models/dailies";
@@ -154,14 +152,13 @@ function meanStats(
   };
 }
 
-export function AverageStats() {
+export function AverageStats({ controls }: { controls?: ReactNode }) {
   const units = useUnits();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const compact = screens.md === false;
 
   const [range, setRange] = useState<Range>(loadRange);
-  const [idealsOpen, setIdealsOpen] = useState(false);
 
   const {
     dailies,
@@ -463,37 +460,23 @@ export function AverageStats() {
         justify="space-between"
         gap={12}
         wrap
-        style={{ marginBottom: 4 }}
+        style={{ marginBottom: 18 }}
       >
-        <Typography.Title level={5} style={{ margin: 0 }}>
-          <Icon name="averages" />
-          Averages
-        </Typography.Title>
-        <Segmented
-          size="small"
-          options={RANGE_OPTIONS}
-          value={range}
-          onChange={(value) => {
-            const next = value as Range;
-            setRange(next);
-            saveRange(next);
-          }}
-        />
-      </Flex>
-
-      <Flex align="center" gap={12} wrap>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {RANGE_CAPTION[range]}
-        </Typography.Text>
-        <Button
-          type="link"
-          size="small"
-          style={{ padding: 0, height: "auto" }}
-          icon={<Icon name="target" style={{ marginRight: 0 }} />}
-          onClick={() => setIdealsOpen(true)}
-        >
-          Set ideal ranges
-        </Button>
+        <Flex align="center" gap={10} wrap>
+          <Typography.Text type="secondary" strong style={{ fontSize: 12 }}>
+            Averages · {RANGE_CAPTION[range]}
+          </Typography.Text>
+          <Segmented
+            options={RANGE_OPTIONS}
+            value={range}
+            onChange={(value) => {
+              const next = value as Range;
+              setRange(next);
+              saveRange(next);
+            }}
+          />
+        </Flex>
+        {controls}
       </Flex>
 
       {!loaded ? (
@@ -503,7 +486,6 @@ export function AverageStats() {
       ) : (
         <div
           style={{
-            marginTop: 12,
             display: "grid",
             gridTemplateColumns: compact
               ? "repeat(2, minmax(0, 1fr))"
@@ -516,32 +498,53 @@ export function AverageStats() {
             const desktopSpan =
               items.length === 6 ? "span 2" : index < 2 ? "span 3" : "span 2";
             const tileStyle: CSSProperties = {
-              padding: compact ? "10px 12px" : "12px 14px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              gap: 8,
+              minHeight: compact ? 104 : 132,
+              padding: compact ? 14 : 18,
               borderRadius: token.borderRadiusLG,
-              background: token.colorFillTertiary,
+              background: token.colorBgContainer,
+              border: `1px solid ${off ? token.colorError : token.colorBorderSecondary}`,
               ...(compact ? {} : { gridColumn: desktopSpan }),
             };
+            const dot =
+              item.noBadge || item.status === "unset"
+                ? null
+                : off
+                  ? token.colorError
+                  : token.colorPrimary;
             return (
               <div key={item.label} style={tileStyle}>
                 <Flex align="center" justify="space-between" gap={8}>
                   <Typography.Text
                     type="secondary"
+                    strong
                     style={{ fontSize: 12 }}
                   >
                     <Icon name={item.icon} />
                     {item.label}
                   </Typography.Text>
-                  {compact || item.noBadge ? null : (
-                    <IdealBadge status={item.status} />
-                  )}
+                  {dot ? (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 8,
+                        height: 8,
+                        flexShrink: 0,
+                        borderRadius: "50%",
+                        background: dot,
+                      }}
+                    />
+                  ) : null}
                 </Flex>
                 {item.valueNode ? (
                   <Typography.Text
-                    strong
                     style={{
                       display: "inline-block",
-                      marginTop: 4,
-                      fontSize: compact ? 16 : 18,
+                      fontSize: compact ? 20 : 26,
+                      lineHeight: 1.2,
                     }}
                   >
                     {item.valueNode}
@@ -549,11 +552,10 @@ export function AverageStats() {
                 ) : item.neutralTip ? (
                   <Tip title={item.neutralTip} placement="bottom">
                     <Typography.Text
-                      strong
                       style={{
                         display: "inline-block",
-                        marginTop: 4,
-                        fontSize: compact ? 16 : 18,
+                        fontSize: compact ? 20 : 26,
+                        lineHeight: 1.2,
                         cursor: "help",
                         color: item.valueColor,
                       }}
@@ -568,11 +570,10 @@ export function AverageStats() {
                     message={item.tip}
                   >
                     <Typography.Text
-                      strong
                       style={{
                         display: "inline-block",
-                        marginTop: 4,
-                        fontSize: compact ? 16 : 18,
+                        fontSize: compact ? 20 : 26,
+                        lineHeight: 1.2,
                         cursor: off ? "help" : undefined,
                         color: off ? token.colorError : undefined,
                       }}
@@ -590,7 +591,7 @@ export function AverageStats() {
                           ? token.colorError
                           : token.colorTextTertiary;
                     return (
-                      <Flex align="center" gap={4} style={{ marginTop: 4 }}>
+                      <Flex align="center" gap={4}>
                         {item.delta.dir === "up" ? (
                           <ArrowUpOutlined
                             style={{ fontSize: 11, color: deltaColor }}
@@ -617,11 +618,6 @@ export function AverageStats() {
         </div>
       )}
 
-      <IdealsModal
-        open={idealsOpen}
-        onClose={() => setIdealsOpen(false)}
-        ideals={ideals}
-      />
     </div>
   );
 }

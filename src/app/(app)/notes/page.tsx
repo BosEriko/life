@@ -40,6 +40,7 @@ import {
   watchNotes,
   type Note,
 } from "@/models/notes";
+import { PageHeading } from "@/components/page-heading";
 
 export default function NotesPage() {
   const { user } = useAuth();
@@ -123,11 +124,10 @@ export default function NotesPage() {
 
   return (
     <div>
-      <Flex align="center" justify="space-between" gap={12} wrap>
-        <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 4 }}>
-          <Icon name="logEntry" />
-          Notes
-        </Typography.Title>
+      <PageHeading
+        title="Notes"
+        subtitle="A private journal beside your health entries."
+        extra={
         <Button
           type="primary"
           icon={<EditOutlined />}
@@ -135,10 +135,8 @@ export default function NotesPage() {
         >
           Write note
         </Button>
-      </Flex>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
-        Everything you&apos;ve jotted down. Add new ones from the pencil button.
-      </Typography.Paragraph>
+        }
+      />
 
       <div
         style={{
@@ -150,11 +148,11 @@ export default function NotesPage() {
           alignItems: "start",
         }}
       >
-        <Flex vertical gap={8}>
-          <Typography.Text strong>
-            <Icon name="date" />
+        <Card styles={{ body: { padding: 20 } }} style={{ boxShadow: token.boxShadowTertiary }}>
+          <Typography.Text style={{ display: "block", fontSize: 17, marginBottom: 12 }}>
             Dates with notes
           </Typography.Text>
+          <Flex vertical gap={4}>
           {!loaded ? (
             <Flex justify="center" style={{ padding: 24 }}>
               <Spin size="small" />
@@ -167,9 +165,15 @@ export default function NotesPage() {
               return (
                 <Button
                   key={key}
-                  type={selected ? "primary" : "text"}
+                  type="text"
+                  aria-current={selected ? "date" : undefined}
                   onClick={() => setDate(dayjs(key))}
-                  style={{ height: 42, paddingInline: 12 }}
+                  style={{
+                    height: 42,
+                    paddingInline: 12,
+                    fontWeight: selected ? 700 : 400,
+                    background: selected ? token.colorPrimaryBg : undefined,
+                  }}
                 >
                   <Flex align="center" justify="space-between" style={{ width: "100%" }}>
                     <span>{dayjs(key).format("MMMM D, YYYY")}</span>
@@ -195,9 +199,16 @@ export default function NotesPage() {
               );
             })
           )}
-        </Flex>
+          </Flex>
+        </Card>
 
-        <div style={{ minWidth: 0 }}>
+        <Card
+          styles={{ body: { padding: 20 } }}
+          style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}
+        >
+          <Typography.Text style={{ display: "block", fontSize: 17, marginBottom: 12 }}>
+            {date.format("dddd, MMMM D, YYYY")}
+          </Typography.Text>
           <Flex align="center" gap={8} wrap style={{ marginBottom: 20 }}>
             <Button
               aria-label="Previous day"
@@ -232,10 +243,6 @@ export default function NotesPage() {
             </Typography.Text>
           </Flex>
 
-          <Typography.Title level={4} style={{ marginTop: 0, marginBottom: 12 }}>
-            {date.format("MMMM D, YYYY")}
-          </Typography.Title>
-
           {!loaded ? (
             <Flex justify="center" style={{ padding: 24 }}>
               <Spin />
@@ -245,7 +252,14 @@ export default function NotesPage() {
           ) : (
             <Flex vertical gap={12}>
               {shown.map((note) => (
-                <Card key={note.id} size="small">
+                <div
+                  key={note.id}
+                  style={{
+                    padding: "14px 16px",
+                    borderRadius: token.borderRadius,
+                    background: token.colorFillSecondary,
+                  }}
+                >
                   <Flex
                     align="flex-start"
                     justify="space-between"
@@ -291,11 +305,11 @@ export default function NotesPage() {
                       />
                     </Flex>
                   </Flex>
-                </Card>
+                </div>
               ))}
             </Flex>
           )}
-        </div>
+        </Card>
       </div>
 
       <Modal

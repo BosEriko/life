@@ -15,7 +15,7 @@ import {
   Typography,
 } from "antd";
 import type { TableProps } from "antd";
-import { CopyOutlined, ShareAltOutlined } from "@ant-design/icons";
+import { CopyOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
@@ -27,6 +27,7 @@ import {
   shareLinkStatus,
   type ShareLink,
 } from "@/models/share-links";
+import { PageHeading } from "@/components/page-heading";
 
 const EXPIRY_OPTIONS = [
   { label: "Never", value: "never" },
@@ -181,16 +182,10 @@ export function SharePanel() {
 
   return (
     <div>
-      <Flex align="center" gap={10} style={{ marginBottom: 4 }}>
-        <ShareAltOutlined style={{ fontSize: 22 }} />
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Share
-        </Typography.Title>
-      </Flex>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
-        Create a link so someone can see your data without signing in — like a
-        Discord invite. Set an expiry, a view limit, both, or neither.
-      </Typography.Paragraph>
+      <PageHeading
+        title="Share"
+        subtitle="Create a link so someone can see your data without signing in. Set an expiry, a view limit, both, or neither."
+      />
 
       <Flex vertical gap={20}>
         <Card size="small" title="Create a link">

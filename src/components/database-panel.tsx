@@ -16,7 +16,6 @@ import {
   Typography,
 } from "antd";
 import {
-  DatabaseOutlined,
   EditOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
@@ -40,6 +39,7 @@ import {
   type FoodItem,
   type FoodKind,
 } from "@/models/foods";
+import { PageHeading } from "@/components/page-heading";
 
 const KIND_OPTIONS = [
   { label: "Food", value: "food" },
@@ -182,19 +182,13 @@ export function DatabasePanel() {
 
   return (
     <div>
-      <Flex align="center" gap={10} style={{ marginBottom: 4 }}>
-        <DatabaseOutlined style={{ color: token.colorPrimary, fontSize: 22 }} />
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Database
-        </Typography.Title>
-      </Flex>
-      <Typography.Paragraph type="secondary" style={{ margin: "0 0 24px" }}>
-        A shared directory of foods and drinks — name, calories, sodium, and the
-        rest. Everyone can add to it, and entries show up when you log food.
-      </Typography.Paragraph>
+      <PageHeading
+        title="Database"
+        subtitle="A shared directory of foods and drinks. Everyone can add to it, and entries show up when you log food."
+      />
 
-      <Flex vertical gap={24}>
-        <Card size="small" title="Add item">
+      <div className="split-grid">
+        <Card title="Add item" style={{ boxShadow: token.boxShadowTertiary }}>
           <Flex vertical gap={12}>
             <Flex gap={8} wrap>
               <Input
@@ -268,8 +262,8 @@ export function DatabasePanel() {
         </Card>
 
         <Card
-          size="small"
           title={`Items · ${visibleFoods.length}`}
+          style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}
           extra={
             <Segmented
               size="small"
@@ -288,7 +282,7 @@ export function DatabasePanel() {
             <Typography.Text type="secondary">
               {mineOnly
                 ? "You haven't added any items yet."
-                : "No items yet. Add one above."}
+                : "No items yet. Add your first one."}
             </Typography.Text>
           ) : (
             <Flex vertical>
@@ -364,7 +358,7 @@ export function DatabasePanel() {
             </Flex>
           )}
         </Card>
-      </Flex>
+      </div>
 
       {editing ? (
         <FoodEditModal
