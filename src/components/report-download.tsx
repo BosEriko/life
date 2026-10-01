@@ -144,18 +144,18 @@ export function ReportDownload() {
         }}
       >
         <FloatButton
+          aria-label="Tasks"
+          icon={<ScheduleOutlined />}
+          tooltip={tip("Tasks")}
+          onClick={() => setTasksOpen(true)}
+          className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
           aria-label="Add to-do"
           icon={<CheckSquareOutlined />}
           tooltip={tip("To-do")}
           onClick={() => setTodoOpen(true)}
           disabled={!todosReady || todoError}
-          className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
-        />
-        <FloatButton
-          aria-label="Tasks"
-          icon={<ScheduleOutlined />}
-          tooltip={tip("Tasks")}
-          onClick={() => setTasksOpen(true)}
           className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
         />
         <FloatButton
@@ -171,6 +171,12 @@ export function ReportDownload() {
           className={`quick-action-health${hasWeightToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
         />
         <FloatButton
+          icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
+          tooltip={tip("Blood pressure")}
+          onClick={() => setBpOpen(true)}
+          className={`quick-action-health${hasBpToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
           icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
           tooltip={tip("Water")}
           onClick={() => setWaterOpen(true)}
@@ -181,12 +187,6 @@ export function ReportDownload() {
           tooltip={tip("Food & drink")}
           onClick={() => setIntakeOpen(true)}
           className={`quick-action-health${hasIntakeToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
-        />
-        <FloatButton
-          icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Blood pressure")}
-          onClick={() => setBpOpen(true)}
-          className={`quick-action-health${hasBpToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
         />
         <FloatButton
           aria-label={`Move menu to ${menuSide === "right" ? "left" : "right"}`}
