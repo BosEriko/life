@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FloatButton, Grid, Modal, theme } from "antd";
-import { CheckSquareOutlined, MenuOutlined } from "@ant-design/icons";
+import { ScheduleOutlined, MenuOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { TasksList } from "@/components/tasks-card";
 import { TaskReminders } from "@/components/task-reminders";
@@ -140,7 +140,7 @@ export function ReportDownload() {
       >
         <FloatButton
           aria-label="Tasks"
-          icon={<CheckSquareOutlined />}
+          icon={<ScheduleOutlined />}
           tooltip={tip("Tasks")}
           onClick={() => setTasksOpen(true)}
           className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
@@ -211,7 +211,7 @@ export function ReportDownload() {
 
       <Modal
         open={tasksOpen}
-        title={<><CheckSquareOutlined style={{ marginRight: 8 }} />Tasks</>}
+        title={<><ScheduleOutlined style={{ marginRight: 8 }} />Tasks</>}
         onCancel={() => setTasksOpen(false)}
         footer={null}
         centered

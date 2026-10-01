@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
-import { CheckSquareOutlined, EditOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -45,8 +45,8 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
           <DatePicker aria-label="Task start date" allowClear={false} inputReadOnly value={dayjs(draft.startDate)} onChange={(date) => date && patch({ startDate: date.format("YYYY-MM-DD") })} style={{ flex: 1, minWidth: 150 }} />
           <TimePicker aria-label="Task time" format="HH:mm" needConfirm={false} allowClear={false} value={dayjs(`${draft.startDate}T${draft.time}`)} onChange={(time) => time && patch({ time: time.format("HH:mm") })} style={{ width: 110 }} />
         </Flex>
-        <Input aria-label="Task title" placeholder="Task title" prefix={<CheckSquareOutlined style={{ opacity: 0.45 }} />} maxLength={120} value={draft.title} onChange={(event) => patch({ title: event.target.value })} autoFocus />
-        <Input.TextArea aria-label="Task description" placeholder="Description (optional) · **bold**, *italic*, ~~strike~~" maxLength={2000} autoSize={{ minRows: 2, maxRows: 4 }} value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
+        <Input aria-label="Task title" placeholder="Task title" prefix={<ScheduleOutlined style={{ opacity: 0.45 }} />} maxLength={120} value={draft.title} onChange={(event) => patch({ title: event.target.value })} autoFocus />
+        <Input.TextArea aria-label="Task description" placeholder="Description (Optional)" maxLength={2000} autoSize={{ minRows: 2, maxRows: 4 }} value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
         <Select aria-label="Task repeat frequency" value={draft.repeat} options={REPEATS.map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))} onChange={(repeat) => patch({ repeat })} />
         <Flex align="center" gap={8} wrap>
           <Typography.Text type="secondary">Repeat every</Typography.Text>
