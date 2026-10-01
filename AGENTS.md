@@ -15,8 +15,11 @@ data models, Firestore queries, providers/context, components that read health d
 report/PDF code, the MCP route, or shared UI, verify all four still hold. Say plainly which
 you actually exercised and which you could only reason through (most need a browser).
 
-Always run `npm run lint`, `npx tsc --noEmit`, and `rm -rf .next && npm run build` — and
-confirm the build still lists `/` and `/summary` as static (`○`), nothing regressed to `ƒ`.
+Always run `pnpm run lint`, `pnpm exec tsc --noEmit`, and `rm -rf .next && pnpm run build` —
+and confirm the build still lists `/` and `/summary` as static (`○`), nothing regressed to
+`ƒ`. This project is pnpm-only (see `packageManager` in `package.json`) — never run `npm
+install`/`npm run …` here, it regenerates a stray `package-lock.json` and can desync
+`node_modules` from `pnpm-lock.yaml`.
 
 ## 1. PDF report (`src/components/report-modal.tsx`)
 - Generates for every range (7 / 30 / 90 / 365 / All) and every field-selector combination.

@@ -74,10 +74,10 @@ built, and maintained solo.
 ## Run it locally
 
 ```bash
-npm install
-npm run dev      # http://localhost:3000
-npm run build    # production build
-npm run lint
+pnpm install
+pnpm run dev      # http://localhost:3000
+pnpm run build    # production build
+pnpm run lint
 ```
 
 `NEXT_PUBLIC_FIREBASE_*` in `.env.local` holds the client Firebase config (public

@@ -10,6 +10,10 @@
 !.yarn/releases
 !.yarn/versions
 
+# this project is pnpm-only — pnpm-lock.yaml is the single source of truth
+package-lock.json
+yarn.lock
+
 # testing
 /coverage
 

@@ -2,6 +2,7 @@
   "name": "life",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@12.3.4",
   "engines": {
     "node": ">=20.19.0"
   },
@@ -19,6 +20,7 @@
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
     "antd": "^6.6.2",
+    "dayjs": "^1.11.11",
     "firebase": "^12.18.0",
     "firebase-admin": "^14.3.0",
     "jspdf": "^4.2.1",
