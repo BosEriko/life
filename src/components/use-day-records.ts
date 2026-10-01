@@ -7,6 +7,31 @@ import { watchHabitDoc, type HabitEntry } from "@/models/habits";
 import { watchBpForDate, type BpReading } from "@/models/bp";
 import { watchWaterForDate, type WaterLog } from "@/models/water";
 import { watchIntakeForDate, type IntakeEntry } from "@/models/intake";
+import { watchTaskDay, type TaskChecks } from "@/models/tasks";
+import { useHealthData } from "@/components/health-data-provider";
+
+export function useTaskDay(date: string, enabled: boolean) {
+  const { user } = useAuth();
+  const { cutoff, taskChecks, taskChecksReady } = useHealthData();
+  const inWindow = !!cutoff && date >= cutoff;
+  const [state, setState] = useState<{ uid: string; row: TaskChecks } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!enabled || !user || inWindow) return;
+    return watchTaskDay(user.uid, date, (row) => {
+      setState({ uid: user.uid, row });
+      setError(null);
+    }, () => setError(date));
+  }, [user, date, enabled, inWindow]);
+  if (enabled && inWindow) return {
+    row: taskChecksReady ? taskChecks.find((entry) => entry.date === date) ?? { date, completed: {} } : null,
+    error: false,
+  };
+  return {
+    row: enabled && state?.uid === user?.uid && state?.row.date === date ? state.row : null,
+    error: error === date,
+  };
+}
 
 const NO_BP: BpReading[] = [];
 const NO_WATER: WaterLog[] = [];

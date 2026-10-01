@@ -19,8 +19,14 @@ import { watchWaterLogs, type WaterLog } from "@/models/water";
 import { watchIntake, type IntakeEntry } from "@/models/intake";
 import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/ideals";
 import { watchWaterPresets, type WaterPreset } from "@/models/presets";
+import { watchTaskSettings, watchTaskChecks, type TaskChecks } from "@/models/tasks";
+import type { Task } from "@/lib/task-schedule";
 
 type HealthData = {
+  tasks: Task[];
+  taskChecks: TaskChecks[];
+  tasksReady: boolean;
+  taskChecksReady: boolean;
   dailies: DailyEntry[];
   habits: HabitEntry[];
   bpReadings: BpReading[];
@@ -33,6 +39,10 @@ type HealthData = {
 };
 
 const HealthDataContext = createContext<HealthData>({
+  tasks: [],
+  taskChecks: [],
+  tasksReady: false,
+  taskChecksReady: false,
   dailies: [],
   habits: [],
   bpReadings: [],
@@ -60,6 +70,10 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const [ideals, setIdeals] = useState<Ideals>(EMPTY_IDEALS);
   const [presets, setPresets] = useState<WaterPreset[]>([]);
   const [ready, setReady] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskChecks, setTaskChecks] = useState<TaskChecks[]>([]);
+  const [tasksReady, setTasksReady] = useState(false);
+  const [taskChecksReady, setTaskChecksReady] = useState(false);
   const seen = useRef({
     dailies: false,
     habits: false,
@@ -92,6 +106,8 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
     };
 
     const unsubscribers = [
+      watchTaskSettings(user.uid, (rows) => { setTasks(rows); setTasksReady(true); }, fail),
+      watchTaskChecks(user.uid, cutoff, (rows) => { setTaskChecks(rows); setTaskChecksReady(true); }, fail),
       watchDailies(
         user.uid,
         (next) => {
@@ -150,6 +166,10 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<HealthData>(
     () => ({
+      tasks,
+      taskChecks,
+      tasksReady,
+      taskChecksReady,
       dailies,
       habits,
       bpReadings,
@@ -161,6 +181,10 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       ready,
     }),
     [
+      tasks,
+      taskChecks,
+      tasksReady,
+      taskChecksReady,
       dailies,
       habits,
       bpReadings,

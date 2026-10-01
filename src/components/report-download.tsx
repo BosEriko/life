@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FloatButton, Grid, theme } from "antd";
-import { MenuOutlined } from "@ant-design/icons";
+import { FloatButton, Grid, Modal, theme } from "antd";
+import { CheckSquareOutlined, MenuOutlined } from "@ant-design/icons";
+import { useAuth } from "@/components/auth-provider";
+import { TasksList } from "@/components/tasks-card";
+import { TaskReminders } from "@/components/task-reminders";
 import { BpModal } from "@/components/bp-modal";
 import { HabitModal } from "@/components/habit-modal";
 import { useHealthData } from "@/components/health-data-provider";
@@ -19,6 +22,7 @@ const MENU_COLLAPSED_KEY = "quick-action-menu-collapsed";
 type MenuSide = "left" | "right";
 
 export function ReportDownload() {
+  const { user } = useAuth();
   const screens = Grid.useBreakpoint();
   const { token } = theme.useToken();
   const {
@@ -34,6 +38,7 @@ export function ReportDownload() {
   };
 
   const [habitOpen, setHabitOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
   const [bpOpen, setBpOpen] = useState(false);
   const [waterOpen, setWaterOpen] = useState(false);
   const [weightOpen, setWeightOpen] = useState(false);
@@ -134,6 +139,13 @@ export function ReportDownload() {
         }}
       >
         <FloatButton
+          aria-label="Tasks"
+          icon={<CheckSquareOutlined />}
+          tooltip={tip("Tasks")}
+          onClick={() => setTasksOpen(true)}
+          className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
           icon={<Icon name="habits" style={{ marginRight: 0, opacity: 1 }} />}
           tooltip={tip("Habits")}
           onClick={() => setHabitOpen(true)}
@@ -196,6 +208,19 @@ export function ReportDownload() {
           />
         ) : null}
       </FloatButton.Group>
+
+      <Modal
+        open={tasksOpen}
+        title={<><CheckSquareOutlined style={{ marginRight: 8 }} />Tasks</>}
+        onCancel={() => setTasksOpen(false)}
+        footer={null}
+        centered
+        destroyOnHidden
+        styles={{ body: { maxHeight: "70dvh", overflowY: "auto" } }}
+      >
+        {tasksOpen && <TasksList />}
+      </Modal>
+      {user && <TaskReminders key={user.uid} paused={tasksOpen} />}
 
       <HabitModal open={habitOpen} onClose={() => setHabitOpen(false)} />
 

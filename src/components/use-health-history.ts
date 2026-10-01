@@ -19,8 +19,10 @@ import { mapHabitDoc, type HabitEntry } from "@/models/habits";
 import { mapBpDoc, type BpReading } from "@/models/bp";
 import { mapWaterDoc, type WaterLog } from "@/models/water";
 import { mapIntakeDoc, type IntakeEntry } from "@/models/intake";
+import { mapTaskChecks, type TaskChecks } from "@/models/tasks";
 
 type HistoryData = {
+  taskChecks: TaskChecks[];
   dailies: DailyEntry[];
   habits: HabitEntry[];
   bpReadings: BpReading[];
@@ -31,6 +33,7 @@ type HistoryData = {
 export type HealthHistory = HistoryData & { ready: boolean };
 
 const EMPTY_DATA: HistoryData = {
+  taskChecks: [],
   dailies: [],
   habits: [],
   bpReadings: [],
@@ -65,14 +68,15 @@ async function loadHistory(uid: string, cutoff: string): Promise<HistoryData> {
       where("date", "<", cutoff),
       orderBy("date", "desc"),
     );
-  const [dailies, habits, bpReadings, waterLogs, intake] = await Promise.all([
+  const [dailies, habits, bpReadings, waterLogs, intake, taskChecks] = await Promise.all([
     pull(slice("dailies"), mapDailyDoc),
     pull(slice("habits"), mapHabitDoc),
     pull(slice("bpReadings"), mapBpDoc),
     pull(slice("waterLogs"), mapWaterDoc),
     pull(slice("intake"), mapIntakeDoc),
+    pull(slice("taskChecks"), mapTaskChecks).catch(() => []),
   ]);
-  return { dailies, habits, bpReadings, waterLogs, intake };
+  return { dailies, habits, bpReadings, waterLogs, intake, taskChecks };
 }
 
 export function useHealthHistory(
