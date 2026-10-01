@@ -222,7 +222,8 @@ export function IdealsModal({
           normalize={dayjsToTimes}
         >
           <TimePicker.RangePicker
-            format="HH:mm"
+            format="h:mm A"
+            use12Hours
             minuteStep={15}
             needConfirm={false}
             order={false}

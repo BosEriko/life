@@ -388,10 +388,11 @@ export function IntakeModal({
           <TimePicker
             value={time}
             onChange={(value) => value && setTime(value)}
-            format="HH:mm"
+            format="h:mm A"
+            use12Hours
             needConfirm={false}
             allowClear={false}
-            style={{ width: 110 }}
+            style={{ width: 130 }}
           />
         </Flex>
 

@@ -45,3 +45,7 @@ export function overdueTasks(tasks: Task[], completed: Record<string, boolean>, 
     .filter((task) => taskOccursOn(task, date) && task.time <= time && !completed[task.id])
     .sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
 }
+
+export function formatTaskTime(time: string) {
+  return dayjs(`2000-01-01T${time}`).format("h:mm A");
+}

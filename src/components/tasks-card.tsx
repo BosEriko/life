@@ -10,7 +10,7 @@ import { useTaskDay } from "@/components/use-day-records";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { RichText, plainText } from "@/components/rich-text";
 import { Tip } from "@/components/tip";
-import { taskOccursOn, type Task } from "@/lib/task-schedule";
+import { formatTaskTime, taskOccursOn, type Task } from "@/lib/task-schedule";
 import { removeTask, saveTask, setTaskChecked } from "@/models/tasks";
 import { todayKey } from "@/models/dailies";
 
@@ -53,7 +53,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
     <Flex vertical gap={10} style={initial.id ? undefined : { marginBottom: 20 }}>
         <Flex gap={8} wrap>
           <DatePicker aria-label="Task start date" allowClear={false} inputReadOnly value={dayjs(draft.startDate)} onChange={(date) => date && patch({ startDate: date.format("YYYY-MM-DD") })} style={{ flex: 1, minWidth: 150 }} />
-          <TimePicker aria-label="Task time" format="HH:mm" needConfirm={false} allowClear={false} value={dayjs(`${draft.startDate}T${draft.time}`)} onChange={(time) => time && patch({ time: time.format("HH:mm") })} style={{ width: 110 }} />
+          <TimePicker aria-label="Task time" format="h:mm A" use12Hours needConfirm={false} allowClear={false} value={dayjs(`${draft.startDate}T${draft.time}`)} onChange={(time) => time && patch({ time: time.format("HH:mm") })} style={{ width: 130 }} />
         </Flex>
         <Input aria-label="Task title" placeholder="Task title" prefix={<ScheduleOutlined style={{ opacity: 0.45 }} />} maxLength={120} value={draft.title} onChange={(event) => patch({ title: event.target.value })} autoFocus />
         <Input.TextArea aria-label="Task description" placeholder="Description (Optional)" maxLength={2000} autoSize={{ minRows: 2, maxRows: 4 }} value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
@@ -131,10 +131,10 @@ export function TasksList() {
           }} />
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
             <Typography.Text strong delete={scheduled && checked}><RichText text={task.title} /></Typography.Text>
-            {task.description && <Flex gap={6} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
+            {task.description && <Flex gap={8} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
             <Flex gap={12} wrap style={{ fontSize: 12 }}>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined /> {task.time}</Typography.Text>
-              <Tip title={scheduleHint(task)}><Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined /> Every {task.interval} {unit(task.repeat, task.interval)}</Typography.Text></Tip>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined style={{ marginRight: 6 }} />{formatTaskTime(task.time)}</Typography.Text>
+              <Tip title={scheduleHint(task)}><Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined style={{ marginRight: 6 }} />{task.interval === 1 ? `Every ${UNITS[task.repeat]}` : `Every ${task.interval} ${unit(task.repeat, task.interval)}`}</Typography.Text></Tip>
               {!scheduled && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Not scheduled today</Typography.Text>}
             </Flex>
           </div>

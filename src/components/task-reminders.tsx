@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { App, Button, Checkbox, Flex, Modal, Typography } from "antd";
-import { AlignLeftOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, ClockCircleOutlined, FieldTimeOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { RichText, plainText } from "@/components/rich-text";
-import { overdueTasks } from "@/lib/task-schedule";
+import { formatTaskTime, overdueTasks } from "@/lib/task-schedule";
 import { setTaskChecked } from "@/models/tasks";
 
 export function TaskReminders({ paused }: { paused: boolean }) {
@@ -35,7 +35,7 @@ export function TaskReminders({ paused }: { paused: boolean }) {
   const completed = taskChecks.find((row) => row.date === date)?.completed ?? {};
   const overdue = now && tasksReady && taskChecksReady ? overdueTasks(tasks, completed, now) : [];
   const open = !paused && !!now && now.getTime() >= snoozedUntil && overdue.length > 0;
-  const snooze = () => setSnoozedUntil(Date.now() + 15 * 60_000);
+  const snooze = () => setSnoozedUntil(Date.now() + 10 * 60_000);
 
   return (
     <Modal
@@ -43,7 +43,7 @@ export function TaskReminders({ paused }: { paused: boolean }) {
       centered
       title={<><ClockCircleOutlined /> Tasks waiting for you</>}
       onCancel={snooze}
-      footer={<Button onClick={snooze}>Remind me in 15 minutes</Button>}
+      footer={<Button icon={<FieldTimeOutlined />} onClick={snooze}>Snooze for 10 minutes</Button>}
       styles={{ body: { maxHeight: "60dvh", overflowY: "auto" } }}
     >
       <Typography.Paragraph type="secondary">Today’s unfinished tasks whose scheduled time has arrived. Check them off as you finish.</Typography.Paragraph>
@@ -59,8 +59,8 @@ export function TaskReminders({ paused }: { paused: boolean }) {
             />
             <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
               <Typography.Text strong><RichText text={task.title} /></Typography.Text>
-              <Flex gap={6} align="center"><Typography.Text type="secondary"><ClockCircleOutlined /></Typography.Text><Typography.Text type="secondary">{task.time}</Typography.Text></Flex>
-              {task.description && <Flex gap={6} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
+              <Flex gap={8} align="center"><Typography.Text type="secondary"><ClockCircleOutlined /></Typography.Text><Typography.Text type="secondary">{formatTaskTime(task.time)}</Typography.Text></Flex>
+              {task.description && <Flex gap={8} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
             </div>
           </Flex>
         ))}
