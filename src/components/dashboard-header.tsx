@@ -6,6 +6,7 @@ import { Button, Dropdown, Flex, Grid, theme } from "antd";
 import type { MenuProps } from "antd";
 import {
   DownOutlined,
+  CheckSquareOutlined,
   FileTextOutlined,
   IdcardOutlined,
   LogoutOutlined,
@@ -20,6 +21,7 @@ import { NAV } from "@/components/nav-items";
 const JOURNAL_TABS = [
   { href: "/journal/notes", label: "Notes", Icon: FileTextOutlined },
   { href: "/journal/tasks", label: "Tasks", Icon: ScheduleOutlined },
+  { href: "/journal/todo", label: "To-do", Icon: CheckSquareOutlined },
 ];
 
 export function DashboardHeader() {

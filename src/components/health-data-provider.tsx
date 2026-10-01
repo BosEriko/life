@@ -21,8 +21,14 @@ import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/ideals";
 import { watchWaterPresets, type WaterPreset } from "@/models/presets";
 import { watchTaskSettings, watchTaskChecks, type TaskChecks } from "@/models/tasks";
 import type { Task } from "@/lib/task-schedule";
+import { watchTodoSettings, watchTodos } from "@/models/todos";
+import type { Todo, TodoList } from "@/lib/todos";
 
 type HealthData = {
+  todos: Todo[];
+  todoLists: TodoList[];
+  todosReady: boolean;
+  todoError: boolean;
   tasks: Task[];
   taskChecks: TaskChecks[];
   tasksReady: boolean;
@@ -39,6 +45,10 @@ type HealthData = {
 };
 
 const HealthDataContext = createContext<HealthData>({
+  todos: [],
+  todoLists: [],
+  todosReady: false,
+  todoError: false,
   tasks: [],
   taskChecks: [],
   tasksReady: false,
@@ -74,6 +84,9 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const [taskChecks, setTaskChecks] = useState<TaskChecks[]>([]);
   const [tasksReady, setTasksReady] = useState(false);
   const [taskChecksReady, setTaskChecksReady] = useState(false);
+  const [todoRecords, setTodoRecords] = useState<{ uid: string; rows: Todo[] } | null>(null);
+  const [todoSettings, setTodoSettings] = useState<{ uid: string; lists: TodoList[] } | null>(null);
+  const [todoFailure, setTodoFailure] = useState<string | null>(null);
   const seen = useRef({
     dailies: false,
     habits: false,
@@ -106,6 +119,8 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
     };
 
     const unsubscribers = [
+      watchTodos(user.uid, cutoff, (rows) => setTodoRecords({ uid: user.uid, rows }), () => setTodoFailure(user.uid)),
+      watchTodoSettings(user.uid, (lists) => setTodoSettings({ uid: user.uid, lists }), () => setTodoFailure(user.uid)),
       watchTaskSettings(user.uid, (rows) => { setTasks(rows); setTasksReady(true); }, fail),
       watchTaskChecks(user.uid, cutoff, (rows) => { setTaskChecks(rows); setTaskChecksReady(true); }, fail),
       watchDailies(
@@ -166,6 +181,10 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<HealthData>(
     () => ({
+      todos: todoRecords?.uid === user?.uid ? todoRecords?.rows ?? [] : [],
+      todoLists: todoSettings?.uid === user?.uid ? todoSettings?.lists ?? [] : [],
+      todosReady: !!user && todoRecords?.uid === user.uid && todoSettings?.uid === user.uid,
+      todoError: !!user && todoFailure === user.uid,
       tasks,
       taskChecks,
       tasksReady,
@@ -181,6 +200,10 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       ready,
     }),
     [
+      user,
+      todoRecords,
+      todoSettings,
+      todoFailure,
       tasks,
       taskChecks,
       tasksReady,

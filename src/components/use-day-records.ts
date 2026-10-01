@@ -9,6 +9,25 @@ import { watchWaterForDate, type WaterLog } from "@/models/water";
 import { watchIntakeForDate, type IntakeEntry } from "@/models/intake";
 import { watchTaskDay, type TaskChecks } from "@/models/tasks";
 import { useHealthData } from "@/components/health-data-provider";
+import { watchTodosForDate } from "@/models/todos";
+import type { Todo } from "@/lib/todos";
+
+export function useTodoDay(date: string, enabled: boolean) {
+  const { user } = useAuth();
+  const { todos, todosReady, cutoff, todoError } = useHealthData();
+  const inWindow = !!cutoff && date >= cutoff;
+  const [state, setState] = useState<{ uid: string; date: string; rows: Todo[]; error: boolean } | null>(null);
+  useEffect(() => {
+    if (!enabled || !user || inWindow) return;
+    return watchTodosForDate(user.uid, date,
+      (rows) => setState({ uid: user.uid, date, rows, error: false }),
+      () => setState({ uid: user.uid, date, rows: [], error: true }));
+  }, [enabled, user, date, inWindow]);
+  if (!enabled) return { rows: [], ready: false, error: false };
+  if (inWindow) return { rows: todos.filter((todo) => todo.date === date), ready: todosReady, error: todoError };
+  const current = state?.uid === user?.uid && state?.date === date;
+  return { rows: current ? state!.rows : [], ready: current, error: current && state!.error };
+}
 
 export function useTaskDay(date: string, enabled: boolean) {
   const { user } = useAuth();

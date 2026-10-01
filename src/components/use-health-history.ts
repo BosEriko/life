@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   collection,
   getDocs,
@@ -20,6 +20,8 @@ import { mapBpDoc, type BpReading } from "@/models/bp";
 import { mapWaterDoc, type WaterLog } from "@/models/water";
 import { mapIntakeDoc, type IntakeEntry } from "@/models/intake";
 import { mapTaskChecks, type TaskChecks } from "@/models/tasks";
+import { mapTodoDoc } from "@/models/todos";
+import type { Todo } from "@/lib/todos";
 
 type HistoryData = {
   taskChecks: TaskChecks[];
@@ -45,6 +47,10 @@ const DISABLED: HealthHistory = { ...EMPTY_DATA, ready: true };
 const LOADING: HealthHistory = { ...EMPTY_DATA, ready: false };
 
 const cache = new Map<string, Promise<HistoryData>>();
+
+function pullTodoHistory(uid: string, cutoff: string): Promise<Todo[]> {
+  return pull(query(collection(getFirebaseDb(), "users", uid, "todos"), where("date", "<", cutoff), orderBy("date", "desc")), mapTodoDoc).catch(() => []);
+}
 
 async function pull<T>(
   built: Query,
@@ -110,4 +116,32 @@ export function useHealthHistory(
   if (!key) return DISABLED;
   if (loaded?.key === key) return { ...loaded.data, ready: true };
   return LOADING;
+}
+
+const todoCache = new Map<string, Promise<Todo[]>>();
+const NO_TODOS: Todo[] = [];
+
+export function useTodoHistory(enabled: boolean, cutoff: string) {
+  const { user } = useAuth();
+  const key = enabled && user && cutoff ? `${user.uid}|${cutoff}` : null;
+  const [loaded, setLoaded] = useState<{ key: string; todos: Todo[] } | null>(null);
+
+  useEffect(() => {
+    if (!key || !user) return;
+    let alive = true;
+    if (!todoCache.has(key)) todoCache.set(key, pullTodoHistory(user.uid, cutoff));
+    todoCache.get(key)!.then((todos) => {
+      if (alive) setLoaded({ key, todos });
+    });
+    return () => { alive = false; };
+  }, [key, user, cutoff]);
+
+  const refresh = useCallback(() => {
+    if (!key || !user) return;
+    const next = pullTodoHistory(user.uid, cutoff);
+    todoCache.set(key, next);
+    next.then((todos) => setLoaded({ key, todos }));
+  }, [key, user, cutoff]);
+
+  return { todos: key && loaded?.key === key ? loaded.todos : NO_TODOS, ready: !key || loaded?.key === key, refresh };
 }

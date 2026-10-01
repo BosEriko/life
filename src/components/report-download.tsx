@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FloatButton, Grid, theme } from "antd";
-import { ScheduleOutlined, MenuOutlined } from "@ant-design/icons";
+import { CheckSquareOutlined, ScheduleOutlined, MenuOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { AddTaskModal } from "@/components/tasks-card";
 import { TaskReminders } from "@/components/task-reminders";
+import { TodoEditor } from "@/components/todo-editor";
 import { BpModal } from "@/components/bp-modal";
 import { HabitModal } from "@/components/habit-modal";
 import { useHealthData } from "@/components/health-data-provider";
@@ -30,6 +31,9 @@ export function ReportDownload() {
     bpReadings,
     waterLogs,
     intake: intakeEntries,
+    todoLists,
+    todosReady,
+    todoError,
   } = useHealthData();
 
   const controlStyle = {
@@ -39,6 +43,7 @@ export function ReportDownload() {
 
   const [habitOpen, setHabitOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [todoOpen, setTodoOpen] = useState(false);
   const [bpOpen, setBpOpen] = useState(false);
   const [waterOpen, setWaterOpen] = useState(false);
   const [weightOpen, setWeightOpen] = useState(false);
@@ -139,6 +144,14 @@ export function ReportDownload() {
         }}
       >
         <FloatButton
+          aria-label="Add to-do"
+          icon={<CheckSquareOutlined />}
+          tooltip={tip("To-do")}
+          onClick={() => setTodoOpen(true)}
+          disabled={!todosReady || todoError}
+          className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+        />
+        <FloatButton
           aria-label="Tasks"
           icon={<ScheduleOutlined />}
           tooltip={tip("Tasks")}
@@ -210,6 +223,7 @@ export function ReportDownload() {
       </FloatButton.Group>
 
       <AddTaskModal open={tasksOpen} onClose={() => setTasksOpen(false)} />
+      {todoOpen && <TodoEditor initial={null} lists={todoLists} listId="inbox" onClose={() => setTodoOpen(false)} />}
       {user && <TaskReminders key={user.uid} paused={tasksOpen} />}
 
       <HabitModal open={habitOpen} onClose={() => setHabitOpen(false)} />
