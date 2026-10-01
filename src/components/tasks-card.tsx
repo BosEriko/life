@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
+import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Modal, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
 import { ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -22,7 +22,7 @@ function newTask(date: string): Task {
   return { id: "", title: "", description: "", time: "09:00", startDate: date, repeat: "daily", interval: 1, weekdays: [start.day()], monthlyMode: "date", monthDay: start.date(), ordinal: 1, weekday: start.day(), month: start.month() };
 }
 
-function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (task: Task) => void; onCancel: () => void }) {
+function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (task: Task) => void; onCancel?: () => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const [draft, setDraft] = useState(initial);
@@ -39,8 +39,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
   }
 
   return (
-    <Flex vertical gap={10} style={{ marginBottom: 20 }}>
-        {initial.id && <Typography.Text strong>Edit task</Typography.Text>}
+    <Flex vertical gap={10} style={initial.id ? undefined : { marginBottom: 20 }}>
         <Flex gap={8} wrap>
           <DatePicker aria-label="Task start date" allowClear={false} inputReadOnly value={dayjs(draft.startDate)} onChange={(date) => date && patch({ startDate: date.format("YYYY-MM-DD") })} style={{ flex: 1, minWidth: 150 }} />
           <TimePicker aria-label="Task time" format="HH:mm" needConfirm={false} allowClear={false} value={dayjs(`${draft.startDate}T${draft.time}`)} onChange={(time) => time && patch({ time: time.format("HH:mm") })} style={{ width: 110 }} />
@@ -66,7 +65,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
         </Flex>}
         {initial.id && <Typography.Text type="secondary">Changes apply to the recurring schedule. Completed days remain saved.</Typography.Text>}
         <Button type="primary" disabled={!valid} onClick={submit}>{initial.id ? "Save changes" : "Add task"}</Button>
-        {initial.id && <Button onClick={onCancel}>Cancel editing</Button>}
+        {initial.id && <Button onClick={onCancel}>Cancel</Button>}
     </Flex>
   );
 }
@@ -78,6 +77,7 @@ export function TasksList() {
   const { tasks, tasksReady } = useHealthData();
   const [date, setDate] = useState(todayKey);
   const [editing, setEditing] = useState<Task | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [manage, setManage] = useState(false);
   const { row, error } = useTaskDay(date, true);
   const due = tasks.filter((task) => taskOccursOn(task, date)).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
@@ -87,7 +87,10 @@ export function TasksList() {
   return (
     <div style={{ minWidth: 0 }}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>Build your routine. Add a task and its schedule, then check it off each day.</Typography.Paragraph>
-      <TaskForm key={editing?.id ?? "new"} initial={editing ?? newTask(date)} onSaved={(task) => { if (!editing) setDate(task.startDate); setEditing(null); }} onCancel={() => setEditing(null)} />
+      <TaskForm key="new" initial={newTask(date)} onSaved={(task) => setDate(task.startDate)} />
+      <Modal open={editOpen} centered title={<><ScheduleOutlined /> Edit task</>} footer={null} onCancel={() => setEditOpen(false)} afterClose={() => setEditing(null)}>
+        {editing && <TaskForm key={editing.id} initial={editing} onSaved={() => setEditOpen(false)} onCancel={() => setEditOpen(false)} />}
+      </Modal>
       <Flex align="center" gap={8} wrap style={{ marginBottom: 16 }}>
         <Button aria-label="Previous task day" icon={<LeftOutlined />} onClick={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))} />
         <DatePicker aria-label="Checklist date" allowClear={false} inputReadOnly value={dayjs(date)} onChange={(value) => value && setDate(value.format("YYYY-MM-DD"))} style={{ width: 140 }} />
@@ -121,10 +124,10 @@ export function TasksList() {
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>{task.time} · Every {task.interval} {UNITS[task.repeat]}{!scheduled ? " · Not scheduled today" : ""}</Typography.Text>
           </div>
           <Flex gap={2}>
-            <Button type="text" size="small" aria-label={`Edit ${plainText(task.title)}`} icon={<EditOutlined />} onClick={() => setEditing(task)} />
+            <Button type="text" size="small" aria-label={`Edit ${plainText(task.title)}`} icon={<EditOutlined />} onClick={() => { setEditing(task); setEditOpen(true); }} />
             <ConfirmDeleteButton ariaLabel={`Delete ${plainText(task.title)}`} hint="Tap again to delete this recurring task" onConfirm={() => {
               if (!user) return;
-              if (editing?.id === task.id) setEditing(null);
+              if (editing?.id === task.id) setEditOpen(false);
               removeTask(user.uid, task.id).catch(() => message.error("Could not delete task."));
             }} />
           </Flex>
