@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useRef, useState, type ComponentRef } from "react";
-import { App, DatePicker, Flex, InputNumber, Modal, Typography } from "antd";
+import { App, DatePicker, Flex, InputNumber, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -84,7 +86,7 @@ export function WeightModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title={
@@ -144,6 +146,6 @@ export function WeightModal({
           </div>
         </IdealTip>
       </Flex>
-    </Modal>
+    </AppModal>
   );
 }

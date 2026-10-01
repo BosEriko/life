@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useState } from "react";
 import {
   App,
@@ -8,7 +10,6 @@ import {
   Flex,
   Input,
   InputNumber,
-  Modal,
   Segmented,
   Select,
   TimePicker,
@@ -102,7 +103,7 @@ export function IntakeEditModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open
       centered
       title="Edit entry"
@@ -199,6 +200,6 @@ export function IntakeEditModal({
           onChange={(event) => setNote(event.target.value)}
         />
       </Flex>
-    </Modal>
+    </AppModal>
   );
 }

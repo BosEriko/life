@@ -200,19 +200,22 @@ body {
     max-width: calc(100vw - 24px);
     margin: 0 auto;
   }
+}
 
-  .ant-modal-container {
-    max-height: calc(100dvh - 48px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+.app-modal .ant-modal-wrap {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 
-  .ant-modal-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-  }
+.app-modal .ant-modal {
+  max-width: calc(100vw - 24px);
+  padding-bottom: 24px;
+}
+
+.app-modal .ant-modal-container,
+.app-modal .ant-modal-body {
+  max-height: none;
+  overflow: visible;
 }
 
 /* tables that sit flush against a card's edges: square corners and scroll

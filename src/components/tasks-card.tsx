@@ -1,9 +1,11 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Modal, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
+import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
 import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -86,14 +88,14 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
 export function AddTaskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   return (
-    <Modal open={open} centered title={<><ScheduleOutlined style={{ marginRight: 8 }} />New task</>} footer={null} onCancel={onClose} destroyOnHidden>
+    <AppModal open={open} centered title={<><ScheduleOutlined style={{ marginRight: 8 }} />New task</>} footer={null} onCancel={onClose} destroyOnHidden>
       {open && <TaskForm initial={newTask(todayKey())} onSaved={onClose} />}
       {pathname !== "/journal/tasks" && (
         <Flex justify="center" style={{ marginTop: 12 }}>
           <Link href="/journal/tasks" onClick={onClose}>See all tasks in Journal</Link>
         </Flex>
       )}
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -113,9 +115,9 @@ export function TasksList() {
 
   return (
     <div style={{ minWidth: 0 }}>
-      <Modal open={editOpen} centered title={<><ScheduleOutlined /> Edit task</>} footer={null} onCancel={() => setEditOpen(false)} afterClose={() => setEditing(null)}>
+      <AppModal open={editOpen} centered title={<><ScheduleOutlined /> Edit task</>} footer={null} onCancel={() => setEditOpen(false)} afterClose={() => setEditing(null)}>
         {editing && <TaskForm key={editing.id} initial={editing} onSaved={() => setEditOpen(false)} onCancel={() => setEditOpen(false)} />}
-      </Modal>
+      </AppModal>
       <Flex align="center" gap={8} wrap style={{ marginBottom: 16 }}>
         <Button aria-label="Previous task day" icon={<LeftOutlined />} onClick={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))} />
         <DatePicker aria-label="Checklist date" allowClear={false} inputReadOnly value={dayjs(date)} onChange={(value) => value && setDate(value.format("YYYY-MM-DD"))} style={{ width: 140 }} />

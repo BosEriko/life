@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useRef, useState, type ComponentRef } from "react";
 import {
   App,
@@ -8,7 +10,6 @@ import {
   Flex,
   Grid,
   Input,
-  Modal,
   Typography,
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
@@ -56,7 +57,7 @@ export function NotesModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title={
@@ -90,7 +91,7 @@ export function NotesModal({
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder="What's on your mind?"
-          autoSize={{ minRows: 3, maxRows: 10 }}
+          autoSize={{ minRows: 3 }}
           onKeyDown={
             enterToSave
               ? (event) => {
@@ -111,6 +112,6 @@ export function NotesModal({
           Add note
         </Button>
       </Flex>
-    </Modal>
+    </AppModal>
   );
 }

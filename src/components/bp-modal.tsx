@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useMemo, useRef, useState, type ComponentRef } from "react";
 import {
   App,
@@ -7,7 +9,6 @@ import {
   DatePicker,
   Flex,
   InputNumber,
-  Modal,
   Segmented,
   theme,
   TimePicker,
@@ -132,7 +133,7 @@ export function BpModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title={
@@ -315,6 +316,6 @@ export function BpModal({
           })}
         </Flex>
       )}
-    </Modal>
+    </AppModal>
   );
 }

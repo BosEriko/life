@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useEffect, useState } from "react";
-import { App, Button, Checkbox, Flex, Modal, Typography } from "antd";
+import { App, Button, Checkbox, Flex, Typography } from "antd";
 import { AlignLeftOutlined, BellOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -39,13 +41,12 @@ export function TaskReminders({ paused }: { paused: boolean }) {
   const snooze = () => setSnoozedUntil(Date.now() + 10 * 60_000);
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title={<><ClockCircleOutlined /> Tasks waiting for you</>}
       onCancel={snooze}
       footer={<Tip title="Snooze for 10 minutes" placement="bottom"><Button icon={<BellOutlined />} onClick={snooze}>Snooze</Button></Tip>}
-      styles={{ body: { maxHeight: "60dvh", overflowY: "auto" } }}
     >
       <Typography.Paragraph type="secondary">Today’s unfinished tasks whose scheduled time has arrived. Check them off as you finish.</Typography.Paragraph>
       <Flex vertical gap={20}>
@@ -66,6 +67,6 @@ export function TaskReminders({ paused }: { paused: boolean }) {
           </Flex>
         ))}
       </Flex>
-    </Modal>
+    </AppModal>
   );
 }

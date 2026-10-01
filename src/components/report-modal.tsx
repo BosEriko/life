@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useMemo, useState } from "react";
-import { App, Checkbox, Divider, Modal, Segmented, Typography } from "antd";
+import { App, Checkbox, Divider, Segmented, Typography } from "antd";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -617,7 +619,7 @@ export function ReportModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title="Download report"
@@ -656,6 +658,6 @@ export function ReportModal({
           marginTop: 10,
         }}
       />
-    </Modal>
+    </AppModal>
   );
 }

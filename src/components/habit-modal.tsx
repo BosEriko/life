@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useState } from "react";
-import { App, Checkbox, DatePicker, Flex, Modal, Typography } from "antd";
+import { App, Checkbox, DatePicker, Flex, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHabitDoc } from "@/components/use-day-records";
@@ -51,7 +53,7 @@ export function HabitModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title={
@@ -105,6 +107,6 @@ export function HabitModal({
           </Flex>
         </Flex>
       </Flex>
-    </Modal>
+    </AppModal>
   );
 }

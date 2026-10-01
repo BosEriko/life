@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useState } from "react";
-import { App, Button, Checkbox, DatePicker, Flex, Form, Input, Modal, Select, TimePicker, Typography } from "antd";
+import { App, Button, Checkbox, DatePicker, Flex, Form, Input, Select, TimePicker, Typography } from "antd";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -41,14 +43,14 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
   }
 
   return (
-    <Modal open centered title={initial ? "Edit to-do" : "Add to-do"} onCancel={onClose} footer={null} styles={{ body: { maxHeight: "65dvh", overflowY: "auto" } }}>
+    <AppModal open centered title={initial ? "Edit to-do" : "Add to-do"} onCancel={onClose} footer={null}>
       <Typography.Paragraph type="secondary">Give it a clear next step. Add a deadline or break it into smaller steps.</Typography.Paragraph>
       <Form layout="vertical" onFinish={submit}>
         <Form.Item label="Title" required>
           <Input aria-label="To-do title" autoFocus maxLength={120} placeholder="What needs to get done?" value={draft.title} onChange={(event) => patch({ title: event.target.value })} />
         </Form.Item>
         <Form.Item label="Description">
-          <Input.TextArea aria-label="To-do description" maxLength={2000} autoSize={{ minRows: 2, maxRows: 5 }} placeholder="Details, context, or a helpful link" value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
+          <Input.TextArea aria-label="To-do description" maxLength={2000} autoSize={{ minRows: 2 }} placeholder="Details, context, or a helpful link" value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
         </Form.Item>
         <Flex gap={12} wrap>
           <Form.Item label="List" style={{ flex: 1, minWidth: 140 }}>
@@ -87,6 +89,6 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
         {validation && draft.title.trim() && <Typography.Paragraph type="danger">{validation}</Typography.Paragraph>}
         <Button type="primary" htmlType="submit" block disabled={!!validation}>{initial ? "Save changes" : "Add to-do"}</Button>
       </Form>
-    </Modal>
+    </AppModal>
   );
 }

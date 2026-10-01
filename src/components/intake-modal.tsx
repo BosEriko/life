@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import {
   useEffect,
   useMemo,
@@ -17,7 +19,6 @@ import {
   Flex,
   Input,
   InputNumber,
-  Modal,
   Segmented,
   Select,
   theme,
@@ -354,7 +355,7 @@ export function IntakeModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title={
@@ -652,6 +653,6 @@ export function IntakeModal({
           onClose={() => setEditing(null)}
         />
       ) : null}
-    </Modal>
+    </AppModal>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Modal, Select, Spin, Tag, theme, Typography } from "antd";
+import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Select, Spin, Tag, theme, Typography } from "antd";
 import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, FlagOutlined, FolderOutlined, InboxOutlined, PlusOutlined, SearchOutlined, UnorderedListOutlined, UndoOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -33,9 +35,9 @@ function ListEditor({ initial, onClose }: { initial: TodoList | null; onClose: (
     saveTodoList(user.uid, { id: initial?.id ?? crypto.randomUUID(), name }).catch(() => message.error("Could not save list."));
     onClose();
   };
-  return <Modal open centered title={initial ? "Rename list" : "New list"} onCancel={onClose} onOk={submit} okText="Save list" okButtonProps={{ disabled: !name.trim() }}>
+  return <AppModal open centered title={initial ? "Rename list" : "New list"} onCancel={onClose} onOk={submit} okText="Save list" okButtonProps={{ disabled: !name.trim() }}>
     <Input aria-label="List name" placeholder="e.g. Work, Home, Personal" autoFocus maxLength={60} value={name} onChange={(event) => setName(event.target.value)} onPressEnter={submit} />
-  </Modal>;
+  </AppModal>;
 }
 
 function CompletedDetails({ initial, onClose }: { initial: Todo; onClose: () => void }) {
@@ -51,7 +53,7 @@ function CompletedDetails({ initial, onClose }: { initial: Todo; onClose: () => 
     return () => window.clearTimeout(timer);
   }, [pending, ready, current, error, onClose]);
 
-  return <Modal open centered title="Completed to-do" onCancel={onClose} footer={null} styles={{ body: { maxHeight: "65dvh", overflowY: "auto" } }}>
+  return <AppModal open centered title="Completed to-do" onCancel={onClose} footer={null}>
     {error ? <Alert type="error" title="Could not load this to-do." /> : !ready ? <Spin /> : !current ? <Typography.Text type="secondary">This to-do has been restored or removed.</Typography.Text> : <Flex vertical gap={16}>
       <Typography.Title level={4} style={{ margin: 0, overflowWrap: "anywhere" }}>{current.title}</Typography.Title>
       {current.description && <Typography.Paragraph style={{ margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{current.description}</Typography.Paragraph>}
@@ -70,7 +72,7 @@ function CompletedDetails({ initial, onClose }: { initial: Todo; onClose: () => 
         }} />
       </Flex>
     </Flex>}
-  </Modal>;
+  </AppModal>;
 }
 
 export function TodoWorkspace() {

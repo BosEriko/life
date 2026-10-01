@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useState } from "react";
-import { App, Button, Flex, Input, InputNumber, Modal, Typography } from "antd";
+import { App, Button, Flex, Input, InputNumber, Typography } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { useUnits } from "@/components/units-provider";
@@ -65,7 +67,7 @@ export function WaterPresetsModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title="Water presets"
@@ -130,6 +132,6 @@ export function WaterPresetsModal({
           ))}
         </Flex>
       )}
-    </Modal>
+    </AppModal>
   );
 }

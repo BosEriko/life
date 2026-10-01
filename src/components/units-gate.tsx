@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useState } from "react";
-import { App, Flex, Modal, Segmented, Typography } from "antd";
+import { App, Flex, Segmented, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { saveProfile } from "@/models/profile";
 import {
@@ -51,7 +53,7 @@ export function UnitsGate({ current }: { current: Units }) {
   }
 
   return (
-    <Modal
+    <AppModal
       open
       centered
       closable={false}
@@ -99,6 +101,6 @@ export function UnitsGate({ current }: { current: Units }) {
           />
         </div>
       </Flex>
-    </Modal>
+    </AppModal>
   );
 }

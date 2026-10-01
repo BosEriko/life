@@ -1,12 +1,13 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useEffect, useState } from "react";
 import {
   App,
   Flex,
   Form,
   InputNumber,
-  Modal,
   TimePicker,
   Typography,
 } from "antd";
@@ -156,7 +157,7 @@ export function IdealsModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title="Ideal ranges"
@@ -231,6 +232,6 @@ export function IdealsModal({
           />
         </Form.Item>
       </Form>
-    </Modal>
+    </AppModal>
   );
 }

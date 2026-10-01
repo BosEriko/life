@@ -1,7 +1,9 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useEffect, useState } from "react";
-import { App, Button, Modal, Typography } from "antd";
+import { App, Button, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { isAdminEmail } from "@/lib/admin";
 import { testClaudeConnection } from "@/models/claude-integration";
@@ -59,7 +61,7 @@ export function CreditAlert() {
   }
 
   return (
-    <Modal
+    <AppModal
       open
       centered
       title="Anthropic credits exhausted"
@@ -102,6 +104,6 @@ export function CreditAlert() {
           {alert.message}
         </Typography.Paragraph>
       ) : null}
-    </Modal>
+    </AppModal>
   );
 }

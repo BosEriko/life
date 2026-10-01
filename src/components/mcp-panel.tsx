@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   App,
@@ -7,7 +9,6 @@ import {
   Card,
   Divider,
   Flex,
-  Modal,
   Spin,
   Tabs,
   theme,
@@ -140,7 +141,7 @@ export function McpPanel() {
         subtitle="Read-only access to your entries, targets, and presets for any MCP-capable agent."
       />
 
-      <Modal
+      <AppModal
         open={confirmOpen}
         centered
         title="Copy with MCP key?"
@@ -165,7 +166,7 @@ export function McpPanel() {
           <strong>No</strong> copies a version with a{" "}
           <Typography.Text code>{KEY_PLACEHOLDER}</Typography.Text> placeholder.
         </Typography.Paragraph>
-      </Modal>
+      </AppModal>
 
       <div className="split-grid split-grid-even">
         <Flex vertical gap={16} style={{ minWidth: 0 }}>

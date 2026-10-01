@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useMemo, useRef, useState, type ComponentRef } from "react";
 import {
   App,
@@ -7,7 +9,6 @@ import {
   DatePicker,
   Flex,
   InputNumber,
-  Modal,
   theme,
   TimePicker,
   Typography,
@@ -124,7 +125,7 @@ export function WaterModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open={open}
       centered
       title={
@@ -282,6 +283,6 @@ export function WaterModal({
         onClose={() => setPresetsOpen(false)}
         presets={presets}
       />
-    </Modal>
+    </AppModal>
   );
 }

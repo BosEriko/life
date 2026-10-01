@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useEffect, useMemo, useState } from "react";
 import {
   App,
@@ -9,7 +11,6 @@ import {
   Empty,
   Flex,
   Grid,
-  Modal,
   Spin,
   theme,
   Typography,
@@ -312,7 +313,7 @@ export default function NotesPage() {
         </Card>
       </div>
 
-      <Modal
+      <AppModal
         open={noteToShare !== null}
         centered
         title={
@@ -345,7 +346,7 @@ export default function NotesPage() {
             </Typography.Text>
           </Card>
         )}
-      </Modal>
+      </AppModal>
       {notesOpen && (
         <NotesModal
           open

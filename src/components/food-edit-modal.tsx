@@ -1,5 +1,7 @@
 "use client";
 
+import { AppModal } from "@/components/app-modal";
+
 import { useState } from "react";
 import {
   App,
@@ -7,7 +9,6 @@ import {
   Flex,
   Input,
   InputNumber,
-  Modal,
   Segmented,
   Select,
 } from "antd";
@@ -89,7 +90,7 @@ export function FoodEditModal({
   }
 
   return (
-    <Modal
+    <AppModal
       open
       centered
       title="Edit item"
@@ -159,6 +160,6 @@ export function FoodEditModal({
           onPressEnter={handleSave}
         />
       </Flex>
-    </Modal>
+    </AppModal>
   );
 }
