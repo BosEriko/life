@@ -5,7 +5,7 @@ import { AppModal } from "@/components/app-modal";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
+import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Select, Spin, TimePicker, Typography, theme } from "antd";
 import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -99,7 +99,9 @@ export function AddTaskModal({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
-export function TasksList() {
+export type TaskView = "today" | Task["repeat"];
+
+export function TasksList({ view = "today" }: { view?: TaskView }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
@@ -107,10 +109,10 @@ export function TasksList() {
   const [date, setDate] = useState(todayKey);
   const [editing, setEditing] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
-  const [manage, setManage] = useState(false);
-  const { row, error } = useTaskDay(date, true);
+  const manage = view !== "today";
+  const { row, error } = useTaskDay(date, !manage);
   const due = tasks.filter((task) => taskOccursOn(task, date)).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
-  const shown = manage ? [...tasks].sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title)) : due;
+  const shown = manage ? tasks.filter((task) => task.repeat === view).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title)) : due;
   const count = due.filter((task) => row?.completed[task.id]).length;
 
   return (
@@ -118,40 +120,27 @@ export function TasksList() {
       <AppModal open={editOpen} centered title={<><ScheduleOutlined /> Edit task</>} footer={null} onCancel={() => setEditOpen(false)} afterClose={() => setEditing(null)}>
         {editing && <TaskForm key={editing.id} initial={editing} onSaved={() => setEditOpen(false)} onCancel={() => setEditOpen(false)} />}
       </AppModal>
-      <Flex align="center" gap={8} wrap style={{ marginBottom: 16 }}>
+      {!manage && <Flex align="center" gap={8} wrap style={{ marginBottom: 16 }}>
         <Button aria-label="Previous task day" icon={<LeftOutlined />} onClick={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))} />
         <DatePicker aria-label="Checklist date" allowClear={false} inputReadOnly value={dayjs(date)} onChange={(value) => value && setDate(value.format("YYYY-MM-DD"))} style={{ width: 140 }} />
         <Button aria-label="Next task day" icon={<RightOutlined />} onClick={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))} />
         <Button onClick={() => setDate(todayKey())}>Today</Button>
-      </Flex>
-      <Flex justify="space-between" align="center" gap={8} wrap style={{ marginBottom: 12 }}>
-        <Typography.Text type="secondary">{row ? `${count} of ${due.length} completed` : "Loading checklist…"}</Typography.Text>
-        <Segmented
-          aria-label="Task view"
-          options={[
-            { label: "Daily checklist", value: "daily" },
-            { label: "Manage all tasks", value: "all" },
-          ]}
-          value={manage ? "all" : "daily"}
-          onChange={(value) => setManage(value === "all")}
-          style={{ maxWidth: "100%", overflowX: "auto" }}
-        />
-      </Flex>
-      {error && <Alert type="error" title="Could not load this checklist." />}
-      {!tasksReady || (!row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? "No tasks yet. Add your first routine." : "No tasks scheduled for this day."} /> : shown.map((task) => {
+      </Flex>}
+      <Typography.Paragraph type="secondary">{manage ? `${shown.length} ${view} ${shown.length === 1 ? "task" : "tasks"}` : row ? `${count} of ${due.length} completed` : "Loading checklist…"}</Typography.Paragraph>
+      {!manage && error && <Alert type="error" title="Could not load this checklist." />}
+      {!tasksReady || (!manage && !row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? `No ${view} tasks yet.` : "No tasks scheduled for this day."} /> : shown.map((task) => {
         const scheduled = taskOccursOn(task, date);
         const checked = !!row?.completed[task.id];
         return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "16px 0", borderTop: `1px solid ${token.colorBorderSecondary}` }}>
-          <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={scheduled && checked} disabled={!scheduled || !row || error} onChange={(event) => {
+          {!manage && <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={scheduled && checked} disabled={!scheduled || !row || error} onChange={(event) => {
             if (user) setTaskChecked(user.uid, date, task.id, event.target.checked).catch(() => message.error("Could not update task."));
-          }} />
+          }} />}
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
-            <Typography.Text strong delete={scheduled && checked}><RichText text={task.title} /></Typography.Text>
+            <Typography.Text strong delete={!manage && scheduled && checked}><RichText text={task.title} /></Typography.Text>
             {task.description && <Flex gap={8} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
             <Flex gap={12} wrap style={{ fontSize: 12 }}>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined style={{ marginRight: 6 }} />{formatTaskTime(task.time)}</Typography.Text>
               <Tip title={scheduleHint(task)}><Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined style={{ marginRight: 6 }} />{task.interval === 1 ? `Every ${UNITS[task.repeat]}` : `Every ${task.interval} ${unit(task.repeat, task.interval)}`}</Typography.Text></Tip>
-              {!scheduled && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Not scheduled today</Typography.Text>}
             </Flex>
           </div>
           <Flex gap={2}>
