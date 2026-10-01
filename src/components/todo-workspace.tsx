@@ -4,6 +4,7 @@ import { AppModal } from "@/components/app-modal";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Select, Spin, Tag, theme, Typography } from "antd";
 import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, FlagOutlined, FolderOutlined, InboxOutlined, PlusOutlined, SearchOutlined, UnorderedListOutlined, UndoOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -15,7 +16,7 @@ import { useTodoHistory } from "@/components/use-health-history";
 import { useTodoDay } from "@/components/use-day-records";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
-import { filterTodos, isTodoOverdue, todoListId, type Todo, type TodoList, type TodoPriority, type TodoSort, type TodoView } from "@/lib/todos";
+import { filterTodos, isTodoOverdue, todoListId, todoViewFromQuery, type Todo, type TodoList, type TodoPriority, type TodoSort, type TodoView } from "@/lib/todos";
 import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/todos";
 
 const VIEWS = [
@@ -81,8 +82,9 @@ export function TodoWorkspace() {
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const { todos, todoLists: lists, todosReady, todoError, cutoff } = useHealthData();
-  const [view, setView] = useState<TodoView>("all");
-  const [listId, setListId] = useState("all");
+  const params = useSearchParams();
+  const view = todoViewFromQuery(params.get("view"));
+  const listId = params.get("list") || "all";
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState<TodoPriority | "all">("all");
   const [status, setStatus] = useState<"all" | "todo" | "doing">("all");
@@ -99,6 +101,16 @@ export function TodoWorkspace() {
   const currentView = VIEWS.find((item) => item.value === view)!;
   const heading = selectedList === "all" ? currentView.label : selectedList === "inbox" ? "Inbox" : lists.find((list) => list.id === selectedList)?.name ?? "Inbox";
   const write = (promise: Promise<void>, error: string) => { promise.catch(() => message.error(error)); };
+
+  function navigateView(nextView: TodoView, nextList = "all") {
+    const query = new URLSearchParams(params.toString());
+    if (nextView === "all") query.delete("view");
+    else query.set("view", nextView);
+    if (nextList === "all") query.delete("list");
+    else query.set("list", nextList);
+    const search = query.toString();
+    window.history.pushState(null, "", `/journal/todo${search ? `?${search}` : ""}`);
+  }
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -121,15 +133,15 @@ export function TodoWorkspace() {
     <div style={{ display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" }}>
       <Card styles={{ body: { padding: 16 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
         <Flex vertical gap={4}>
-          {VIEWS.map(({ value, label, Icon }) => <div key={value}>{navButton(label, value === "completed" ? undefined : filterTodos(active, lists, { view: value, listId: "all", search: "", priority: "all", status: "all", sort: "due", now }).length, view === value && selectedList === "all", <Icon />, () => { setView(value); setListId("all"); })}</div>)}
+          {VIEWS.map(({ value, label, Icon }) => <div key={value}>{navButton(label, value === "completed" ? undefined : filterTodos(active, lists, { view: value, listId: "all", search: "", priority: "all", status: "all", sort: "due", now }).length, view === value && selectedList === "all", <Icon />, () => navigateView(value))}</div>)}
         </Flex>
         <Flex align="center" justify="space-between" style={{ marginTop: 24, marginBottom: 8 }}>
           <Typography.Text strong>Lists</Typography.Text>
           <Button type="text" size="small" icon={<PlusOutlined />} aria-label="Add list" disabled={!todosReady || todoError} onClick={() => setListEditor(null)} />
         </Flex>
-        {navButton("Inbox", active.filter((todo) => todoListId(todo, lists) === "inbox").length, selectedList === "inbox", <InboxOutlined />, () => { setListId("inbox"); setView("all"); })}
+        {navButton("Inbox", active.filter((todo) => todoListId(todo, lists) === "inbox").length, selectedList === "inbox", <InboxOutlined />, () => navigateView("all", "inbox"))}
         {lists.map((list) => <Flex key={list.id} align="center" gap={2} style={{ minWidth: 0 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>{navButton(list.name, active.filter((todo) => todo.listId === list.id).length, selectedList === list.id, <FolderOutlined />, () => { setListId(list.id); setView("all"); })}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>{navButton(list.name, active.filter((todo) => todo.listId === list.id).length, selectedList === list.id, <FolderOutlined />, () => navigateView("all", list.id))}</div>
           <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Rename list ${list.name}`} onClick={() => setListEditor(list)} />
           <ConfirmDeleteButton ariaLabel={`Delete list ${list.name}`} hint="Tap again to delete this list. Its to-dos move to Inbox." onConfirm={() => { write(deleteTodoList(user.uid, list.id), "Could not delete list."); }} />
         </Flex>)}
@@ -142,7 +154,7 @@ export function TodoWorkspace() {
         {view === "today" && <Typography.Paragraph type="secondary">Due today, plus unfinished work from earlier days.</Typography.Paragraph>}
         <Input aria-label="Search to-dos" prefix={<SearchOutlined />} placeholder="Search titles, details, lists, or subtasks" allowClear value={search} onChange={(event) => setSearch(event.target.value)} style={{ marginBottom: 12 }} />
         <Flex gap={8} wrap style={{ marginBottom: 20 }}>
-          <Select aria-label="Filter list" value={selectedList} onChange={setListId} style={{ width: 140 }} options={[{ value: "all", label: "All lists" }, { value: "inbox", label: "Inbox" }, ...lists.map((list) => ({ value: list.id, label: list.name }))]} />
+          <Select aria-label="Filter list" value={selectedList} onChange={(nextList) => navigateView(view, nextList)} style={{ width: 140 }} options={[{ value: "all", label: "All lists" }, { value: "inbox", label: "Inbox" }, ...lists.map((list) => ({ value: list.id, label: list.name }))]} />
           <Select aria-label="Filter priority" value={priority} onChange={setPriority} style={{ width: 140 }} options={[{ value: "all", label: "All priorities" }, ...["high", "medium", "low", "none"].map((value) => ({ value, label: value === "none" ? "No priority" : `${value[0].toUpperCase()}${value.slice(1)} priority` }))]} />
           {view !== "completed" && <Select aria-label="Filter status" value={status} onChange={setStatus} style={{ width: 140 }} options={[{ value: "all", label: "All statuses" }, { value: "todo", label: "To do" }, { value: "doing", label: "In progress" }]} />}
           {view !== "completed" && <Select aria-label="Sort to-dos" value={sort} onChange={setSort} style={{ width: 150 }} options={[{ value: "due", label: "Due date first" }, { value: "priority", label: "Priority first" }, { value: "newest", label: "Newest first" }]} />}

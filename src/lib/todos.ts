@@ -23,6 +23,9 @@ export type Todo = {
 };
 export type TodoView = "all" | "today" | "upcoming" | "overdue" | "completed";
 export type TodoSort = "due" | "priority" | "newest";
+export function todoViewFromQuery(value: string | null): TodoView {
+  return value === "today" || value === "upcoming" || value === "overdue" || value === "completed" ? value : "all";
+}
 export type TodoColumn = "upcoming" | "todo" | "doing" | "done";
 
 export function todoColumn(todo: Todo, now: Date): TodoColumn {

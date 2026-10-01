@@ -149,12 +149,13 @@ export function TodoBoard() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(260px, 1fr))", gap: 16, minWidth: 1088, alignItems: "stretch" }}>
         {COLUMNS.map(({ value, label, Icon }) => {
           const items = all.filter((todo) => todoColumn(todo, now) === value).sort((a, b) => value === "done" ? (b.completedAt ?? "").localeCompare(a.completedAt ?? "") : (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31") || a.createdAt.localeCompare(b.createdAt));
+          const visible = value === "done" ? items.slice(0, 5) : items;
           return <section key={value} data-board-column={value} aria-label={label} style={{ minHeight: 300, padding: 12, borderRadius: token.borderRadiusLG, background: drag?.target === value ? token.colorPrimaryBg : token.colorFillQuaternary, border: `1px solid ${drag?.target === value ? token.colorPrimary : token.colorBorderSecondary}` }}>
             <Flex justify="space-between" align="center" style={{ padding: "4px 4px 16px" }}><Typography.Text strong><Icon style={{ marginRight: 8 }} />{label}</Typography.Text><Typography.Text type="secondary">{items.length}</Typography.Text></Flex>
             <Flex vertical gap={12}>
               {value === "done" && !history.ready && <Spin size="small" />}
               {items.length === 0 && <Typography.Text type="secondary" style={{ padding: "24px 4px", textAlign: "center" }}>No to-dos here</Typography.Text>}
-              {items.map((todo) => <Card key={todo.id} size="small" className="todo-board-card" role="button" tabIndex={todoError || archivedMove ? -1 : 0} aria-label={`Edit ${todo.title}`} aria-disabled={todoError || !!archivedMove} style={{ minWidth: 0, userSelect: "none", touchAction: "none", opacity: drag?.id === todo.id && drag.moved ? 0.25 : 1, boxShadow: token.boxShadowTertiary }}
+              {visible.map((todo) => <Card key={todo.id} size="small" className="todo-board-card" role="button" tabIndex={todoError || archivedMove ? -1 : 0} aria-label={`Edit ${todo.title}`} aria-disabled={todoError || !!archivedMove} style={{ minWidth: 0, userSelect: "none", touchAction: "none", opacity: drag?.id === todo.id && drag.moved ? 0.25 : 1, boxShadow: token.boxShadowTertiary }}
                 onPointerDown={(event) => dragStart(event, todo)} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { suppressClick.current = true; pointer.current = null; setDrag(null); }}
                 onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!todoError && !archivedMove) setEditor(todo); }}
                 onKeyDown={(event) => {
@@ -166,6 +167,7 @@ export function TodoBoard() {
                     if (COLUMNS[index]) move(todo, COLUMNS[index].value);
                   } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditor(todo); }
                 }}><CardContent todo={todo} upcoming={value === "upcoming"} /></Card>)}
+              {value === "done" && items.length > 5 && <Link href="/journal/todo?view=completed" style={{ textAlign: "center", padding: "12px 4px", color: token.colorPrimary }}>And {items.length - 5} more…</Link>}
             </Flex>
           </section>;
         })}

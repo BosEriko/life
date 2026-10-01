@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ACTIVE_TODO_DATE, filterTodos, isTodoOverdue, todoColumn, todoMovePatch, todoListId, todoValidation } from "../src/lib/todos.ts";
+import { ACTIVE_TODO_DATE, filterTodos, isTodoOverdue, todoColumn, todoMovePatch, todoListId, todoValidation, todoViewFromQuery } from "../src/lib/todos.ts";
+
+test("To-do URL views accept all supported views and fall back safely", () => {
+  for (const view of ["all", "today", "upcoming", "overdue", "completed"]) assert.equal(todoViewFromQuery(view), view);
+  for (const view of [null, "", "invalid", "Completed"]) assert.equal(todoViewFromQuery(view), "all");
+});
 
 const base = {
   id: "one", date: ACTIVE_TODO_DATE, title: "Plan trip", description: "Book tickets",
