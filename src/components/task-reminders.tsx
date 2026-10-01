@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { App, Button, Checkbox, Flex, Modal, Typography } from "antd";
-import { AlignLeftOutlined, ClockCircleOutlined, FieldTimeOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, BellOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { RichText, plainText } from "@/components/rich-text";
+import { Tip } from "@/components/tip";
 import { formatTaskTime, overdueTasks } from "@/lib/task-schedule";
 import { setTaskChecked } from "@/models/tasks";
 
@@ -43,7 +44,7 @@ export function TaskReminders({ paused }: { paused: boolean }) {
       centered
       title={<><ClockCircleOutlined /> Tasks waiting for you</>}
       onCancel={snooze}
-      footer={<Button icon={<FieldTimeOutlined />} onClick={snooze}>Snooze for 10 minutes</Button>}
+      footer={<Tip title="Snooze for 10 minutes" placement="bottom"><Button icon={<BellOutlined />} onClick={snooze}>Snooze</Button></Tip>}
       styles={{ body: { maxHeight: "60dvh", overflowY: "auto" } }}
     >
       <Typography.Paragraph type="secondary">Today’s unfinished tasks whose scheduled time has arrived. Check them off as you finish.</Typography.Paragraph>
