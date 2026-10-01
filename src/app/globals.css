@@ -213,6 +213,16 @@ body {
     min-height: 0;
     overflow-y: auto;
   }
+
+  .modal-page-scroll .ant-modal-container {
+    max-height: none;
+    display: block;
+    overflow: visible;
+  }
+
+  .modal-page-scroll .ant-modal-body {
+    overflow-y: visible;
+  }
 }
 
 /* tables that sit flush against a card's edges: square corners and scroll

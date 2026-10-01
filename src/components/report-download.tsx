@@ -216,7 +216,7 @@ export function ReportDownload() {
         footer={null}
         centered
         destroyOnHidden
-        styles={{ body: { maxHeight: "70dvh", overflowY: "auto" } }}
+        rootClassName="modal-page-scroll"
       >
         {tasksOpen && <TasksList />}
       </Modal>
