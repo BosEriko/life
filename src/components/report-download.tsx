@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FloatButton, Grid, Modal, theme } from "antd";
+import { FloatButton, Grid, theme } from "antd";
 import { ScheduleOutlined, MenuOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
-import { TasksList } from "@/components/tasks-card";
+import { AddTaskModal } from "@/components/tasks-card";
 import { TaskReminders } from "@/components/task-reminders";
 import { BpModal } from "@/components/bp-modal";
 import { HabitModal } from "@/components/habit-modal";
@@ -209,17 +209,7 @@ export function ReportDownload() {
         ) : null}
       </FloatButton.Group>
 
-      <Modal
-        open={tasksOpen}
-        title={<><ScheduleOutlined style={{ marginRight: 8 }} />Tasks</>}
-        onCancel={() => setTasksOpen(false)}
-        footer={null}
-        centered
-        destroyOnHidden
-        rootClassName="modal-page-scroll"
-      >
-        {tasksOpen && <TasksList />}
-      </Modal>
+      <AddTaskModal open={tasksOpen} onClose={() => setTasksOpen(false)} />
       {user && <TaskReminders key={user.uid} paused={tasksOpen} />}
 
       <HabitModal open={habitOpen} onClose={() => setHabitOpen(false)} />

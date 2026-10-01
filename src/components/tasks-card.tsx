@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Modal, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
 import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -50,7 +52,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
   }
 
   return (
-    <Flex vertical gap={10} style={initial.id ? undefined : { marginBottom: 20 }}>
+    <Flex vertical gap={10}>
         <Flex gap={8} wrap>
           <DatePicker aria-label="Task start date" allowClear={false} inputReadOnly value={dayjs(draft.startDate)} onChange={(date) => date && patch({ startDate: date.format("YYYY-MM-DD") })} style={{ flex: 1, minWidth: 150 }} />
           <TimePicker aria-label="Task time" format="h:mm A" use12Hours needConfirm={false} allowClear={false} value={dayjs(`${draft.startDate}T${draft.time}`)} onChange={(time) => time && patch({ time: time.format("HH:mm") })} style={{ width: 130 }} />
@@ -81,6 +83,20 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
   );
 }
 
+export function AddTaskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const pathname = usePathname();
+  return (
+    <Modal open={open} centered title={<><ScheduleOutlined style={{ marginRight: 8 }} />New task</>} footer={null} onCancel={onClose} destroyOnHidden>
+      {open && <TaskForm initial={newTask(todayKey())} onSaved={onClose} />}
+      {pathname !== "/journal/tasks" && (
+        <Flex justify="center" style={{ marginTop: 12 }}>
+          <Link href="/journal/tasks" onClick={onClose}>See all tasks in Journal</Link>
+        </Flex>
+      )}
+    </Modal>
+  );
+}
+
 export function TasksList() {
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -97,8 +113,6 @@ export function TasksList() {
 
   return (
     <div style={{ minWidth: 0 }}>
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>Build your routine. Add a task and its schedule, then check it off each day.</Typography.Paragraph>
-      <TaskForm key="new" initial={newTask(date)} onSaved={(task) => setDate(task.startDate)} />
       <Modal open={editOpen} centered title={<><ScheduleOutlined /> Edit task</>} footer={null} onCancel={() => setEditOpen(false)} afterClose={() => setEditing(null)}>
         {editing && <TaskForm key={editing.id} initial={editing} onSaved={() => setEditOpen(false)} onCancel={() => setEditOpen(false)} />}
       </Modal>

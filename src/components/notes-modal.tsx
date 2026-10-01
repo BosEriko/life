@@ -72,7 +72,7 @@ export function NotesModal({
       }}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Jot down anything. Everything lands on the Notes page.
+        Jot down anything. Everything lands in your Journal.
       </Typography.Paragraph>
 
       <Flex vertical gap={10}>

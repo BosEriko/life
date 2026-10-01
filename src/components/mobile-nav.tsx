@@ -21,7 +21,7 @@ export function MobileNav() {
   if (screens.md !== false) return null;
 
   const flatButton = (item: NavItem) => {
-    const active = pathname === item.key;
+    const active = pathname.split("/")[1] === item.key.split("/")[1];
     return (
       <button
         key={item.key}

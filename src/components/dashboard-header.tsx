@@ -6,14 +6,21 @@ import { Button, Dropdown, Flex, Grid, theme } from "antd";
 import type { MenuProps } from "antd";
 import {
   DownOutlined,
+  FileTextOutlined,
   IdcardOutlined,
   LogoutOutlined,
   MenuOutlined,
+  ScheduleOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { NAV } from "@/components/nav-items";
+
+const JOURNAL_TABS = [
+  { href: "/journal/notes", label: "Notes", Icon: FileTextOutlined },
+  { href: "/journal/tasks", label: "Tasks", Icon: ScheduleOutlined },
+];
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
@@ -144,7 +151,7 @@ export function DashboardHeader() {
             <nav aria-label="Primary">
               <Flex align="center" gap={28}>
                 {NAV.map((item) => {
-                  const active = pathname === item.key;
+                  const active = pathname.split("/")[1] === item.key.split("/")[1];
                   return (
                     <Link
                       key={item.key}
@@ -204,6 +211,44 @@ export function DashboardHeader() {
           </Flex>
         )}
       </Flex>
+      {user && pathname.startsWith("/journal/") ? (
+        <nav
+          aria-label="Journal"
+          style={{
+            background: `color-mix(in srgb, ${token.colorBgContainer} 55%, ${token.colorBgLayout})`,
+            borderTop: `1px solid ${token.colorSplit}`,
+          }}
+        >
+          <Flex gap={24} style={{ maxWidth: 1200, margin: "0 auto", paddingInline: 20 }}>
+            {JOURNAL_TABS.map(({ href, label, Icon: TabIcon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    minHeight: 44,
+                    padding: "0 2px",
+                    marginBottom: -1,
+                    fontSize: 13,
+                    fontWeight: active ? 800 : 600,
+                    color: active ? token.colorPrimary : token.colorTextSecondary,
+                    borderBottom: `2px solid ${active ? token.colorPrimary : "transparent"}`,
+                    textDecoration: "none",
+                  }}
+                >
+                  <TabIcon />
+                  {label}
+                </Link>
+              );
+            })}
+          </Flex>
+        </nav>
+      ) : null}
     </header>
   );
 }
