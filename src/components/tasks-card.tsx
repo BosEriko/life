@@ -9,6 +9,7 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useTaskDay } from "@/components/use-day-records";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { RichText, plainText } from "@/components/rich-text";
+import { Tip } from "@/components/tip";
 import { taskOccursOn, type Task } from "@/lib/task-schedule";
 import { removeTask, saveTask, setTaskChecked } from "@/models/tasks";
 import { todayKey } from "@/models/dailies";
@@ -17,6 +18,15 @@ const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 const REPEATS = ["daily", "weekly", "monthly", "yearly"] as const;
 const UNITS = { daily: "day", weekly: "week", monthly: "month", yearly: "year" };
 const unit = (repeat: Task["repeat"], interval: number) => `${UNITS[repeat]}${interval === 1 ? "" : "s"}`;
+
+const ORDINALS: Record<number, string> = { 1: "first", 2: "second", 3: "third", 4: "fourth", [-1]: "last" };
+
+function scheduleHint(task: Task) {
+  if (task.repeat === "weekly") return [...task.weekdays].sort((a, b) => a - b).map((day) => WEEKDAYS[day]).join(", ");
+  if (task.repeat === "monthly") return task.monthlyMode === "weekday" ? `On the ${ORDINALS[task.ordinal]} ${WEEKDAYS[task.weekday]}` : `On day ${task.monthDay}`;
+  if (task.repeat === "yearly") return `On ${dayjs().month(task.month).format("MMMM")} ${task.monthDay}`;
+  return undefined;
+}
 
 function newTask(date: string): Task {
   const start = dayjs(date);
@@ -82,7 +92,7 @@ export function TasksList() {
   const [manage, setManage] = useState(false);
   const { row, error } = useTaskDay(date, true);
   const due = tasks.filter((task) => taskOccursOn(task, date)).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
-  const shown = manage ? [...tasks].sort((a, b) => a.time.localeCompare(b.time)) : due;
+  const shown = manage ? [...tasks].sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title)) : due;
   const count = due.filter((task) => row?.completed[task.id]).length;
 
   return (
@@ -124,7 +134,7 @@ export function TasksList() {
             {task.description && <Flex gap={6} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
             <Flex gap={12} wrap style={{ fontSize: 12 }}>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined /> {task.time}</Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined /> Every {task.interval} {unit(task.repeat, task.interval)}</Typography.Text>
+              <Tip title={scheduleHint(task)}><Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined /> Every {task.interval} {unit(task.repeat, task.interval)}</Typography.Text></Tip>
               {!scheduled && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Not scheduled today</Typography.Text>}
             </Flex>
           </div>
