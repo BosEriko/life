@@ -218,6 +218,29 @@ body {
   overflow: visible;
 }
 
+.todo-board-card,
+.todo-board-card * {
+  cursor: grab;
+}
+
+.todo-board-card:active,
+.todo-board-card:active *,
+body.todo-board-grabbing,
+body.todo-board-grabbing * {
+  cursor: grabbing !important;
+}
+
+.todo-board-card:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-board-drag-preview {
+    transform: none !important;
+  }
+}
+
 /* tables that sit flush against a card's edges: square corners and scroll
    shadow, but keep the cell text off the card border. !important is needed
    to beat antd's size-scoped cell padding (.ant-table.ant-table-medium ...) */

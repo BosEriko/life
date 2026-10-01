@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Alert, App, Button, Card, Empty, Flex, Grid, Select, Spin, Tag, Typography, theme } from "antd";
-import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, DragOutlined, EditOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { Alert, App, Button, Card, Empty, Flex, Grid, Spin, Typography, theme } from "antd";
+import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -45,6 +46,22 @@ function ArchivedMove({ todo, column, onClose }: { todo: Todo; column: TodoColum
   return <AppModal open title="Moving completed to-do" footer={null} closable={false} keyboard={false} mask={{ closable: false }}><Spin /> <Typography.Text>Updating {todo.title}…</Typography.Text></AppModal>;
 }
 
+function BoardEditor({ todo, lists, onClose }: { todo: Todo; lists: Parameters<typeof TodoEditor>[0]["lists"]; onClose: () => void }) {
+  const { rows, ready, error } = useTodoDay(todo.date, true);
+  const current = rows.find((item) => item.id === todo.id);
+  if (!ready || error || !current) return <AppModal open title="Edit to-do" footer={null} onCancel={onClose}>{error ? <Alert type="error" title="Could not load this to-do." /> : !ready ? <Spin /> : <Typography.Text>This to-do was removed or moved. Close and reopen it.</Typography.Text>}</AppModal>;
+  return <TodoEditor initial={current} lists={lists} listId="inbox" onClose={onClose} />;
+}
+
+type BoardDrag = { id: string; target: TodoColumn | null; x: number; y: number; width: number; offsetX: number; offsetY: number; moved: boolean };
+
+function CardContent({ todo, upcoming }: { todo: Todo; upcoming: boolean }) {
+  return <>
+    <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere", pointerEvents: "none" }}>{todo.title}</Typography.Text>
+    {upcoming && todo.dueDate && <Typography.Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12, pointerEvents: "none" }}>{dayjs(todo.dueDate).format("MMM D, YYYY")}</Typography.Text>}
+  </>;
+}
+
 export function TodoBoard() {
   const { user, loading } = useAuth();
   const { todos, todoLists, todosReady, todoError, cutoff } = useHealthData();
@@ -55,10 +72,19 @@ export function TodoBoard() {
   const [now, setNow] = useState(() => new Date());
   const [editor, setEditor] = useState<Todo | null | undefined>(undefined);
   const [archivedMove, setArchivedMove] = useState<{ todo: Todo; column: TodoColumn } | null>(null);
-  const [drag, setDrag] = useState<{ id: string; target: TodoColumn | null } | null>(null);
-  const pointer = useRef<{ id: string; x: number; y: number; moved: boolean; target: TodoColumn | null } | null>(null);
+  const [drag, setDrag] = useState<BoardDrag | null>(null);
+  const pointer = useRef<(BoardDrag & { startX: number; startY: number }) | null>(null);
+  const suppressClick = useRef(false);
   const rail = useRef<HTMLDivElement>(null);
   const all = mergeById(todos, history.todos);
+  const draggedTodo = all.find((todo) => todo.id === drag?.id);
+  const isDragging = drag !== null;
+
+  useEffect(() => {
+    if (!isDragging) return;
+    document.body.classList.add("todo-board-grabbing");
+    return () => document.body.classList.remove("todo-board-grabbing");
+  }, [isDragging]);
 
   useEffect(() => {
     const tick = () => setNow(new Date());
@@ -74,19 +100,24 @@ export function TodoBoard() {
   }
 
   function dragStart(event: PointerEvent<HTMLElement>, todo: Todo) {
-    if (event.button !== 0 || todoError || archivedMove) return;
+    if (event.button !== 0 || !event.isPrimary || todoError || archivedMove || pointer.current) return;
+    suppressClick.current = false;
+    event.currentTarget.focus();
     event.currentTarget.setPointerCapture(event.pointerId);
-    pointer.current = { id: todo.id, x: event.clientX, y: event.clientY, moved: false, target: null };
+    const rect = event.currentTarget.getBoundingClientRect();
+    pointer.current = { id: todo.id, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, width: rect.width, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, moved: false, target: null };
+    setDrag({ ...pointer.current });
   }
 
   function dragMove(event: PointerEvent<HTMLElement>) {
     const current = pointer.current;
     if (!current) return;
-    if (Math.hypot(event.clientX - current.x, event.clientY - current.y) < 8 && !current.moved) return;
+    if (Math.hypot(event.clientX - current.startX, event.clientY - current.startY) < 8 && !current.moved) return;
     current.moved = true;
+    current.x = event.clientX;
+    current.y = event.clientY;
     const column = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-board-column]");
     current.target = column?.dataset.boardColumn as TodoColumn ?? null;
-    setDrag({ id: current.id, target: current.target });
     const rect = rail.current?.getBoundingClientRect();
     if (rect && rail.current) {
       if (event.clientX > rect.right - 40) rail.current.scrollLeft += 24;
@@ -94,10 +125,13 @@ export function TodoBoard() {
     }
     if (event.clientY > window.innerHeight - 64) window.scrollBy(0, 20);
     else if (event.clientY < 64) window.scrollBy(0, -20);
+    setDrag({ ...current });
   }
 
   function dragEnd() {
     const current = pointer.current;
+    if (!current) return;
+    suppressClick.current = !!current?.moved;
     pointer.current = null;
     setDrag(null);
     const todo = all.find((item) => item.id === current?.id);
@@ -109,7 +143,7 @@ export function TodoBoard() {
 
   return <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
     <PageHeading title="Board" subtitle="The same to-dos, organized by what comes next." extra={<Button type="primary" icon={<PlusOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>} />
-    <Typography.Paragraph type="secondary">Drag a card using its handle, or choose Move to. Upcoming schedules it for tomorrow; moving a future to-do into To do makes it due today.</Typography.Paragraph>
+    <Typography.Paragraph type="secondary">Click a card to edit, or drag it into another column.</Typography.Paragraph>
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}
     {!todosReady ? <Spin /> : <div ref={rail} tabIndex={0} role="region" aria-label="To-do board" style={{ overflowX: "auto", paddingBottom: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(260px, 1fr))", gap: 16, minWidth: 1088, alignItems: "start" }}>
@@ -120,30 +154,26 @@ export function TodoBoard() {
             <Flex vertical gap={12}>
               {value === "done" && !history.ready && <Spin size="small" />}
               {items.length === 0 && <Typography.Text type="secondary" style={{ padding: "24px 4px", textAlign: "center" }}>No to-dos here</Typography.Text>}
-              {items.map((todo) => {
-                const steps = Object.values(todo.subtasks);
-                return <Card key={todo.id} size="small" style={{ minWidth: 0, opacity: drag?.id === todo.id ? 0.55 : 1, boxShadow: token.boxShadowTertiary }}>
-                  <Flex gap={8} align="flex-start">
-                    <Button type="text" size="small" icon={<DragOutlined />} aria-label={`Drag ${todo.title}`} disabled={todoError || !!archivedMove} style={{ touchAction: "none", cursor: "grab", flexShrink: 0 }} onPointerDown={(event) => dragStart(event, todo)} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { pointer.current = null; setDrag(null); }} />
-                    <Typography.Text strong style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{todo.title}</Typography.Text>
-                    {todoColumn(todo, now) !== "done" && <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${todo.title}`} disabled={todoError} onClick={() => setEditor(todo)} />}
-                  </Flex>
-                  {todo.description && <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ margin: "8px 0", overflowWrap: "anywhere" }}>{todo.description}</Typography.Paragraph>}
-                  <Flex gap={6} wrap style={{ margin: "10px 0" }}>
-                    {todo.priority !== "none" && <Tag color={todo.priority === "high" ? "red" : todo.priority === "medium" ? "gold" : "blue"}>{todo.priority}</Tag>}
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{todoLists.find((list) => list.id === todo.listId)?.name ?? "Inbox"}</Typography.Text>
-                  </Flex>
-                  {todo.dueDate && <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}><CalendarOutlined /> {dayjs(todo.dueDate).format("MMM D, YYYY")}{todo.dueTime ? ` · ${todo.dueTime}` : ""}</Typography.Paragraph>}
-                  {steps.length > 0 && <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>{steps.filter((step) => step.done).length}/{steps.length} subtasks</Typography.Paragraph>}
-                  <Select aria-label={`Move ${todo.title} to`} placeholder="Move to…" value={undefined} disabled={todoError || !!archivedMove} style={{ width: "100%" }} options={COLUMNS.filter((column) => column.value !== value).map((column) => ({ value: column.value, label: column.label }))} onChange={(column: TodoColumn) => move(todo, column)} />
-                </Card>;
-              })}
+              {items.map((todo) => <Card key={todo.id} size="small" className="todo-board-card" role="button" tabIndex={todoError || archivedMove ? -1 : 0} aria-label={`Edit ${todo.title}`} aria-disabled={todoError || !!archivedMove} style={{ minWidth: 0, userSelect: "none", touchAction: "none", opacity: drag?.id === todo.id && drag.moved ? 0.25 : 1, boxShadow: token.boxShadowTertiary }}
+                onPointerDown={(event) => dragStart(event, todo)} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { suppressClick.current = true; pointer.current = null; setDrag(null); }}
+                onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!todoError && !archivedMove) setEditor(todo); }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") { suppressClick.current = true; pointer.current = null; setDrag(null); return; }
+                  if (todoError || archivedMove || pointer.current) return;
+                  if (event.shiftKey && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
+                    event.preventDefault();
+                    const index = COLUMNS.findIndex((column) => column.value === value) + (event.key === "ArrowRight" ? 1 : -1);
+                    if (COLUMNS[index]) move(todo, COLUMNS[index].value);
+                  } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditor(todo); }
+                }}><CardContent todo={todo} upcoming={value === "upcoming"} /></Card>)}
             </Flex>
           </section>;
         })}
       </div>
     </div>}
-    {editor !== undefined && <TodoEditor initial={editor} lists={todoLists} listId="inbox" onClose={() => setEditor(undefined)} />}
+    {drag?.moved && draggedTodo && createPortal(<Card size="small" aria-hidden className="todo-board-drag-preview" style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width, pointerEvents: "none", zIndex: 1100, transform: "rotate(4deg)", boxShadow: token.boxShadow }}><CardContent todo={draggedTodo} upcoming={todoColumn(draggedTodo, now) === "upcoming"} /></Card>, document.body)}
+    {editor === null && <TodoEditor initial={null} lists={todoLists} listId="inbox" onClose={() => setEditor(undefined)} />}
+    {editor && <BoardEditor key={editor.id} todo={editor} lists={todoLists} onClose={() => { setEditor(undefined); history.refresh(); }} />}
     {archivedMove && <ArchivedMove key={archivedMove.todo.id} {...archivedMove} onClose={() => { setArchivedMove(null); history.refresh(); }} />}
   </div>;
 }

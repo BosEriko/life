@@ -37,7 +37,13 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
 
   function submit() {
     if (!user || validation) return;
-    saveTodo(user.uid, { ...draft, id: draft.id || crypto.randomUUID() }).catch(() => message.error("Could not save to-do."));
+    const now = new Date();
+    saveTodo(user.uid, {
+      ...draft,
+      id: draft.id || crypto.randomUUID(),
+      date: draft.status === "done" ? draft.completedAt ? draft.date : dayjs(now).format("YYYY-MM-DD") : ACTIVE_TODO_DATE,
+      completedAt: draft.status === "done" ? draft.completedAt ?? now.toISOString() : null,
+    }).catch(() => message.error("Could not save to-do."));
     onClose();
     message.success(navigator.onLine ? "To-do saved" : "Saved offline · will sync");
   }
@@ -69,7 +75,7 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
           </Form.Item>
         </Flex>
         <Form.Item label="Status">
-          <Select aria-label="To-do status" value={draft.status} options={[{ value: "todo", label: "To do" }, { value: "doing", label: "In progress" }]} onChange={(status) => patch({ status })} />
+          <Select aria-label="To-do status" value={draft.status} options={[{ value: "todo", label: "To do" }, { value: "doing", label: "In progress" }, ...(initial?.status === "done" ? [{ value: "done", label: "Completed" }] : [])]} onChange={(status) => patch({ status })} />
         </Form.Item>
         <Form.Item label="Subtasks">
           <Flex vertical gap={8}>
