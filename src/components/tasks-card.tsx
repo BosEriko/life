@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Modal, Segmented, Select, Spin, TimePicker, Typography, theme } from "antd";
-import { ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -15,7 +15,8 @@ import { todayKey } from "@/models/dailies";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REPEATS = ["daily", "weekly", "monthly", "yearly"] as const;
-const UNITS = { daily: "day(s)", weekly: "week(s)", monthly: "month(s)", yearly: "year(s)" };
+const UNITS = { daily: "day", weekly: "week", monthly: "month", yearly: "year" };
+const unit = (repeat: Task["repeat"], interval: number) => `${UNITS[repeat]}${interval === 1 ? "" : "s"}`;
 
 function newTask(date: string): Task {
   const start = dayjs(date);
@@ -50,9 +51,9 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
         <Flex align="center" gap={8} wrap>
           <Typography.Text type="secondary">Repeat every</Typography.Text>
           <InputNumber aria-label="Repeat interval" min={1} max={365} precision={0} value={draft.interval} onChange={(value) => patch({ interval: value ?? 1 })} style={{ width: 80 }} />
-          <Typography.Text type="secondary">{UNITS[draft.repeat]}</Typography.Text>
+          <Typography.Text type="secondary">{unit(draft.repeat, draft.interval)}</Typography.Text>
         </Flex>
-        {draft.repeat === "weekly" && <Checkbox.Group aria-label="On these days" value={draft.weekdays} onChange={(weekdays) => patch({ weekdays: weekdays as number[] })}><Flex gap={8} wrap>{[1, 2, 3, 4, 5, 6, 0].map((value) => <Checkbox key={value} value={value}>{WEEKDAYS[value].slice(0, 3)}</Checkbox>)}</Flex></Checkbox.Group>}
+        {draft.repeat === "weekly" && <Checkbox.Group aria-label="On these days" value={draft.weekdays} onChange={(weekdays) => patch({ weekdays: weekdays as number[] })}><Flex gap={8} wrap>{WEEKDAYS.map((label, value) => <Checkbox key={value} value={value}>{label.slice(0, 3)}</Checkbox>)}</Flex></Checkbox.Group>}
         {draft.repeat === "monthly" && <Select aria-label="Monthly schedule" value={draft.monthlyMode} options={[{ value: "date", label: "Day of the month" }, { value: "weekday", label: "Weekday of the month" }]} onChange={(monthlyMode) => patch({ monthlyMode })} />}
         {draft.repeat === "yearly" && <Select aria-label="Task month" value={draft.month} options={Array.from({ length: 12 }, (_, value) => ({ value, label: dayjs().month(value).format("MMMM") }))} onChange={(month) => patch({ month })} />}
         {(draft.repeat === "yearly" || (draft.repeat === "monthly" && draft.monthlyMode === "date")) && <>
@@ -120,8 +121,12 @@ export function TasksList() {
           }} />
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
             <Typography.Text strong delete={scheduled && checked}><RichText text={task.title} /></Typography.Text>
-            {task.description && <Typography.Paragraph type="secondary" style={{ margin: "4px 0", whiteSpace: "pre-wrap" }}><RichText text={task.description} /></Typography.Paragraph>}
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>{task.time} · Every {task.interval} {UNITS[task.repeat]}{!scheduled ? " · Not scheduled today" : ""}</Typography.Text>
+            {task.description && <Flex gap={6} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
+            <Flex gap={12} wrap style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined /> {task.time}</Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined /> Every {task.interval} {unit(task.repeat, task.interval)}</Typography.Text>
+              {!scheduled && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Not scheduled today</Typography.Text>}
+            </Flex>
           </div>
           <Flex gap={2}>
             <Button type="text" size="small" aria-label={`Edit ${plainText(task.title)}`} icon={<EditOutlined />} onClick={() => { setEditing(task); setEditOpen(true); }} />

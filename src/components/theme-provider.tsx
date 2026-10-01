@@ -28,6 +28,8 @@ const SHARED = {
 const LIGHT_TOKENS = {
   ...SHARED,
   colorPrimary: "#316342",
+  colorPrimaryBg: "#e1efe5",
+  colorPrimaryBgHover: "#d2e7d8",
   colorText: "#151d1a",
   colorBgLayout: "#f2fcf5",
   colorBgContainer: "#ffffff",

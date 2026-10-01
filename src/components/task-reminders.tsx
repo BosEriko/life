@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { App, Button, Checkbox, Flex, Modal, Typography } from "antd";
-import { ClockCircleOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -59,8 +59,8 @@ export function TaskReminders({ paused }: { paused: boolean }) {
             />
             <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
               <Typography.Text strong><RichText text={task.title} /></Typography.Text>
-              <div><Typography.Text type="secondary">{task.time}</Typography.Text></div>
-              {task.description && <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap" }}><RichText text={task.description} /></Typography.Paragraph>}
+              <Flex gap={6} align="center"><Typography.Text type="secondary"><ClockCircleOutlined /></Typography.Text><Typography.Text type="secondary">{task.time}</Typography.Text></Flex>
+              {task.description && <Flex gap={6} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
             </div>
           </Flex>
         ))}
