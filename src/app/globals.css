@@ -305,9 +305,17 @@ body.todo-board-grabbing * {
   padding-bottom: 32px;
 }
 
+.home-grid > :last-child {
+  order: -1;
+}
+
 @media (min-width: 992px) {
   .home-grid {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+
+  .home-grid > :last-child {
+    order: 0;
   }
 }
 
