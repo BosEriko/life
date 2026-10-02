@@ -18,6 +18,7 @@ import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
 import { filterTodos, isTodoOverdue, todoListId, todoViewFromQuery, type Todo, type TodoList, type TodoPriority, type TodoSort, type TodoView } from "@/lib/todos";
 import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/todos";
+import { Tip } from "@/components/tip";
 
 const VIEWS = [
   { value: "all" as const, label: "All to-dos", Icon: UnorderedListOutlined },
@@ -99,6 +100,7 @@ export function TodoWorkspace() {
   const shown = filterTodos(all, lists, { view, listId: selectedList, search, priority, status, sort, now });
   const active = todos.filter((todo) => todo.status !== "done");
   const currentView = VIEWS.find((item) => item.value === view)!;
+  const currentList = lists.find((list) => list.id === selectedList);
   const heading = selectedList === "all" ? currentView.label : selectedList === "inbox" ? "Inbox" : lists.find((list) => list.id === selectedList)?.name ?? "Inbox";
   const write = (promise: Promise<void>, error: string) => { promise.catch(() => message.error(error)); };
 
@@ -140,16 +142,18 @@ export function TodoWorkspace() {
           <Button type="text" size="small" icon={<PlusOutlined />} aria-label="Add list" disabled={!todosReady || todoError} onClick={() => setListEditor(null)} />
         </Flex>
         {navButton("Inbox", active.filter((todo) => todoListId(todo, lists) === "inbox").length, selectedList === "inbox", <InboxOutlined />, () => navigateView("all", "inbox"))}
-        {lists.map((list) => <Flex key={list.id} align="center" gap={2} style={{ minWidth: 0 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>{navButton(list.name, active.filter((todo) => todo.listId === list.id).length, selectedList === list.id, <FolderOutlined />, () => navigateView("all", list.id))}</div>
-          <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Rename list ${list.name}`} onClick={() => setListEditor(list)} />
-          <ConfirmDeleteButton ariaLabel={`Delete list ${list.name}`} tooltip="Delete list" hint="Tap again to delete this list. Its to-dos move to Inbox." onConfirm={() => { write(deleteTodoList(user.uid, list.id), "Could not delete list."); }} />
-        </Flex>)}
+        {lists.map((list) => <div key={list.id}>{navButton(list.name, active.filter((todo) => todo.listId === list.id).length, selectedList === list.id, <FolderOutlined />, () => navigateView("all", list.id))}</div>)}
       </Card>
       <Card styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
         <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 16 }}>
           <Typography.Title level={4} style={{ margin: 0, overflowWrap: "anywhere" }}>{heading}</Typography.Title>
-          <Typography.Text type="secondary">{shown.length} {shown.length === 1 ? "to-do" : "to-dos"}</Typography.Text>
+          <Flex align="center" gap={8}>
+            <Typography.Text type="secondary">{shown.length} {shown.length === 1 ? "to-do" : "to-dos"}</Typography.Text>
+            {currentList && <>
+              <Tip title="Rename list"><Button type="text" size="small" icon={<EditOutlined />} aria-label={`Rename list ${currentList.name}`} onClick={() => setListEditor(currentList)} /></Tip>
+              <ConfirmDeleteButton ariaLabel={`Delete list ${currentList.name}`} tooltip="Delete list" hint="Tap again to delete this list. Its to-dos move to Inbox." onConfirm={() => { write(deleteTodoList(user.uid, currentList.id), "Could not delete list."); }} />
+            </>}
+          </Flex>
         </Flex>
         {view === "today" && <Typography.Paragraph type="secondary">Due today, plus unfinished work from earlier days.</Typography.Paragraph>}
         <Input aria-label="Search to-dos" prefix={<SearchOutlined />} placeholder="Search titles, details, lists, or subtasks" allowClear value={search} onChange={(event) => setSearch(event.target.value)} style={{ marginBottom: 12 }} />
