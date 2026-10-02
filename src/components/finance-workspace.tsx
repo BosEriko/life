@@ -46,6 +46,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   ).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id));
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / 20)));
   const month = dayjs().format("YYYY-MM");
+  const twoColumns = { display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" } as const;
   const statistics = financeStatistics(records.filter((record) => record.date.startsWith(month)), accounts);
 
   function recalculate() {
@@ -61,21 +62,55 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   return (
     <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
       <PageHeading title={view === "dashboard" ? "Finance" : view === "accounts" ? "Accounts" : "Records"} subtitle={view === "dashboard" ? "Your accounts, everyday spending, and money coming in." : view === "accounts" ? "Your money, organized by account." : "Every expense, income, and transfer in one place."} extra={<>
-        {view !== "records" && <Button icon={<ReloadOutlined />} loading={recalculating} disabled={!financeReady || financeError || accounts.length === 0 || recalculating} onClick={recalculate}>Recalculate</Button>}
+        <Button icon={<ReloadOutlined />} loading={recalculating} disabled={!financeReady || financeError || accounts.length === 0 || recalculating} onClick={recalculate}>Recalculate</Button>
         <Button icon={<WalletOutlined />} disabled={!financeReady || financeError} onClick={() => setModal("account")}>Add account</Button>
         <Button type="primary" icon={<PlusOutlined />} disabled={!financeReady || financeError || accounts.length === 0} onClick={() => setModal("record")}>Add record</Button>
       </>} />
       {financeError && <Alert type="error" title="Could not load your finance data. Reload to try again." style={{ marginBottom: 24 }} />}
       {!financeReady ? <Spin /> : <>
         {view !== "records" && <>
-        {view === "dashboard" ? <Typography.Title level={2} style={{ fontSize: 18, marginBottom: 16 }}>Accounts</Typography.Title> : <Flex gap={12} wrap style={{ marginBottom: 20 }}>
-          <Input aria-label="Search accounts" prefix={<SearchOutlined />} placeholder="Search accounts…" value={search} onChange={(event) => setSearch(event.target.value)} allowClear style={{ flex: "1 1 200px", minWidth: 0 }} />
-          <Select aria-label="Filter accounts by type" value={accountType} onChange={setAccountType} style={{ width: 170, maxWidth: "100%" }} options={[{ value: "all", label: "All account types" }, ...ACCOUNT_TYPES.map((value) => ({ value, label: value }))]} />
-          <Select aria-label="Filter accounts by currency" value={currency} onChange={setCurrency} style={{ width: 150, maxWidth: "100%" }} options={[{ value: "all", label: "All currencies" }, ...[...new Set(accounts.map((account) => account.currency))].map((value) => ({ value, label: value }))]} />
-          <Select aria-label="Filter accounts by statistics" value={statisticsFilter} onChange={setStatisticsFilter} style={{ width: 190, maxWidth: "100%" }} options={[{ value: "all", label: "All statistics settings" }, { value: "included", label: "Included in statistics" }, { value: "excluded", label: "Excluded from statistics" }]} />
-        </Flex>}
+        {view === "dashboard" && <Typography.Title level={2} style={{ fontSize: 18, marginBottom: 16 }}>Accounts</Typography.Title>}
+        {view === "accounts" ? <div style={twoColumns}>
+          <Card title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
+            <Flex vertical gap={12}>
+              <div>
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Search</Typography.Text>
+                <Input aria-label="Search accounts" prefix={<SearchOutlined />} placeholder="Search accounts…" value={search} onChange={(event) => setSearch(event.target.value)} allowClear />
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Type</Typography.Text>
+                <Select aria-label="Filter accounts by type" value={accountType} onChange={setAccountType} style={{ width: "100%" }} options={[{ value: "all", label: "All account types" }, ...ACCOUNT_TYPES.map((value) => ({ value, label: value }))]} />
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Currency</Typography.Text>
+                <Select aria-label="Filter accounts by currency" value={currency} onChange={setCurrency} style={{ width: "100%" }} options={[{ value: "all", label: "All currencies" }, ...[...new Set(accounts.map((account) => account.currency))].map((value) => ({ value, label: value }))]} />
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Statistics</Typography.Text>
+                <Select aria-label="Filter accounts by statistics" value={statisticsFilter} onChange={setStatisticsFilter} style={{ width: "100%" }} options={[{ value: "all", label: "All statistics settings" }, { value: "included", label: "Included in statistics" }, { value: "excluded", label: "Excluded from statistics" }]} />
+              </div>
+            </Flex>
+          </Card>
+          <div style={{ minWidth: 0 }}>
         {accounts.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Add your first account to start tracking your money."><Button type="primary" icon={<PlusOutlined />} onClick={() => setModal("account")}>Create account</Button></Empty></Card> :
-          <div style={{ display: "grid", gridTemplateColumns: view === "accounts" ? "1fr" : "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 16 }}>
+          <Card styles={{ body: { padding: filteredAccounts.length ? "0 20px" : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
+            {filteredAccounts.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." /> :
+              filteredAccounts.map((account, index) => <div key={account.id} role="button" tabIndex={0} aria-label={`Edit ${account.name}`} onClick={() => setEditingAccount(account)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditingAccount(account); } }} style={{ padding: "16px 0", cursor: "pointer", borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
+                <Flex align="center" gap={12}>
+                  <span aria-hidden style={{ width: 36, height: 36, flexShrink: 0, borderRadius: token.borderRadius, background: account.color, color: accountTextColor(account.color), display: "inline-flex", alignItems: "center", justifyContent: "center" }}><WalletOutlined /></span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{account.type} · {account.currency}{account.excludeFromStatistics ? " · Excluded from statistics" : ""}</Typography.Text>
+                  </div>
+                  <Typography.Text strong style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{money(account.balanceMinor, account.currency)}</Typography.Text>
+                </Flex>
+              </div>)}
+          </Card>}
+        {accounts.length > 0 && <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 12 }}>Balances update with every record. Recalculate checks the full history and requires an internet connection.</Typography.Paragraph>}
+          </div>
+        </div> : <>
+        {accounts.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Add your first account to start tracking your money."><Button type="primary" icon={<PlusOutlined />} onClick={() => setModal("account")}>Create account</Button></Empty></Card> :
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 16 }}>
             {filteredAccounts.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." />}
             {filteredAccounts.map((account) => <Card key={account.id} role="button" tabIndex={0} aria-label={`Edit ${account.name}`} onClick={() => setEditingAccount(account)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditingAccount(account); } }} style={{ minWidth: 0, cursor: "pointer", background: account.color, borderColor: account.color, color: accountTextColor(account.color) }}>
               <Flex gap={8} align="start" justify="space-between"><Typography.Text strong style={{ color: "inherit", overflowWrap: "anywhere" }}>{account.name}</Typography.Text><WalletOutlined style={{ fontSize: 20 }} /></Flex>
@@ -84,6 +119,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
             </Card>)}
           </div>}
         {accounts.length > 0 && <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 12 }}>Balances update with every record. Recalculate checks the full history and requires an internet connection.</Typography.Paragraph>}
+        </>}
         </>}
 
         {view === "dashboard" && <>
@@ -103,15 +139,26 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           </div>}
         </>}
 
-        {view === "records" && <>
-        <Flex gap={12} wrap style={{ marginBottom: 16 }}>
-          <Select aria-label="Filter records by account" value={accountId} onChange={(value) => { setAccountId(value); setPage(1); }} style={{ width: 220, maxWidth: "100%" }} options={[{ value: "all", label: "All accounts" }, ...allAccounts.map((account) => ({ value: account.id, label: accountNames.get(account.id) }))]} />
-          <Select aria-label="Filter records by type" value={recordType} onChange={(value) => { setRecordType(value); setPage(1); }} style={{ width: 160, maxWidth: "100%" }} options={[{ value: "all", label: "All record types" }, { value: "expense", label: "Expenses" }, { value: "income", label: "Income" }, { value: "transfer", label: "Transfers" }]} />
-          <Input aria-label="Search records" prefix={<SearchOutlined />} placeholder="Search records, categories, labels…" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} allowClear style={{ flex: "1 1 220px", minWidth: 0 }} />
-        </Flex>
+        {view === "records" && <div style={twoColumns}>
+          <Card title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
+            <Flex vertical gap={12}>
+              <div>
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Search</Typography.Text>
+                <Input aria-label="Search records" prefix={<SearchOutlined />} placeholder="Records, categories, labels…" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} allowClear />
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Account</Typography.Text>
+                <Select aria-label="Filter records by account" value={accountId} onChange={(value) => { setAccountId(value); setPage(1); }} style={{ width: "100%" }} options={[{ value: "all", label: "All accounts" }, ...allAccounts.map((account) => ({ value: account.id, label: accountNames.get(account.id) }))]} />
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Type</Typography.Text>
+                <Select aria-label="Filter records by type" value={recordType} onChange={(value) => { setRecordType(value); setPage(1); }} style={{ width: "100%" }} options={[{ value: "all", label: "All record types" }, { value: "expense", label: "Expenses" }, { value: "income", label: "Income" }, { value: "transfer", label: "Transfers" }]} />
+              </div>
+            </Flex>
+          </Card>
+          <div style={{ minWidth: 0 }}>
         {!history.ready && !history.error && <Typography.Paragraph type="secondary">Loading older records…</Typography.Paragraph>}
         {history.error && <Alert type="warning" title="Older records could not be loaded." action={<Button size="small" onClick={history.refresh}>Retry</Button>} style={{ marginBottom: 16 }} />}
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12 }}>Offline, only records previously saved on this device are available.</Typography.Paragraph>
         <Card styles={{ body: { padding: filtered.length ? "0 20px" : 24 } }}>
           {filtered.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={allRecords.length ? "No records match these filters." : "Your records will appear here."} /> :
             filtered.slice((currentPage - 1) * 20, currentPage * 20).map((record, index) => <div key={record.id} style={{ padding: "18px 0", borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
@@ -127,7 +174,9 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
             </div>)}
         </Card>
         {filtered.length > 0 && <Flex justify="center" style={{ marginTop: 20 }}><Pagination current={currentPage} onChange={setPage} pageSize={20} total={filtered.length} size="small" simple={screens.md !== true} showSizeChanger={false} /></Flex>}
-        </>}
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 12 }}>Offline, only records previously saved on this device are available.</Typography.Paragraph>
+          </div>
+        </div>}
       </>}
       {modal === "account" && <FinanceAccountModal onClose={() => setModal(null)} />}
       {editingAccount && <FinanceAccountModal key={editingAccount.id} initial={editingAccount} onClose={() => setEditingAccount(null)} />}
