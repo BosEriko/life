@@ -46,6 +46,28 @@ export function addFinanceRecord(uid: string, record: FinanceRecord, accounts: F
   return batch.commit();
 }
 
+export function editFinanceRecord(uid: string, original: FinanceRecord, record: FinanceRecord, accounts: FinanceAccount[]) {
+  const reverted = accounts.map((account) => ({ ...account, balanceMinor: account.balanceMinor - balanceChanges(original).filter(([id]) => id === account.id).reduce((sum, [, change]) => sum + change, 0) }));
+  const error = recordValidation(record, reverted);
+  if (error) return Promise.reject(new Error(error));
+  const batch = writeBatch(getFirebaseDb());
+  batch.set(doc(getFirebaseDb(), "users", uid, "financeRecords", record.id), record);
+  batch.update(settingsRef(uid), { revision: increment(1) });
+  const net = new Map<string, number>();
+  for (const [id, change] of balanceChanges(original)) net.set(id, (net.get(id) ?? 0) - change);
+  for (const [id, change] of balanceChanges(record)) net.set(id, (net.get(id) ?? 0) + change);
+  for (const [id, change] of net) if (change !== 0) batch.update(settingsRef(uid), new FieldPath("accounts", id, "balanceMinor"), increment(change));
+  return batch.commit();
+}
+
+export function deleteFinanceRecord(uid: string, record: FinanceRecord) {
+  const batch = writeBatch(getFirebaseDb());
+  batch.delete(doc(getFirebaseDb(), "users", uid, "financeRecords", record.id));
+  batch.update(settingsRef(uid), { revision: increment(1) });
+  for (const [id, change] of balanceChanges(record)) batch.update(settingsRef(uid), new FieldPath("accounts", id, "balanceMinor"), increment(-change));
+  return batch.commit();
+}
+
 export function recalculateFinanceAccounts(uid: string, records: FinanceRecord[], revision: number) {
   return runTransaction(getFirebaseDb(), async (transaction) => {
     const snapshot = await transaction.get(settingsRef(uid));

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button, Dropdown, Flex, Grid, theme } from "antd";
 import type { MenuProps } from "antd";
 import {
+  BarChartOutlined,
   DownOutlined,
   CheckSquareOutlined,
   DatabaseOutlined,
@@ -30,6 +31,7 @@ const SUBMENUS = {
       { href: "/finance", label: "Dashboard", Icon: DashboardOutlined },
       { href: "/finance/accounts", label: "Accounts", Icon: WalletOutlined },
       { href: "/finance/records", label: "Records", Icon: UnorderedListOutlined },
+      { href: "/finance/analytics", label: "Analytics", Icon: BarChartOutlined },
     ],
   },
   journal: {

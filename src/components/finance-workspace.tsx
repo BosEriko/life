@@ -10,7 +10,7 @@ import { FinanceRecordModal } from "@/components/finance-record-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
-import { ACCOUNT_TYPES, accountTextColor, financeStatistics, money, type FinanceAccount } from "@/lib/finance";
+import { ACCOUNT_TYPES, accountTextColor, financeStatistics, money, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import { recalculateFinanceAccounts } from "@/models/finance";
 
@@ -24,6 +24,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const history = useFinanceHistory(view === "records", cutoff);
   const [modal, setModal] = useState<"account" | "record" | null>(null);
   const [editingAccount, setEditingAccount] = useState<FinanceAccount | null>(null);
+  const [editingRecord, setEditingRecord] = useState<FinanceRecord | null>(null);
   const [accountId, setAccountId] = useState("all");
   const [recordType, setRecordType] = useState("all");
   const [search, setSearch] = useState("");
@@ -161,7 +162,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
         {history.error && <Alert type="warning" title="Older records could not be loaded." action={<Button size="small" onClick={history.refresh}>Retry</Button>} style={{ marginBottom: 16 }} />}
         <Card styles={{ body: { padding: filtered.length ? "0 20px" : 24 } }}>
           {filtered.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={allRecords.length ? "No records match these filters." : "Your records will appear here."} /> :
-            filtered.slice((currentPage - 1) * 20, currentPage * 20).map((record, index) => <div key={record.id} style={{ padding: "18px 0", borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
+            filtered.slice((currentPage - 1) * 20, currentPage * 20).map((record, index) => <div key={record.id} role="button" tabIndex={0} aria-label={`Edit ${record.category} record`} onClick={() => setEditingRecord(record)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditingRecord(record); } }} style={{ padding: "18px 0", cursor: "pointer", borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
               <Flex justify="space-between" align="start" gap={12} wrap>
                 <div style={{ minWidth: 0, flex: "1 1 180px", overflowWrap: "anywhere" }}>
                   <Typography.Text strong>{record.type === "transfer" ? <SwapOutlined /> : record.type === "income" ? <ArrowDownOutlined /> : <ArrowUpOutlined />} {record.category}</Typography.Text>
@@ -181,6 +182,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
       {modal === "account" && <FinanceAccountModal onClose={() => setModal(null)} />}
       {editingAccount && <FinanceAccountModal key={editingAccount.id} initial={editingAccount} onClose={() => setEditingAccount(null)} />}
       {modal === "record" && <FinanceRecordModal onClose={() => setModal(null)} onSaved={history.refresh} />}
+      {editingRecord && <FinanceRecordModal key={editingRecord.id} initial={editingRecord} onClose={() => setEditingRecord(null)} onSaved={history.refresh} />}
     </div>
   );
 }

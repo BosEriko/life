@@ -1,52 +1,72 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { App, Button, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from "antd";
+import { App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceDay } from "@/components/use-day-records";
 import { CATEGORIES, currencyDigits, recordValidation, toMinor, type FinanceRecord } from "@/lib/finance";
-import { addFinanceRecord } from "@/models/finance";
+import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/finance";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 
-export function FinanceRecordModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: FinanceRecord; onClose: () => void; onSaved: () => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { financeAccounts, financeRecords: records } = useHealthData();
   const accounts = financeAccounts.filter((account) => !account.deletedAt);
-  const [type, setType] = useState<FinanceRecord["type"]>("expense");
-  const [amount, setAmount] = useState<number | null>(null);
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
-  const [destinationId, setDestinationId] = useState<string | null>(null);
-  const [category, setCategory] = useState<string[]>([]);
-  const [labels, setLabels] = useState<string[]>([]);
-  const [date, setDate] = useState<Dayjs | null>(null);
-  const [description, setDescription] = useState("");
+  const [type, setType] = useState<FinanceRecord["type"]>(initial?.type ?? "expense");
+  const [amount, setAmount] = useState<number | null>(initial ? initial.amountMinor / 10 ** currencyDigits(initial.currency) : null);
+  const [accountId, setAccountId] = useState(initial?.accountId ?? accounts[0]?.id ?? "");
+  const [destinationId, setDestinationId] = useState<string | null>(initial?.destinationId ?? null);
+  const [category, setCategory] = useState<string[]>(initial && initial.type !== "transfer" ? [initial.category] : []);
+  const [labels, setLabels] = useState<string[]>(initial?.labels ?? []);
+  const [date, setDate] = useState<Dayjs | null>(initial ? dayjs(initial.occurredAt) : null);
+  const [description, setDescription] = useState(initial?.description ?? "");
   const [pending, setPending] = useState<string | null>(null);
+  const [pendingOccurredAt, setPendingOccurredAt] = useState<string | null>(null);
   const saved = useRef(false);
   const account = accounts.find((item) => item.id === accountId);
   const day = useFinanceDay((date ?? dayjs()).format("YYYY-MM-DD"), true);
   useEffect(() => {
-    if (pending && day.rows.some((record) => record.id === pending) && !saved.current) {
+    if (pending && day.rows.some((record) => record.id === pending && (!pendingOccurredAt || record.occurredAt === pendingOccurredAt)) && !saved.current) {
       saved.current = true;
       onSaved();
       onClose();
     }
-  }, [pending, day.rows, onSaved, onClose]);
+  }, [pending, pendingOccurredAt, day.rows, onSaved, onClose]);
   function save() {
     if (!user || !account || pending) return;
     const occurred = date ?? dayjs();
-    const record: FinanceRecord = { id: crypto.randomUUID(), type, amountMinor: amount === null ? NaN : toMinor(amount, account.currency), accountId, destinationId: type === "transfer" ? destinationId : null, currency: account.currency, category: type === "transfer" ? "Transfer" : category[0] ?? "", labels, date: occurred.format("YYYY-MM-DD"), occurredAt: occurred.toISOString(), description: description.trim() };
+    const record: FinanceRecord = { id: initial?.id ?? crypto.randomUUID(), type, amountMinor: amount === null ? NaN : toMinor(amount, account.currency), accountId, destinationId: type === "transfer" ? destinationId : null, currency: account.currency, category: type === "transfer" ? "Transfer" : category[0] ?? "", labels, date: occurred.format("YYYY-MM-DD"), occurredAt: occurred.toISOString(), description: description.trim() };
+    if (initial) {
+      setPending(record.id);
+      setPendingOccurredAt(record.occurredAt);
+      void editFinanceRecord(user.uid, initial, record, accounts).catch((error: unknown) => { setPending(null); message.error(error instanceof Error ? error.message : "Could not save the record."); });
+      message.success(navigator.onLine ? "Record updated." : "Record saved offline. It will sync when you reconnect.");
+      return;
+    }
     const error = recordValidation(record, accounts);
     if (error) { message.error(error); return; }
     setPending(record.id);
     void addFinanceRecord(user.uid, record, accounts).catch(() => { setPending(null); message.error("Could not save the record."); });
     message.success(navigator.onLine ? "Record added." : "Record saved offline. It will sync when you reconnect.");
   }
+  function remove() {
+    if (!user || !initial || pending) return;
+    void deleteFinanceRecord(user.uid, initial).catch(() => message.error("Could not delete the record."));
+    message.success(navigator.onLine ? "Record deleted." : "Deleted offline. It will sync when you reconnect.");
+    saved.current = true;
+    onSaved();
+    onClose();
+  }
   const categories = [...new Set([...CATEGORIES, ...records.map((record) => record.category)])];
   const knownLabels = [...new Set(records.flatMap((record) => record.labels))];
-  return <AppModal open title="Add record" onCancel={pending ? undefined : onClose} closable={!pending} mask={{ closable: !pending }} footer={<Button type="primary" disabled={!day.ready || day.error || !!pending} onClick={save}>Add record</Button>}>
+  return <AppModal open title={initial ? "Edit record" : "Add record"} onCancel={pending ? undefined : onClose} closable={!pending} mask={{ closable: !pending }} footer={<Flex justify={initial ? "space-between" : "flex-end"} align="center">
+    {initial && <ConfirmDeleteButton ariaLabel="Delete record" tooltip="Delete record" hint="Tap again to delete this record" onConfirm={remove} />}
+    <Button type="primary" disabled={!day.ready || day.error || !!pending} onClick={save}>{initial ? "Save changes" : "Add record"}</Button>
+  </Flex>}>
     <Form layout="vertical" onFinish={save}>
       <Form.Item label="Record type"><Segmented block value={type} disabled={!!pending} onChange={setType} options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }, { value: "transfer", label: "Transfer" }]} /></Form.Item>
       <Form.Item label={type === "transfer" ? "From account" : "Account"} required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: `${item.name} · ${item.currency}` }))} /></Form.Item>
