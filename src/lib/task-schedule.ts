@@ -14,6 +14,8 @@ export type Task = {
   ordinal: number;
   weekday: number;
   month: number;
+  completedThrough?: string;
+  previousCompletedThrough?: string;
 };
 
 export function taskOccursOn(task: Task, date: string): boolean {
@@ -37,12 +39,31 @@ export function taskOccursOn(task: Task, date: string): boolean {
     : Math.ceil(day.date() / 7) === task.ordinal;
 }
 
-export function overdueTasks(tasks: Task[], completed: Record<string, boolean>, now: Date): Task[] {
+export function pendingTaskDate(task: Task, date: string, checks: { date: string; completed: Record<string, boolean> }[] = []): string | null {
+  if (task.repeat === "daily") return taskOccursOn(task, date) ? date : null;
+  const completion = [task.completedThrough, task.previousCompletedThrough, ...checks.filter((row) => row.completed[task.id]).map((row) => row.date)]
+    .filter((value): value is string => !!value && value <= date).sort().at(-1);
+  let day = dayjs(date).startOf("day");
+  const start = dayjs(task.startDate).startOf("day");
+  if (!day.isValid() || !start.isValid() || task.interval < 1) return null;
+  while (!day.isBefore(start)) {
+    const key = day.format("YYYY-MM-DD");
+    if (completion && key <= completion) return null;
+    if (taskOccursOn(task, key)) return key;
+    day = day.subtract(1, "day");
+  }
+  return null;
+}
+
+export function overdueTasks(tasks: Task[], completed: Record<string, boolean>, now: Date, checks: { date: string; completed: Record<string, boolean> }[] = []): Task[] {
   const local = dayjs(now);
   const date = local.format("YYYY-MM-DD");
   const time = local.format("HH:mm");
   return tasks
-    .filter((task) => taskOccursOn(task, date) && task.time <= time && !completed[task.id])
+    .filter((task) => {
+      const pending = pendingTaskDate(task, date, checks);
+      return pending && (pending < date || task.time <= time) && !completed[task.id];
+    })
     .sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
 }
 

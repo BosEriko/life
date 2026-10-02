@@ -14,7 +14,7 @@ import { useTaskDay } from "@/components/use-day-records";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { RichText, plainText } from "@/components/rich-text";
 import { Tip } from "@/components/tip";
-import { formatTaskTime, taskOccursOn, type Task } from "@/lib/task-schedule";
+import { formatTaskTime, pendingTaskDate, type Task } from "@/lib/task-schedule";
 import { removeTask, saveTask, setTaskChecked } from "@/models/tasks";
 import { todayKey } from "@/models/dailies";
 
@@ -105,13 +105,14 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const { tasks, tasksReady } = useHealthData();
+  const { tasks, tasksReady, taskChecks } = useHealthData();
   const [date, setDate] = useState(todayKey);
   const [editing, setEditing] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const manage = view !== "today";
   const { row, error } = useTaskDay(date, !manage);
-  const due = tasks.filter((task) => taskOccursOn(task, date)).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
+  const checks = row ? [...taskChecks.filter((entry) => entry.date !== date), row] : taskChecks;
+  const due = tasks.filter((task) => row?.completed[task.id] || pendingTaskDate(task, date, checks)).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
   const shown = manage ? tasks.filter((task) => task.repeat === view).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title)) : due;
   const count = due.filter((task) => row?.completed[task.id]).length;
 
@@ -129,14 +130,13 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
       <Typography.Paragraph type="secondary">{manage ? `${shown.length} ${view} ${shown.length === 1 ? "task" : "tasks"}` : row ? `${count} of ${due.length} completed` : "Loading checklist…"}</Typography.Paragraph>
       {!manage && error && <Alert type="error" title="Could not load this checklist." />}
       {!tasksReady || (!manage && !row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? `No ${view} tasks yet.` : "No tasks scheduled for this day."} /> : shown.map((task) => {
-        const scheduled = taskOccursOn(task, date);
         const checked = !!row?.completed[task.id];
         return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "16px 0", borderTop: `1px solid ${token.colorBorderSecondary}` }}>
-          {!manage && <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={scheduled && checked} disabled={!scheduled || !row || error} onChange={(event) => {
-            if (user) setTaskChecked(user.uid, date, task.id, event.target.checked).catch(() => message.error("Could not update task."));
+          {!manage && <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={checked} disabled={!row || error} onChange={(event) => {
+            if (user) setTaskChecked(user.uid, date, task.id, event.target.checked, task).catch(() => message.error("Could not update task."));
           }} />}
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
-            <Typography.Text strong delete={!manage && scheduled && checked}><RichText text={task.title} /></Typography.Text>
+            <Typography.Text strong delete={!manage && checked}><RichText text={task.title} /></Typography.Text>
             {task.description && <Flex gap={8} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
             <Flex gap={12} wrap style={{ fontSize: 12 }}>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined style={{ marginRight: 6 }} />{formatTaskTime(task.time)}</Typography.Text>

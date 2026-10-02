@@ -36,7 +36,7 @@ export function TaskReminders({ paused }: { paused: boolean }) {
 
   const date = now ? dayjs(now).format("YYYY-MM-DD") : "";
   const completed = taskChecks.find((row) => row.date === date)?.completed ?? {};
-  const overdue = now && tasksReady && taskChecksReady ? overdueTasks(tasks, completed, now) : [];
+  const overdue = now && tasksReady && taskChecksReady ? overdueTasks(tasks, completed, now, taskChecks) : [];
   const open = !paused && !!now && now.getTime() >= snoozedUntil && overdue.length > 0;
   const snooze = () => setSnoozedUntil(Date.now() + 10 * 60_000);
 
@@ -48,7 +48,7 @@ export function TaskReminders({ paused }: { paused: boolean }) {
       onCancel={snooze}
       footer={<Tip title="Snooze for 10 minutes" placement="bottom"><Button icon={<BellOutlined />} onClick={snooze}>Snooze</Button></Tip>}
     >
-      <Typography.Paragraph type="secondary">Today’s unfinished tasks whose scheduled time has arrived. Check them off as you finish.</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">Unfinished tasks carried over from earlier days, and today’s tasks whose scheduled time has arrived. Check them off as you finish.</Typography.Paragraph>
       <Flex vertical gap={20}>
         {overdue.map((task) => (
           <Flex key={`${date}:${task.id}`} align="flex-start" gap={12}>
@@ -56,7 +56,7 @@ export function TaskReminders({ paused }: { paused: boolean }) {
               aria-label={`Mark ${plainText(task.title)} as done`}
               checked={false}
               onChange={() => {
-                if (user) setTaskChecked(user.uid, date, task.id, true).catch(() => message.error("Could not update task."));
+                if (user) setTaskChecked(user.uid, date, task.id, true, task).catch(() => message.error("Could not update task."));
               }}
             />
             <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
