@@ -66,7 +66,7 @@ function CompletedDetails({ initial, onClose }: { initial: Todo; onClose: () => 
           setPending(true);
           restoreTodo(user.uid, current.id).catch(() => { setPending(false); message.error("Could not restore to-do."); });
         }}>Restore to-do</Button>
-        <ConfirmDeleteButton ariaLabel="Delete completed to-do" loading={pending} onConfirm={() => {
+        <ConfirmDeleteButton ariaLabel="Delete completed to-do" tooltip="Delete" loading={pending} onConfirm={() => {
           if (!user || pending) return;
           setPending(true);
           deleteTodo(user.uid, current.id).catch(() => { setPending(false); message.error("Could not delete to-do."); });
@@ -143,7 +143,7 @@ export function TodoWorkspace() {
         {lists.map((list) => <Flex key={list.id} align="center" gap={2} style={{ minWidth: 0 }}>
           <div style={{ flex: 1, minWidth: 0 }}>{navButton(list.name, active.filter((todo) => todo.listId === list.id).length, selectedList === list.id, <FolderOutlined />, () => navigateView("all", list.id))}</div>
           <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Rename list ${list.name}`} onClick={() => setListEditor(list)} />
-          <ConfirmDeleteButton ariaLabel={`Delete list ${list.name}`} hint="Tap again to delete this list. Its to-dos move to Inbox." onConfirm={() => { write(deleteTodoList(user.uid, list.id), "Could not delete list."); }} />
+          <ConfirmDeleteButton ariaLabel={`Delete list ${list.name}`} tooltip="Delete list" hint="Tap again to delete this list. Its to-dos move to Inbox." onConfirm={() => { write(deleteTodoList(user.uid, list.id), "Could not delete list."); }} />
         </Flex>)}
       </Card>
       <Card styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
@@ -160,13 +160,13 @@ export function TodoWorkspace() {
           {view !== "completed" && <Select aria-label="Sort to-dos" value={sort} onChange={setSort} style={{ width: 150 }} options={[{ value: "due", label: "Due date first" }, { value: "priority", label: "Priority first" }, { value: "newest", label: "Newest first" }]} />}
           {(search || priority !== "all" || status !== "all") && <Button type="text" onClick={() => { setSearch(""); setPriority("all"); setStatus("all"); }}>Clear filters</Button>}
         </Flex>
-        {!todosReady || (view === "completed" && !history.ready) ? <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={active.length === 0 && view !== "completed" ? "A fresh start. Add your first to-do." : "No to-dos match this view."} /> : <Flex vertical>
+        {!todosReady || (view === "completed" && !history.ready) ? <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={active.length === 0 && view !== "completed" ? "A fresh start. Add your first to-do." : "No to-dos match this view."} /> : <Flex vertical gap={10}>
           {shown.map((todo) => {
             const subtasks = Object.values(todo.subtasks);
             const completed = todo.status === "done";
             const overdue = isTodoOverdue(todo, now);
             const listName = lists.find((list) => list.id === todo.listId)?.name ?? "Inbox";
-            return <div key={todo.id} style={{ borderTop: `1px solid ${token.colorBorderSecondary}`, padding: "18px 0" }}>
+            return <div key={todo.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
               <Flex gap={12} align="flex-start">
                 <Checkbox aria-label={`Complete ${todo.title}`} checked={completed} disabled={completed || todoError} onChange={() => write(completeTodo(user.uid, todo), "Could not complete to-do.")} />
                 <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
@@ -186,7 +186,7 @@ export function TodoWorkspace() {
                 </div>
                 <Flex gap={2}>
                   <Button type="text" size="small" icon={completed ? <UndoOutlined /> : <EditOutlined />} aria-label={completed ? `Review ${todo.title}` : `Edit ${todo.title}`} onClick={() => completed ? setReviewing(todo) : setEditor(todo)} />
-                  {!completed && <ConfirmDeleteButton ariaLabel={`Delete ${todo.title}`} onConfirm={() => write(deleteTodo(user.uid, todo.id), "Could not delete to-do.")} />}
+                  {!completed && <ConfirmDeleteButton ariaLabel={`Delete ${todo.title}`} tooltip="Delete to-do" onConfirm={() => write(deleteTodo(user.uid, todo.id), "Could not delete to-do.")} />}
                 </Flex>
               </Flex>
             </div>;

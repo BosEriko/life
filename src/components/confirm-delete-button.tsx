@@ -9,11 +9,13 @@ import { useBottomToast } from "@/components/use-bottom-toast";
 export function ConfirmDeleteButton({
   onConfirm,
   ariaLabel = "Delete",
+  tooltip,
   hint = "Tap again to delete",
   loading = false,
 }: {
   onConfirm: () => void;
   ariaLabel?: string;
+  tooltip?: string;
   hint?: string;
   loading?: boolean;
 }) {
@@ -41,7 +43,7 @@ export function ConfirmDeleteButton({
 
   return (
     <>
-      <Tip title={ariaLabel}>
+      <Tip title={tooltip ?? ariaLabel}>
         <Button
           type="text"
           size="small"

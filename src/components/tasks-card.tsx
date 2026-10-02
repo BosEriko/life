@@ -154,7 +154,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
       {!tasksReady || (!manage && !row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? `No ${view} tasks yet.` : "No tasks scheduled for this day."} /> : shown.map((task) => {
         const checked = !!row?.completed[task.id];
         const subtasks = taskSubtaskChecks(task, date, checks);
-        return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "16px 0", borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+        return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "14px 16px", marginBottom: 10, borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
           {!manage && <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={checked} disabled={!row || error || (!checked && !allTaskSubtasksDone(task, subtasks))} onChange={(event) => {
             if (user) setTaskChecked(user.uid, date, task.id, event.target.checked, task, subtasks).catch(() => message.error("Could not update task."));
           }} />}
@@ -169,7 +169,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
           </div>
           <Flex gap={2}>
             <Button type="text" size="small" aria-label={`Edit ${plainText(task.title)}`} icon={<EditOutlined />} onClick={() => { setEditing(task); setEditOpen(true); }} />
-            <ConfirmDeleteButton ariaLabel={`Delete ${plainText(task.title)}`} hint="Tap again to delete this recurring task" onConfirm={() => {
+            <ConfirmDeleteButton ariaLabel={`Delete ${plainText(task.title)}`} tooltip="Delete task" hint="Tap again to delete this recurring task" onConfirm={() => {
               if (!user) return;
               if (editing?.id === task.id) setEditOpen(false);
               removeTask(user.uid, task.id).catch(() => message.error("Could not delete task."));
