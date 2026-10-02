@@ -15,6 +15,6 @@ export type NavItem = {
 export const NAV: NavItem[] = [
   { key: "/", label: "Health", Icon: HeartOutlined },
   { key: "/journal/notes", label: "Journal", Icon: FileTextOutlined },
-  { key: "/finance", label: "Finance", Icon: WalletOutlined },
+  { key: "/finance/dashboard", label: "Finance", Icon: WalletOutlined },
   { key: "/records/database", label: "Records", Icon: DatabaseOutlined },
 ];

@@ -85,11 +85,12 @@ export function recalculateFinanceAccounts(uid: string, records: FinanceRecord[]
       if (!Number.isSafeInteger(balance)) throw new Error("The balance exceeds the supported amount.");
       transaction.update(settingsRef(uid), new FieldPath("accounts", account.id, "balanceMinor"), balance);
     }
+    transaction.update(settingsRef(uid), "lastRecalculatedAt", new Date().toISOString());
   });
 }
 
-export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean }) => void, fail: (error: Error) => void) {
-  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true }), fail);
+export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean; lastRecalculatedAt: string | null }) => void, fail: (error: Error) => void) {
+  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true, lastRecalculatedAt: (snapshot.data()?.lastRecalculatedAt as string | undefined) ?? null }), fail);
 }
 
 export function setFinanceAccountsLocked(uid: string, locked: boolean) {

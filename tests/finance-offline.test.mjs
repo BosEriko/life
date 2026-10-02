@@ -100,7 +100,9 @@ test("recalculation repairs all balances together and refuses stale record histo
   });
   try {
     await models.recalculateFinanceAccounts("user", records, 1);
-    assert.equal(committed.length, 2);
+    assert.equal(committed.length, 3);
+    assert.equal(committed[2].field, "lastRecalculatedAt");
+    assert.ok(Number.isFinite(Date.parse(committed[2].amount)));
     assert.equal(committed[0].field.isEqual(new firestore.FieldPath("accounts", "cash", "balanceMinor")), true);
     assert.equal(committed[0].amount, 98000);
     assert.equal(committed[1].field.isEqual(new firestore.FieldPath("accounts", "bank", "balanceMinor")), true);

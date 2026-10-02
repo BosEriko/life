@@ -28,7 +28,7 @@ const SUBMENUS = {
   finance: {
     label: "Finance",
     tabs: [
-      { href: "/finance", label: "Dashboard", Icon: DashboardOutlined },
+      { href: "/finance/dashboard", label: "Dashboard", Icon: DashboardOutlined },
       { href: "/finance/accounts", label: "Accounts", Icon: WalletOutlined },
       { href: "/finance/records", label: "Records", Icon: UnorderedListOutlined },
       { href: "/finance/analytics", label: "Analytics", Icon: BarChartOutlined },

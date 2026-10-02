@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Alert, App, Button, Card, Empty, Flex, Grid, Input, Pagination, Select, Spin, Tag, Typography, theme } from "antd";
-import { HolderOutlined, LockOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, WalletOutlined, UnlockOutlined } from "@ant-design/icons";
+import { HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, WalletOutlined, UnlockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { PageHeading } from "@/components/page-heading";
 import { FinanceAccountModal } from "@/components/finance-account-modal";
@@ -12,7 +12,7 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
 import { ACCOUNT_TYPES, accountTextColor, money, sortAccounts, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
-import { recalculateFinanceAccounts, reorderFinanceAccounts, setFinanceAccountsLocked } from "@/models/users/finance";
+import { reorderFinanceAccounts, setFinanceAccountsLocked } from "@/models/users/finance";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 import { AccountTypeIcon, CategoryIcon } from "@/components/finance-category-icon";
@@ -38,7 +38,6 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const [currency, setCurrency] = useState("all");
   const [statisticsFilter, setStatisticsFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [recalculating, setRecalculating] = useState(false);
   const accountNames = new Map(allAccounts.map((account) => [account.id, `${account.name}${account.deletedAt ? " (deleted)" : ""}`]));
   const allRecords = mergeById(records, history.rows);
   const query = search.trim().toLowerCase();
@@ -82,20 +81,10 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / 20)));
   const twoColumns = { display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" } as const;
 
-  function recalculate() {
-    if (!user || recalculating) return;
-    setRecalculating(true);
-    void history.forRecalculation()
-      .then(({ records: fullHistory, revision }) => recalculateFinanceAccounts(user.uid, fullHistory, revision))
-      .then(() => message.success("Account balances recalculated."))
-      .catch((error: unknown) => message.error(error instanceof Error && error.message.startsWith("Records changed") ? error.message : "Could not recalculate. Connect to the internet, let your records sync, and try again."))
-      .finally(() => setRecalculating(false));
-  }
 
   return (
     <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
       <PageHeading title={view === "dashboard" ? "Finance" : view === "accounts" ? "Accounts" : "Records"} subtitle={view === "dashboard" ? "Your accounts, everyday spending, and money coming in." : view === "accounts" ? "Your money, organized by account." : "Every expense, income, and transfer in one place."} extra={<>
-        <Button icon={<ReloadOutlined />} loading={recalculating} disabled={!financeReady || financeError || accounts.length === 0 || recalculating} onClick={recalculate}>Recalculate</Button>
         <Button icon={<WalletOutlined />} disabled={!financeReady || financeError} onClick={() => setModal("account")}>Add account</Button>
         <Button type="primary" icon={<PlusOutlined />} disabled={!financeReady || financeError || accounts.length === 0} onClick={() => setModal("record")}>Add record</Button>
       </>} />
@@ -159,6 +148,9 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
               renderItem={(id, { ref, style, handlers, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <Card key={id} ref={ref} {...handlers} styles={{ body: { padding: 16 } }} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...accountCardStyle(account), ...style, cursor: "pointer" }}>
                 {accountCardBody(account)}
               </Card>; }} />
+            {view === "dashboard" && <button type="button" className="add-account-tile" disabled={!financeReady || financeError} onClick={() => setModal("account")} style={{ "--tile-border": token.colorBorder, "--tile-text": token.colorTextSecondary, "--tile-accent": token.colorPrimary, borderRadius: token.borderRadiusLG } as React.CSSProperties}>
+              <PlusOutlined /> Add Account
+            </button>}
           </div>}
         </>}
         </>}
