@@ -1,39 +1,22 @@
 "use client";
 
-import { AppModal } from "@/components/app-modal";
-
 import { useEffect, useState } from "react";
-import { App, Button, Checkbox, Flex, Typography } from "antd";
-import { AlignLeftOutlined, BellOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { App, Card, Checkbox, Flex, Typography, theme } from "antd";
+import { AlignLeftOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { RichText, plainText } from "@/components/rich-text";
-import { Tip } from "@/components/tip";
 import { allTaskSubtasksDone, formatTaskTime, overdueTasks, taskSubtaskChecks } from "@/lib/task-schedule";
 import { setTaskChecked } from "@/models/tasks";
 import { TaskSubtasks } from "@/components/task-subtasks";
 
-export function TaskReminders({ paused }: { paused: boolean }) {
+export function TaskReminders() {
   const { user } = useAuth();
-  const uid = user?.uid;
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const { tasks, taskChecks, tasksReady, taskChecksReady } = useHealthData();
   const [now, setNow] = useState<Date | null>(null);
-  const [snoozed, setSnoozed] = useState<{ uid: string; until: number } | null>(null);
-
-  useEffect(() => {
-    if (!uid) return;
-    const timer = window.setTimeout(() => {
-      let until = 0;
-      try {
-        const saved = Number(window.localStorage.getItem(`task-snooze:${uid}`));
-        if (Number.isFinite(saved)) until = saved;
-      } catch {}
-      setSnoozed({ uid, until });
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [uid]);
 
   useEffect(() => {
     const tick = () => setNow(document.visibilityState === "visible" ? new Date() : null);
@@ -52,45 +35,44 @@ export function TaskReminders({ paused }: { paused: boolean }) {
   const date = now ? dayjs(now).format("YYYY-MM-DD") : "";
   const completed = taskChecks.find((row) => row.date === date)?.completed ?? {};
   const overdue = now && tasksReady && taskChecksReady ? overdueTasks(tasks, completed, now, taskChecks) : [];
-  const open = !paused && !!now && !!snoozed && snoozed.uid === uid && now.getTime() >= snoozed.until && overdue.length > 0;
-  const snooze = () => {
-    if (!user) return;
-    const until = Date.now() + 10 * 60_000;
-    setSnoozed({ uid: user.uid, until });
-    try { window.localStorage.setItem(`task-snooze:${user.uid}`, String(until)); } catch {}
-  };
+
+  if (overdue.length === 0) return null;
 
   return (
-    <AppModal
-      open={open}
-      centered
-      title={<><ClockCircleOutlined /> Tasks waiting for you</>}
-      onCancel={snooze}
-      footer={<Tip title="Snooze for 10 minutes" placement="bottom"><Button icon={<BellOutlined />} onClick={snooze}>Snooze</Button></Tip>}
+    <Card
+      styles={{ body: { padding: 20 } }}
+      style={{ borderColor: token.colorBorderSecondary, borderRadius: token.borderRadiusLG, boxShadow: token.boxShadowTertiary }}
     >
-      <Typography.Paragraph type="secondary">Unfinished tasks carried over from earlier days, and today’s tasks whose scheduled time has arrived. Check them off as you finish.</Typography.Paragraph>
+      <Typography.Text style={{ display: "block", fontSize: 17 }}>
+        <ClockCircleOutlined style={{ marginRight: 8 }} />
+        Tasks waiting for you
+      </Typography.Text>
+      <Typography.Paragraph type="secondary" style={{ fontSize: 12, margin: "4px 0 16px" }}>
+        Unfinished tasks carried over from earlier days, and today’s tasks whose scheduled time has arrived.
+      </Typography.Paragraph>
       <Flex vertical gap={20}>
         {overdue.map((task) => {
           const subtasks = taskSubtaskChecks(task, date, taskChecks);
           return (
-          <Flex key={`${date}:${task.id}`} align="flex-start" gap={12}>
-            <Checkbox
-              aria-label={`Mark ${plainText(task.title)} as done`}
-              checked={false}
-              disabled={!allTaskSubtasksDone(task, subtasks)}
-              onChange={() => {
-                if (user) setTaskChecked(user.uid, date, task.id, true, task, subtasks).catch(() => message.error("Could not update task."));
-              }}
-            />
-            <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-              <Typography.Text strong><RichText text={task.title} /></Typography.Text>
-              <Flex gap={8} align="center"><Typography.Text type="secondary"><ClockCircleOutlined /></Typography.Text><Typography.Text type="secondary">{formatTaskTime(task.time)}</Typography.Text></Flex>
-              {task.description && <Flex gap={8} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
-              <TaskSubtasks task={task} date={date} completed={subtasks} />
-            </div>
-          </Flex>
-        ); })}
+            <Flex key={`${date}:${task.id}`} align="flex-start" gap={12}>
+              <Checkbox
+                aria-label={`Mark ${plainText(task.title)} as done`}
+                checked={false}
+                disabled={!allTaskSubtasksDone(task, subtasks)}
+                onChange={() => {
+                  if (user) setTaskChecked(user.uid, date, task.id, true, task, subtasks).catch(() => message.error("Could not update task."));
+                }}
+              />
+              <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                <Typography.Text strong><RichText text={task.title} /></Typography.Text>
+                <Flex gap={8} align="center"><Typography.Text type="secondary"><ClockCircleOutlined /></Typography.Text><Typography.Text type="secondary">{formatTaskTime(task.time)}</Typography.Text></Flex>
+                {task.description && <Flex gap={8} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
+                <TaskSubtasks task={task} date={date} completed={subtasks} />
+              </div>
+            </Flex>
+          );
+        })}
       </Flex>
-    </AppModal>
+    </Card>
   );
 }

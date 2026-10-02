@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FloatButton, Grid, theme } from "antd";
 import { CheckSquareOutlined, ScheduleOutlined, MenuOutlined } from "@ant-design/icons";
-import { useAuth } from "@/components/auth-provider";
 import { AddTaskModal } from "@/components/tasks-card";
-import { TaskReminders } from "@/components/task-reminders";
 import { TodoEditor } from "@/components/todo-editor";
 import { BpModal } from "@/components/bp-modal";
 import { HabitModal } from "@/components/habit-modal";
@@ -23,7 +21,6 @@ const MENU_COLLAPSED_KEY = "quick-action-menu-collapsed";
 type MenuSide = "left" | "right";
 
 export function ReportDownload() {
-  const { user } = useAuth();
   const screens = Grid.useBreakpoint();
   const { token } = theme.useToken();
   const {
@@ -224,7 +221,6 @@ export function ReportDownload() {
 
       <AddTaskModal open={tasksOpen} onClose={() => setTasksOpen(false)} />
       {todoOpen && <TodoEditor initial={null} lists={todoLists} listId="inbox" onClose={() => setTodoOpen(false)} />}
-      {user && <TaskReminders key={user.uid} paused={tasksOpen} />}
 
       <HabitModal open={habitOpen} onClose={() => setHabitOpen(false)} />
 

@@ -13,6 +13,7 @@ import { PageHeading } from "@/components/page-heading";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { LandingPage } from "@/components/landing-page";
 import { RecentEntries } from "@/components/recent-entries";
+import { TaskReminders } from "@/components/task-reminders";
 import { todayKey } from "@/models/dailies";
 
 const TREND_RANGE_OPTIONS = [
@@ -115,6 +116,7 @@ function HealthDashboard() {
 
       <div className="home-grid">
         <Flex vertical gap={24} style={{ minWidth: 0 }}>
+          <TaskReminders />
           <Card
             styles={{ body: { padding: 20 } }}
             style={{
