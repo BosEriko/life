@@ -28,6 +28,10 @@ export function todoViewFromQuery(value: string | null): TodoView {
 }
 export type TodoColumn = "upcoming" | "todo" | "doing" | "done";
 
+export function isTodoPastDate(todo: Todo, now: Date): boolean {
+  return !!todo.dueDate && todo.dueDate < dayjs(now).format("YYYY-MM-DD");
+}
+
 export function todoColumn(todo: Todo, now: Date): TodoColumn {
   if (todo.status === "done" || todo.completedAt) return "done";
   if (todo.status === "doing") return "doing";

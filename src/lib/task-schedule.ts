@@ -1,5 +1,8 @@
 import dayjs from "dayjs";
 
+export type TaskSubtask = { id: string; title: string };
+export type SubtaskChecks = Record<string, boolean>;
+
 export type Task = {
   id: string;
   title: string;
@@ -16,7 +19,20 @@ export type Task = {
   month: number;
   completedThrough?: string;
   previousCompletedThrough?: string;
+  subtasks?: TaskSubtask[];
+  subtaskProgress?: { date: string; since: string; completed: SubtaskChecks };
 };
+
+export function allTaskSubtasksDone(task: Task, completed: SubtaskChecks): boolean {
+  return (task.subtasks ?? []).every((subtask) => completed[subtask.id] === true);
+}
+
+export function taskSubtaskChecks(task: Task, date: string, checks: { date: string; subtasks?: Record<string, SubtaskChecks> }[]): SubtaskChecks {
+  const saved = checks.find((row) => row.date === date)?.subtasks?.[task.id];
+  if (saved) return saved;
+  const progress = task.subtaskProgress;
+  return (task.repeat === "monthly" || task.repeat === "yearly") && progress && progress.date <= date && progress.since === (task.completedThrough ?? "") ? progress.completed : {};
+}
 
 export function taskOccursOn(task: Task, date: string): boolean {
   const day = dayjs(date).startOf("day");

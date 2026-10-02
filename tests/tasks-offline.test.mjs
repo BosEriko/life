@@ -5,7 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { initializeApp, deleteApp } from "firebase/app";
 import * as firestore from "firebase/firestore";
-import { overdueTasks, pendingTaskDate } from "../src/lib/task-schedule.ts";
+import { allTaskSubtasksDone, overdueTasks, pendingTaskDate, taskSubtaskChecks } from "../src/lib/task-schedule.ts";
 
 test("offline task creation, edits, per-day completion, undo and deletion self-echo", async () => {
   const app = initializeApp({ projectId: "demo-task-offline" }, "task-offline-test");
@@ -16,6 +16,7 @@ test("offline task creation, edits, per-day completion, undo and deletion self-e
   vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(exports, (name) => {
     if (name === "@/lib/firebase") return { getFirebaseDb: () => db };
     if (name === "firebase/firestore") return firestore;
+    if (name === "@/lib/task-schedule") return { allTaskSubtasksDone };
     throw new Error(`Unexpected import: ${name}`);
   });
   const uid = "test-user";
@@ -65,6 +66,32 @@ test("offline task creation, edits, per-day completion, undo and deletion self-e
     pending(exports.setTaskChecked(uid, "2026-10-02", "routine", false, updates.at(-1)[0]));
     await waitFor(() => updates.at(-1)?.[0]?.completedThrough === "" && recent.at(-1)?.find((row) => row.date === "2026-10-02")?.completed.routine === false);
     assert.equal(pendingTaskDate(updates.at(-1)[0], "2026-10-03"), "2026-10-01");
+    pending(exports.saveTask(uid, { ...updates.at(-1)[0], subtasks: [{ id: "one", title: "First step" }, { id: "two", title: "Second step" }] }));
+    await waitFor(() => updates.at(-1)?.[0]?.subtasks?.length === 2);
+    await assert.rejects(exports.setTaskChecked(uid, "2026-10-03", "routine", true, updates.at(-1)[0]), /Complete all subtasks/);
+    await assert.rejects(exports.setTaskSubtaskChecked(uid, "2026-10-03", updates.at(-1)[0], "missing", true, {}), /does not exist/);
+    pending(exports.setTaskSubtaskChecked(uid, "2026-10-03", updates.at(-1)[0], "one", true, {}));
+    await waitFor(() => recent.at(-1)?.find((row) => row.date === "2026-10-03")?.subtasks?.routine?.one === true);
+    assert.equal(taskSubtaskChecks(updates.at(-1)[0], "2026-10-04", recent.at(-1)).one, true);
+    await assert.rejects(exports.setTaskChecked(uid, "2026-10-03", "routine", true, updates.at(-1)[0], { one: true }), /Complete all subtasks/);
+    pending(exports.setTaskSubtaskChecked(uid, "2026-10-03", updates.at(-1)[0], "two", true, { one: true }));
+    await waitFor(() => recent.at(-1)?.find((row) => row.date === "2026-10-03")?.subtasks?.routine?.two === true);
+    assert.equal(recent.at(-1).find((row) => row.date === "2026-10-03").completed.routine, undefined);
+    pending(exports.setTaskChecked(uid, "2026-10-04", "routine", true, updates.at(-1)[0], { one: true, two: true }));
+    await waitFor(() => updates.at(-1)?.[0]?.completedThrough === "2026-10-04" && recent.at(-1)?.find((row) => row.date === "2026-10-04")?.completed.routine);
+    assert.deepEqual(taskSubtaskChecks(updates.at(-1)[0], "2026-10-04", recent.at(-1)), { one: true, two: true });
+    assert.deepEqual(taskSubtaskChecks(updates.at(-1)[0], "2026-11-01", recent.at(-1)), {});
+    pending(exports.setTaskSubtaskChecked(uid, "2026-10-04", updates.at(-1)[0], "one", false, { one: true, two: true }));
+    await waitFor(() => updates.at(-1)?.[0]?.completedThrough === "" && recent.at(-1)?.find((row) => row.date === "2026-10-04")?.completed.routine === false);
+    assert.deepEqual(taskSubtaskChecks(updates.at(-1)[0], "2026-10-05", recent.at(-1)), { one: false, two: true });
+    pending(exports.setTaskSubtaskChecked(uid, "2020-01-01", updates.at(-1)[0], "one", true, {}));
+    await waitFor(() => days.at(-1)?.subtasks?.routine?.one === true);
+    assert.equal(updates.at(-1)[0].subtaskProgress.date, "2026-10-04");
+    pending(exports.saveTask(uid, { ...updates.at(-1)[0], subtasks: [{ id: "two", title: "Renamed step" }] }));
+    await waitFor(() => updates.at(-1)?.[0]?.subtasks?.length === 1 && updates.at(-1)?.[0]?.subtasks[0].title === "Renamed step");
+    assert.equal(updates.at(-1)[0].subtaskProgress.completed.two, true);
+    pending(exports.saveTask(uid, { ...updates.at(-1)[0], subtasks: [] }));
+    await waitFor(() => updates.at(-1)?.[0]?.subtasks?.length === 0);
     pending(exports.removeTask(uid, "routine"));
     await waitFor(() => updates.at(-1)?.length === 0);
   } finally {

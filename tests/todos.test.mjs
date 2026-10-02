@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ACTIVE_TODO_DATE, filterTodos, isTodoOverdue, todoColumn, todoMovePatch, todoListId, todoValidation, todoViewFromQuery } from "../src/lib/todos.ts";
+import { ACTIVE_TODO_DATE, filterTodos, isTodoOverdue, isTodoPastDate, todoColumn, todoMovePatch, todoListId, todoValidation, todoViewFromQuery } from "../src/lib/todos.ts";
 
 test("To-do URL views accept all supported views and fall back safely", () => {
   for (const view of ["all", "today", "upcoming", "overdue", "completed"]) assert.equal(todoViewFromQuery(view), view);
@@ -15,6 +15,12 @@ const base = {
 };
 const lists = [{ id: "personal", name: "Personal" }];
 const options = { view: "all", listId: "all", search: "", priority: "all", status: "all", sort: "due", now: new Date(2026, 9, 2, 15) };
+
+test("past-date board borders exclude today, tomorrow, later dates and undated cards", () => {
+  for (const status of ["todo", "doing", "done"]) assert.equal(isTodoPastDate({ ...base, status, dueDate: "2026-10-01" }, options.now), true);
+  for (const dueDate of [null, "2026-10-02", "2026-10-03", "2026-10-10"]) assert.equal(isTodoPastDate({ ...base, dueDate, dueTime: "09:00" }, options.now), false);
+  assert.equal(isTodoPastDate(base, new Date(2026, 9, 3, 0, 0)), true);
+});
 
 test("board columns honor completion first, then progress, then local due dates", () => {
   assert.equal(todoColumn(base, options.now), "todo");

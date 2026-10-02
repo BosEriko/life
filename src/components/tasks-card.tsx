@@ -6,7 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Select, Spin, TimePicker, Typography, theme } from "antd";
-import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -14,7 +14,8 @@ import { useTaskDay } from "@/components/use-day-records";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { RichText, plainText } from "@/components/rich-text";
 import { Tip } from "@/components/tip";
-import { formatTaskTime, pendingTaskDate, type Task } from "@/lib/task-schedule";
+import { allTaskSubtasksDone, formatTaskTime, pendingTaskDate, taskSubtaskChecks, type Task } from "@/lib/task-schedule";
+import { TaskSubtasks } from "@/components/task-subtasks";
 import { removeTask, saveTask, setTaskChecked } from "@/models/tasks";
 import { todayKey } from "@/models/dailies";
 
@@ -41,12 +42,19 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
   const { user } = useAuth();
   const { message } = App.useApp();
   const [draft, setDraft] = useState(initial);
+  const [subtaskTitle, setSubtaskTitle] = useState("");
   const patch = (values: Partial<Task>) => setDraft((current) => ({ ...current, ...values }));
-  const valid = draft.title.trim().length > 0 && draft.time && draft.startDate && Number.isInteger(draft.interval) && draft.interval >= 1 && (draft.repeat !== "weekly" || draft.weekdays.length > 0);
+  const valid = draft.title.trim().length > 0 && draft.time && draft.startDate && Number.isInteger(draft.interval) && draft.interval >= 1 && (draft.repeat !== "weekly" || draft.weekdays.length > 0) && (draft.subtasks ?? []).every((subtask) => subtask.title.trim().length > 0);
+
+  function addSubtask() {
+    if (!subtaskTitle.trim() || (draft.subtasks?.length ?? 0) >= 50) return;
+    patch({ subtasks: [...(draft.subtasks ?? []), { id: crypto.randomUUID(), title: subtaskTitle.trim() }] });
+    setSubtaskTitle("");
+  }
 
   function submit() {
     if (!user || !valid) return;
-    const saved = { ...draft, id: draft.id || crypto.randomUUID(), title: draft.title.trim(), description: draft.description.trim() };
+    const saved = { ...draft, id: draft.id || crypto.randomUUID(), title: draft.title.trim(), description: draft.description.trim(), subtasks: (draft.subtasks ?? []).map((subtask) => ({ ...subtask, title: subtask.title.trim() })) };
     saveTask(user.uid, saved).catch(() => message.error("Could not save task."));
     setDraft({ ...draft, title: "", description: "" });
     onSaved(saved);
@@ -61,6 +69,17 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
         </Flex>
         <Input aria-label="Task title" placeholder="Task title" prefix={<ScheduleOutlined style={{ opacity: 0.45 }} />} maxLength={120} value={draft.title} onChange={(event) => patch({ title: event.target.value })} autoFocus />
         <Input.TextArea aria-label="Task description" placeholder="Description (Optional)" maxLength={2000} autoSize={{ minRows: 2, maxRows: 4 }} value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
+        <Typography.Text strong>Subtasks (optional)</Typography.Text>
+        <Flex vertical gap={8}>
+          {(draft.subtasks ?? []).map((subtask) => <Flex key={subtask.id} gap={8} align="center">
+            <Input aria-label="Subtask title" maxLength={120} value={subtask.title} onChange={(event) => patch({ subtasks: draft.subtasks?.map((item) => item.id === subtask.id ? { ...item, title: event.target.value } : item) })} style={{ minWidth: 0 }} />
+            <Button type="text" danger aria-label={`Remove subtask ${subtask.title}`} icon={<DeleteOutlined />} onClick={() => patch({ subtasks: draft.subtasks?.filter((item) => item.id !== subtask.id) })} />
+          </Flex>)}
+          <Flex gap={8}>
+            <Input aria-label="New subtask" placeholder="Add a small step" maxLength={120} value={subtaskTitle} onChange={(event) => setSubtaskTitle(event.target.value)} onPressEnter={(event) => { event.preventDefault(); addSubtask(); }} style={{ minWidth: 0 }} />
+            <Button aria-label="Add subtask" icon={<PlusOutlined />} disabled={!subtaskTitle.trim() || (draft.subtasks?.length ?? 0) >= 50} onClick={addSubtask} />
+          </Flex>
+        </Flex>
         <Select aria-label="Task repeat frequency" value={draft.repeat} options={REPEATS.map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))} onChange={(repeat) => patch({ repeat })} />
         <Flex align="center" gap={8} wrap>
           <Typography.Text type="secondary">Repeat every</Typography.Text>
@@ -131,9 +150,10 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
       {!manage && error && <Alert type="error" title="Could not load this checklist." />}
       {!tasksReady || (!manage && !row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? `No ${view} tasks yet.` : "No tasks scheduled for this day."} /> : shown.map((task) => {
         const checked = !!row?.completed[task.id];
+        const subtasks = taskSubtaskChecks(task, date, checks);
         return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "16px 0", borderTop: `1px solid ${token.colorBorderSecondary}` }}>
-          {!manage && <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={checked} disabled={!row || error} onChange={(event) => {
-            if (user) setTaskChecked(user.uid, date, task.id, event.target.checked, task).catch(() => message.error("Could not update task."));
+          {!manage && <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={checked} disabled={!row || error || (!checked && !allTaskSubtasksDone(task, subtasks))} onChange={(event) => {
+            if (user) setTaskChecked(user.uid, date, task.id, event.target.checked, task, subtasks).catch(() => message.error("Could not update task."));
           }} />}
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
             <Typography.Text strong delete={!manage && checked}><RichText text={task.title} /></Typography.Text>
@@ -142,6 +162,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
               <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined style={{ marginRight: 6 }} />{formatTaskTime(task.time)}</Typography.Text>
               <Tip title={scheduleHint(task)}><Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined style={{ marginRight: 6 }} />{task.interval === 1 ? `Every ${UNITS[task.repeat]}` : `Every ${task.interval} ${unit(task.repeat, task.interval)}`}</Typography.Text></Tip>
             </Flex>
+            <TaskSubtasks task={task} date={date} completed={subtasks} disabled={!row || error} readOnly={manage} />
           </div>
           <Flex gap={2}>
             <Button type="text" size="small" aria-label={`Edit ${plainText(task.title)}`} icon={<EditOutlined />} onClick={() => { setEditing(task); setEditOpen(true); }} />
