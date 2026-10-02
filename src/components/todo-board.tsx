@@ -56,9 +56,17 @@ function BoardEditor({ todo, lists, onClose }: { todo: Todo; lists: Parameters<t
 type BoardDrag = { id: string; target: TodoColumn | null; x: number; y: number; width: number; offsetX: number; offsetY: number; moved: boolean };
 
 function CardContent({ todo, upcoming }: { todo: Todo; upcoming: boolean }) {
+  const subtasks = Object.values(todo.subtasks ?? {});
+  const done = subtasks.filter((subtask) => subtask.done).length;
   return <>
     <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere", pointerEvents: "none" }}>{todo.title}</Typography.Text>
-    {upcoming && todo.dueDate && <Typography.Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12, pointerEvents: "none" }}>{dayjs(todo.dueDate).format("MMM D, YYYY")}</Typography.Text>}
+    {upcoming ? todo.dueDate && <Typography.Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12, pointerEvents: "none" }}>
+      <CalendarOutlined style={{ marginRight: 6 }} />
+      {dayjs(todo.dueDate).format("MMM D, YYYY")}
+    </Typography.Text> : subtasks.length > 0 && <Typography.Text type={done === subtasks.length ? "success" : "secondary"} style={{ display: "block", marginTop: 12, fontSize: 12, pointerEvents: "none" }}>
+      <CheckSquareOutlined style={{ marginRight: 6 }} />
+      {done}/{subtasks.length} subtasks
+    </Typography.Text>}
   </>;
 }
 
