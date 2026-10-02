@@ -146,7 +146,10 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
         <Button aria-label="Next task day" icon={<RightOutlined />} onClick={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))} />
         <Button onClick={() => setDate(todayKey())}>Today</Button>
       </Flex>}
-      <Typography.Paragraph type="secondary">{manage ? `${shown.length} ${view} ${shown.length === 1 ? "task" : "tasks"}` : row ? `${count} of ${due.length} completed` : "Loading checklist…"}</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">
+        {manage ? `${shown.length} ${view} ${shown.length === 1 ? "task" : "tasks"}` : row ? `${count} of ${due.length} completed` : "Loading checklist…"}
+        {(view === "monthly" || view === "yearly") && " · Carries over until checked off"}
+      </Typography.Paragraph>
       {!manage && error && <Alert type="error" title="Could not load this checklist." />}
       {!tasksReady || (!manage && !row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? `No ${view} tasks yet.` : "No tasks scheduled for this day."} /> : shown.map((task) => {
         const checked = !!row?.completed[task.id];
