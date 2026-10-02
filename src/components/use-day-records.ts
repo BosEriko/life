@@ -11,6 +11,23 @@ import { watchTaskDay, type TaskChecks } from "@/models/tasks";
 import { useHealthData } from "@/components/health-data-provider";
 import { watchTodosForDate } from "@/models/todos";
 import type { Todo } from "@/lib/todos";
+import type { FinanceRecord } from "@/lib/finance";
+import { watchFinanceDay } from "@/models/finance";
+
+export function useFinanceDay(date: string, enabled: boolean) {
+  const { user } = useAuth();
+  const { financeRecords, financeReady, financeError, cutoff } = useHealthData();
+  const inWindow = !!cutoff && date >= cutoff;
+  const [state, setState] = useState<{ uid: string; date: string; rows: FinanceRecord[]; error: boolean } | null>(null);
+  useEffect(() => {
+    if (!enabled || !user || inWindow) return;
+    return watchFinanceDay(user.uid, date, (rows) => setState({ uid: user.uid, date, rows, error: false }), () => setState({ uid: user.uid, date, rows: [], error: true }));
+  }, [enabled, user, date, inWindow]);
+  if (!enabled) return { rows: [], ready: false, error: false };
+  if (inWindow) return { rows: financeRecords.filter((record) => record.date === date), ready: financeReady, error: financeError };
+  const current = state?.uid === user?.uid && state?.date === date;
+  return { rows: current ? state!.rows : [], ready: current, error: current && state!.error };
+}
 
 export function useTodoDay(date: string, enabled: boolean) {
   const { user } = useAuth();

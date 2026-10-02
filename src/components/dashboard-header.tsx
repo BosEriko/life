@@ -16,12 +16,22 @@ import {
   MenuOutlined,
   ScheduleOutlined,
   UserOutlined,
+  DashboardOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { NAV } from "@/components/nav-items";
 
 const SUBMENUS = {
+  finance: {
+    label: "Finance",
+    tabs: [
+      { href: "/finance", label: "Dashboard", Icon: DashboardOutlined },
+      { href: "/finance/accounts", label: "Accounts", Icon: WalletOutlined },
+      { href: "/finance/records", label: "Records", Icon: UnorderedListOutlined },
+    ],
+  },
   journal: {
     label: "Journal",
     tabs: [
