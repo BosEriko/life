@@ -38,6 +38,7 @@ test("every board move lands in its target column without losing task details", 
       const moved = { ...todo, ...todoMovePatch(todo, column, options.now) };
       assert.equal(todoColumn(moved, options.now), column);
       assert.equal(moved.title, todo.title);
+      assert.equal(moved.listId, todo.listId);
       assert.equal(moved.subtasks, todo.subtasks);
       assert.equal(moved.dueTime, todo.dueTime);
       assert.equal(moved.date, column === "done" ? "2026-10-02" : ACTIVE_TODO_DATE);

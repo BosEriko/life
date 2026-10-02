@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Alert, App, Button, Card, Empty, Flex, Grid, Spin, Typography, theme } from "antd";
+import { Alert, App, Button, Card, Empty, Flex, Grid, Select, Spin, Typography, theme } from "antd";
 import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
@@ -14,7 +14,7 @@ import { useTodoDay } from "@/components/use-day-records";
 import { PageHeading } from "@/components/page-heading";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
-import { isTodoPastDate, todoColumn, type Todo, type TodoColumn } from "@/lib/todos";
+import { isTodoPastDate, todoColumn, todoListId, type Todo, type TodoColumn } from "@/lib/todos";
 import { moveTodo } from "@/models/todos";
 
 const COLUMNS = [
@@ -70,6 +70,7 @@ export function TodoBoard() {
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const [now, setNow] = useState(() => new Date());
+  const [listId, setListId] = useState("all");
   const [editor, setEditor] = useState<Todo | null | undefined>(undefined);
   const [archivedMove, setArchivedMove] = useState<{ todo: Todo; column: TodoColumn } | null>(null);
   const [drag, setDrag] = useState<BoardDrag | null>(null);
@@ -77,6 +78,9 @@ export function TodoBoard() {
   const suppressClick = useRef(false);
   const rail = useRef<HTMLDivElement>(null);
   const all = mergeById(todos, history.todos);
+  const selectedList = listId === "all" || listId === "inbox" || todoLists.some((list) => list.id === listId) ? listId : "inbox";
+  const filtered = all.filter((todo) => selectedList === "all" || todoListId(todo, todoLists) === selectedList);
+  const completedHref = `/journal/todo?view=completed${selectedList === "all" ? "" : `&list=${encodeURIComponent(selectedList)}`}`;
   const draggedTodo = all.find((todo) => todo.id === drag?.id);
   const isDragging = drag !== null;
 
@@ -144,11 +148,15 @@ export function TodoBoard() {
   return <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
     <PageHeading title="Board" subtitle="The same to-dos, organized by what comes next." extra={<Button type="primary" icon={<PlusOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>} />
     <Typography.Paragraph type="secondary">Click a card to edit, or drag it into another column.</Typography.Paragraph>
+    <Flex align="center" gap={8} wrap style={{ marginBottom: 16 }}>
+      <Typography.Text>List</Typography.Text>
+      <Select aria-label="Filter list" value={selectedList} onChange={setListId} style={{ width: 200, maxWidth: "100%" }} options={[{ value: "all", label: "All lists" }, { value: "inbox", label: "Inbox" }, ...todoLists.map((list) => ({ value: list.id, label: list.name }))]} />
+    </Flex>
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}
     {!todosReady ? <Spin /> : <div ref={rail} tabIndex={0} role="region" aria-label="To-do board" style={{ overflowX: "auto", paddingBottom: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(260px, 1fr))", gap: 16, minWidth: 1088, alignItems: "stretch" }}>
         {COLUMNS.map(({ value, label, Icon }) => {
-          const items = all.filter((todo) => todoColumn(todo, now) === value).sort((a, b) => value === "done" ? (b.completedAt ?? "").localeCompare(a.completedAt ?? "") : (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31") || a.createdAt.localeCompare(b.createdAt));
+          const items = filtered.filter((todo) => todoColumn(todo, now) === value).sort((a, b) => value === "done" ? (b.completedAt ?? "").localeCompare(a.completedAt ?? "") : (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31") || a.createdAt.localeCompare(b.createdAt));
           const visible = value === "done" ? items.slice(0, 10) : items;
           return <section key={value} data-board-column={value} aria-label={label} style={{ minHeight: 300, padding: 12, borderRadius: token.borderRadiusLG, background: drag?.target === value ? token.colorPrimaryBg : token.colorFillQuaternary, border: `1px solid ${drag?.target === value ? token.colorPrimary : token.colorBorderSecondary}` }}>
             <Flex justify="space-between" align="center" style={{ padding: "4px 4px 16px" }}><Typography.Text strong><Icon style={{ marginRight: 8 }} />{label}</Typography.Text><Typography.Text type="secondary">{items.length}</Typography.Text></Flex>
@@ -167,14 +175,14 @@ export function TodoBoard() {
                     if (COLUMNS[index]) move(todo, COLUMNS[index].value);
                   } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditor(todo); }
                 }}><CardContent todo={todo} upcoming={value === "upcoming"} /></Card>)}
-              {value === "done" && items.length > visible.length && <Link href="/journal/todo?view=completed" style={{ textAlign: "center", padding: "12px 4px", color: token.colorPrimary }}>And {items.length - visible.length} more…</Link>}
+              {value === "done" && items.length > visible.length && <Link href={completedHref} style={{ textAlign: "center", padding: "12px 4px", color: token.colorPrimary }}>And {items.length - visible.length} more…</Link>}
             </Flex>
           </section>;
         })}
       </div>
     </div>}
     {drag?.moved && draggedTodo && createPortal(<Card size="small" aria-hidden className="todo-board-drag-preview" style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width, pointerEvents: "none", zIndex: 1100, transform: "rotate(4deg)", boxShadow: token.boxShadow, borderColor: isTodoPastDate(draggedTodo, now) ? token.colorError : undefined }}><CardContent todo={draggedTodo} upcoming={todoColumn(draggedTodo, now) === "upcoming"} /></Card>, document.body)}
-    {editor === null && <TodoEditor initial={null} lists={todoLists} listId="inbox" onClose={() => setEditor(undefined)} />}
+    {editor === null && <TodoEditor initial={null} lists={todoLists} listId={selectedList === "all" ? "inbox" : selectedList} onClose={() => setEditor(undefined)} />}
     {editor && <BoardEditor key={editor.id} todo={editor} lists={todoLists} onClose={() => { setEditor(undefined); history.refresh(); }} />}
     {archivedMove && <ArchivedMove key={archivedMove.todo.id} {...archivedMove} onClose={() => { setArchivedMove(null); history.refresh(); }} />}
   </div>;
