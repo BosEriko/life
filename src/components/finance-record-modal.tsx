@@ -46,7 +46,7 @@ export function FinanceRecordModal({ onClose, onSaved }: { onClose: () => void; 
   }
   const categories = [...new Set([...CATEGORIES, ...records.map((record) => record.category)])];
   const knownLabels = [...new Set(records.flatMap((record) => record.labels))];
-  return <AppModal open title="Add record" onCancel={pending ? undefined : onClose} closable={!pending} maskClosable={!pending} footer={<Button type="primary" disabled={!day.ready || day.error || !!pending} onClick={save}>Add record</Button>}>
+  return <AppModal open title="Add record" onCancel={pending ? undefined : onClose} closable={!pending} mask={{ closable: !pending }} footer={<Button type="primary" disabled={!day.ready || day.error || !!pending} onClick={save}>Add record</Button>}>
     <Form layout="vertical" onFinish={save}>
       <Form.Item label="Record type"><Segmented block value={type} disabled={!!pending} onChange={setType} options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }, { value: "transfer", label: "Transfer" }]} /></Form.Item>
       <Form.Item label={type === "transfer" ? "From account" : "Account"} required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: `${item.name} · ${item.currency}` }))} /></Form.Item>
