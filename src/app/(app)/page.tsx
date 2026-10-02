@@ -15,6 +15,7 @@ import { LandingPage } from "@/components/landing-page";
 import { RecentEntries } from "@/components/recent-entries";
 import { TaskReminders } from "@/components/task-reminders";
 import { todayKey } from "@/models/dailies";
+import { Icon } from "@/components/icon";
 
 const TREND_RANGE_OPTIONS = [
   { label: "7D", value: "7" },
@@ -76,7 +77,7 @@ function HealthDashboard() {
         title="Health"
         subtitle="A calm view of your recent days."
         extra={
-          <Button type="primary" onClick={() => setIdealsOpen(true)}>
+          <Button type="primary" icon={<Icon name="target" style={{ marginRight: 0, opacity: 1, color: "inherit" }} />} onClick={() => setIdealsOpen(true)}>
             Set ideal ranges
           </Button>
         }

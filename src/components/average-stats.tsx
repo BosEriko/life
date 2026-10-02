@@ -495,6 +495,7 @@ export function AverageStats() {
               borderRadius: token.borderRadiusLG,
               background: token.colorBgContainer,
               border: `1px solid ${off ? token.colorError : token.colorBorderSecondary}`,
+              boxShadow: token.boxShadowTertiary,
               ...(compact ? {} : { gridColumn: desktopSpan }),
             };
             const dot =

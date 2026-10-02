@@ -70,10 +70,9 @@ export function TaskReminders() {
               align="flex-start"
               gap={12}
               style={{
-                padding: "12px 14px",
+                padding: "14px 16px",
                 borderRadius: token.borderRadius,
-                background: `color-mix(in srgb, ${token.colorBgContainer} 75%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${token.colorWarning} 25%, ${token.colorBorderSecondary})`,
+                background: `color-mix(in srgb, ${token.colorWarning} 28%, ${token.colorBgContainer})`,
               }}
             >
               <Checkbox
