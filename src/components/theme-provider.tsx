@@ -62,12 +62,14 @@ const DARK_TOKENS = {
 
 const LIGHT_COMPONENTS = {
   Button: { fontWeight: 700 },
+  Tooltip: { controlHeight: 0 },
   Segmented: { trackPadding: 4, trackBg: "#e7f3ea" },
   Table: { headerBg: "#e7f3ea", headerColor: "#607066" },
 };
 
 const DARK_COMPONENTS = {
   Button: { fontWeight: 700 },
+  Tooltip: { controlHeight: 0 },
   Segmented: { trackPadding: 4 },
 };
 
