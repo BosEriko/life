@@ -53,7 +53,7 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
       <Typography.Paragraph type="secondary">Give it a clear next step. Add a deadline or break it into smaller steps.</Typography.Paragraph>
       <Form layout="vertical" onFinish={submit}>
         <Form.Item label="Title" required>
-          <Input aria-label="To-do title" autoFocus maxLength={120} placeholder="What needs to get done?" value={draft.title} onChange={(event) => patch({ title: event.target.value })} />
+          <Input aria-label="To-do title" autoFocus maxLength={120} showCount placeholder="What needs to get done?" value={draft.title} onChange={(event) => patch({ title: event.target.value })} />
         </Form.Item>
         <Form.Item label="Description">
           <Input.TextArea aria-label="To-do description" maxLength={2000} autoSize={{ minRows: 2 }} placeholder="Details, context, or a helpful link" value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
