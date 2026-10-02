@@ -8,7 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { RichText, plainText } from "@/components/rich-text";
 import { allTaskSubtasksDone, formatTaskTime, overdueTasks, taskSubtaskChecks } from "@/lib/task-schedule";
-import { setTaskChecked } from "@/models/tasks";
+import { setTaskChecked } from "@/models/users/tasks";
 import { TaskSubtasks } from "@/components/task-subtasks";
 import { Tip } from "@/components/tip";
 import { TaskDescription } from "@/components/task-description";

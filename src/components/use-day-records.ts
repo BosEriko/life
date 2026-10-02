@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { watchDailyDoc, type DailyEntry } from "@/models/dailies";
-import { watchHabitDoc, type HabitEntry } from "@/models/habits";
-import { watchBpForDate, type BpReading } from "@/models/bp";
-import { watchWaterForDate, type WaterLog } from "@/models/water";
-import { watchIntakeForDate, type IntakeEntry } from "@/models/intake";
-import { watchTaskDay, type TaskChecks } from "@/models/tasks";
+import { watchDailyDoc, type DailyEntry } from "@/models/users/dailies";
+import { watchHabitDoc, type HabitEntry } from "@/models/users/habits";
+import { watchBpForDate, type BpReading } from "@/models/users/bp-readings";
+import { watchWaterForDate, type WaterLog } from "@/models/users/water-logs";
+import { watchIntakeForDate, type IntakeEntry } from "@/models/users/intake";
+import { watchTaskDay, type TaskChecks } from "@/models/users/tasks";
 import { useHealthData } from "@/components/health-data-provider";
-import { watchTodosForDate } from "@/models/todos";
+import { watchTodosForDate } from "@/models/users/todos";
 import type { Todo } from "@/lib/todos";
 import type { FinanceRecord } from "@/lib/finance";
-import { watchFinanceDay } from "@/models/finance";
+import { watchFinanceDay } from "@/models/users/finance";
 
 export function useFinanceDay(date: string, enabled: boolean) {
   const { user } = useAuth();

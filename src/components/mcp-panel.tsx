@@ -16,7 +16,7 @@ import {
 } from "antd";
 import { CopyOutlined, KeyOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
-import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/mcp-key";
+import { generateMcpKey, watchMcpKey, type McpKeyMeta } from "@/models/users/mcp-keys";
 import { PageHeading } from "@/components/page-heading";
 
 const KEY_PLACEHOLDER = "<YOUR_MCP_KEY>";

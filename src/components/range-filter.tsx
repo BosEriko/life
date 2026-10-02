@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import { DatePicker, Flex, Segmented } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { todayKey } from "@/models/dailies";
+import { todayKey } from "@/models/users/dailies";
 
 export type DateRange = [Dayjs | null, Dayjs];
 

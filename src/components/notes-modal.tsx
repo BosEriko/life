@@ -15,8 +15,8 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { todayKey } from "@/models/dailies";
-import { addNote } from "@/models/notes";
+import { todayKey } from "@/models/users/dailies";
+import { addNote } from "@/models/users/notes";
 
 const noSubscribe = () => () => {};
 const detectMac = () => /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);

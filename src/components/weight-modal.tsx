@@ -18,8 +18,8 @@ import {
   weightStep,
   weightSuffix,
 } from "@/lib/units";
-import { saveDaily, todayKey } from "@/models/dailies";
-import { evaluateIdeal, rangeText } from "@/models/ideals";
+import { saveDaily, todayKey } from "@/models/users/dailies";
+import { evaluateIdeal, rangeText } from "@/models/users/ideals";
 
 export function WeightModal({
   open,

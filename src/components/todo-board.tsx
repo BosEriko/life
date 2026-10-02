@@ -15,7 +15,7 @@ import { PageHeading } from "@/components/page-heading";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
 import { isKnownList, fixedListOptions, ARCHIVE_LIST_ID, isTodoPastDate, todoColumn, todoListId, type Todo, type TodoColumn } from "@/lib/todos";
-import { moveTodo } from "@/models/todos";
+import { moveTodo } from "@/models/users/todos";
 
 const COLUMNS = [
   { value: "upcoming" as const, label: "Upcoming", Icon: CalendarOutlined },

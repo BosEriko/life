@@ -10,11 +10,11 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { useUnits } from "@/components/units-provider";
-import { todayKey, type DailyEntry } from "@/models/dailies";
-import { type HabitEntry } from "@/models/habits";
-import { dailyBpAverages } from "@/models/bp";
-import { dailyWaterTotals } from "@/models/water";
-import { dailyIntake } from "@/models/intake";
+import { todayKey, type DailyEntry } from "@/models/users/dailies";
+import { type HabitEntry } from "@/models/users/habits";
+import { dailyBpAverages } from "@/models/users/bp-readings";
+import { dailyWaterTotals } from "@/models/users/water-logs";
+import { dailyIntake } from "@/models/users/intake";
 import {
   convertRange,
   fromKg,

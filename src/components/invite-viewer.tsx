@@ -15,7 +15,7 @@ import {
   evaluateIdeal,
   type Ideals,
   type IdealRange,
-} from "@/models/ideals";
+} from "@/models/users/ideals";
 import {
   convertRange,
   DEFAULT_UNITS,

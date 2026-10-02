@@ -2,7 +2,7 @@
 
 import type { ReactElement, ReactNode } from "react";
 import { Tip } from "@/components/tip";
-import { rangeText, type IdealRange, type IdealStatus } from "@/models/ideals";
+import { rangeText, type IdealRange, type IdealStatus } from "@/models/users/ideals";
 
 /**
  * Wraps a value with an "above/below your ideal" hover tooltip.

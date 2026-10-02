@@ -16,8 +16,8 @@ import { RichText, markdownLiteToHtml, plainText } from "@/components/rich-text"
 import { Tip } from "@/components/tip";
 import { allTaskSubtasksDone, formatTaskTime, pendingTaskDate, taskSubtaskChecks, type Task } from "@/lib/task-schedule";
 import { TaskSubtasks } from "@/components/task-subtasks";
-import { removeTask, saveTask, setTaskChecked } from "@/models/tasks";
-import { todayKey } from "@/models/dailies";
+import { removeTask, saveTask, setTaskChecked } from "@/models/users/tasks";
+import { todayKey } from "@/models/users/dailies";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { TaskDescription } from "@/components/task-description";
 

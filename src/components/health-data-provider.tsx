@@ -12,19 +12,19 @@ import {
 import { App } from "antd";
 import { useAuth } from "@/components/auth-provider";
 import { healthWindowCutoff } from "@/lib/health-window";
-import { watchDailies, type DailyEntry } from "@/models/dailies";
-import { watchHabits, type HabitEntry } from "@/models/habits";
-import { watchBpReadings, type BpReading } from "@/models/bp";
-import { watchWaterLogs, type WaterLog } from "@/models/water";
-import { watchIntake, type IntakeEntry } from "@/models/intake";
-import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/ideals";
-import { watchWaterPresets, type WaterPreset } from "@/models/presets";
-import { watchTaskSettings, watchTaskChecks, type TaskChecks } from "@/models/tasks";
+import { watchDailies, type DailyEntry } from "@/models/users/dailies";
+import { watchHabits, type HabitEntry } from "@/models/users/habits";
+import { watchBpReadings, type BpReading } from "@/models/users/bp-readings";
+import { watchWaterLogs, type WaterLog } from "@/models/users/water-logs";
+import { watchIntake, type IntakeEntry } from "@/models/users/intake";
+import { EMPTY_IDEALS, watchIdeals, type Ideals } from "@/models/users/ideals";
+import { watchWaterPresets, type WaterPreset } from "@/models/users/presets";
+import { watchTaskSettings, watchTaskChecks, type TaskChecks } from "@/models/users/tasks";
 import type { Task } from "@/lib/task-schedule";
-import { watchTodoSettings, watchTodos } from "@/models/todos";
+import { watchTodoSettings, watchTodos } from "@/models/users/todos";
 import type { Todo, TodoList } from "@/lib/todos";
 import type { FinanceAccount, FinanceRecord } from "@/lib/finance";
-import { watchFinanceAccounts, watchFinanceRecords } from "@/models/finance";
+import { watchFinanceAccounts, watchFinanceRecords } from "@/models/users/finance";
 
 type HealthData = {
   financeAccounts: FinanceAccount[];

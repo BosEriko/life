@@ -17,16 +17,16 @@ import {
 } from "firebase/firestore";
 import { useAuth } from "@/components/auth-provider";
 import { getFirebaseDb } from "@/lib/firebase";
-import { mapDailyDoc, type DailyEntry } from "@/models/dailies";
-import { mapHabitDoc, type HabitEntry } from "@/models/habits";
-import { mapBpDoc, type BpReading } from "@/models/bp";
-import { mapWaterDoc, type WaterLog } from "@/models/water";
-import { mapIntakeDoc, type IntakeEntry } from "@/models/intake";
-import { mapTaskChecks, type TaskChecks } from "@/models/tasks";
-import { mapTodoDoc } from "@/models/todos";
+import { mapDailyDoc, type DailyEntry } from "@/models/users/dailies";
+import { mapHabitDoc, type HabitEntry } from "@/models/users/habits";
+import { mapBpDoc, type BpReading } from "@/models/users/bp-readings";
+import { mapWaterDoc, type WaterLog } from "@/models/users/water-logs";
+import { mapIntakeDoc, type IntakeEntry } from "@/models/users/intake";
+import { mapTaskChecks, type TaskChecks } from "@/models/users/tasks";
+import { mapTodoDoc } from "@/models/users/todos";
 import type { Todo } from "@/lib/todos";
 import type { FinanceRecord } from "@/lib/finance";
-import { mapFinanceRecord } from "@/models/finance";
+import { mapFinanceRecord } from "@/models/users/finance";
 
 type HistoryData = {
   taskChecks: TaskChecks[];

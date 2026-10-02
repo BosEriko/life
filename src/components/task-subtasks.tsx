@@ -4,7 +4,7 @@ import { App, Checkbox, Flex, Typography } from "antd";
 import { EnterOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { RichText, plainText } from "@/components/rich-text";
-import { setTaskSubtaskChecked } from "@/models/tasks";
+import { setTaskSubtaskChecked } from "@/models/users/tasks";
 import type { SubtaskChecks, Task } from "@/lib/task-schedule";
 
 export function TaskSubtasks({ task, date, completed, disabled = false, readOnly = false }: { task: Task; date: string; completed: SubtaskChecks; disabled?: boolean; readOnly?: boolean }) {

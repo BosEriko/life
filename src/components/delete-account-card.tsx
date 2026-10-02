@@ -8,7 +8,7 @@ import { Icon } from "@/components/icon";
 import {
   confirmAccountDeletion,
   requestAccountDeletion,
-} from "@/models/account";
+} from "@/models/users/account";
 
 export function DeleteAccountCard() {
   const { user, signOut } = useAuth();

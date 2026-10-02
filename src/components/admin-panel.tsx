@@ -12,7 +12,7 @@ import {
   setUserAdmin,
   setUserClaudeAccess,
   type AdminUser,
-} from "@/models/admin";
+} from "@/models/admin-users";
 import { PageHeading } from "@/components/page-heading";
 
 export function AdminPanel() {

@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { UnitsGate } from "@/components/units-gate";
-import { EMPTY_PROFILE, watchProfile, type Profile } from "@/models/profile";
+import { EMPTY_PROFILE, watchProfile, type Profile } from "@/models/users/profile";
 import { DEFAULT_UNITS, type Units } from "@/lib/units";
 
 type UnitsContextValue = {

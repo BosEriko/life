@@ -8,8 +8,8 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHabitDoc } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
-import { relativeDate, todayKey } from "@/models/dailies";
-import { saveHabits, type HabitInput } from "@/models/habits";
+import { relativeDate, todayKey } from "@/models/users/dailies";
+import { saveHabits, type HabitInput } from "@/models/users/habits";
 
 export function HabitModal({
   open,

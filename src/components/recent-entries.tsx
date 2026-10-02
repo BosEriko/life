@@ -4,10 +4,10 @@ import { useMemo } from "react";
 import { Empty, Flex, Spin, theme, Typography } from "antd";
 import dayjs from "dayjs";
 import { useHealthData } from "@/components/health-data-provider";
-import { relativeDate, todayKey } from "@/models/dailies";
-import { dailyBpAverages } from "@/models/bp";
-import { dailyWaterTotals } from "@/models/water";
-import { dailyIntake } from "@/models/intake";
+import { relativeDate, todayKey } from "@/models/users/dailies";
+import { dailyBpAverages } from "@/models/users/bp-readings";
+import { dailyWaterTotals } from "@/models/users/water-logs";
+import { dailyIntake } from "@/models/users/intake";
 import { Icon } from "@/components/icon";
 import { IdealTip, idealTipProps } from "@/components/ideal-tip";
 import { useUnits } from "@/components/units-provider";
@@ -20,7 +20,7 @@ import {
   volumeSuffix,
   weightSuffix,
 } from "@/lib/units";
-import { evaluateIdeal } from "@/models/ideals";
+import { evaluateIdeal } from "@/models/users/ideals";
 
 const DAYS = 7;
 

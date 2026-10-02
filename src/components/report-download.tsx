@@ -11,7 +11,7 @@ import { NotesModal } from "@/components/notes-modal";
 import { WaterModal } from "@/components/water-modal";
 import { WeightModal } from "@/components/weight-modal";
 import { Icon } from "@/components/icon";
-import { todayKey } from "@/models/dailies";
+import { todayKey } from "@/models/users/dailies";
 
 const MENU_SIDE_KEY = "quick-action-menu-side";
 const MENU_COLLAPSED_KEY = "quick-action-menu-collapsed";

@@ -5,7 +5,7 @@ import { CheckCircleOutlined, ExclamationCircleOutlined, WarningOutlined } from 
 import dayjs from "dayjs";
 import { useHealthData } from "@/components/health-data-provider";
 import { money } from "@/lib/finance";
-import { todayKey } from "@/models/dailies";
+import { todayKey } from "@/models/users/dailies";
 
 export function EmergencyFundBanner() {
   const { token } = theme.useToken();

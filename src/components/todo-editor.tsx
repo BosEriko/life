@@ -8,7 +8,7 @@ import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { todoListId, isKnownList, fixedListOptions, ACTIVE_TODO_DATE, TODO_PRIORITIES, todoValidation, type Todo, type TodoList } from "@/lib/todos";
-import { saveTodo } from "@/models/todos";
+import { saveTodo } from "@/models/users/todos";
 import { RichTextEditor, plainTextToHtml } from "@/components/rich-text-editor";
 
 export function TodoEditor({ initial, lists, listId, onClose }: {

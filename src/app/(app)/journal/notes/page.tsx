@@ -33,7 +33,7 @@ import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon } from "@/components/icon";
 import { NotesModal } from "@/components/notes-modal";
-import { relativeDate, todayKey } from "@/models/dailies";
+import { relativeDate, todayKey } from "@/models/users/dailies";
 import {
   deleteNote,
   formatNoteTime,
@@ -41,13 +41,13 @@ import {
   sortNotes,
   watchNotes,
   type Note,
-} from "@/models/notes";
+} from "@/models/users/notes";
 import { PageHeading } from "@/components/page-heading";
 import { journalViewUrl, noteDateFromQuery } from "@/lib/journal-views";
 import { RichTextView } from "@/components/rich-text-view";
 import { plainTextToHtml } from "@/components/rich-text-editor";
 import { ACTIVE_TODO_DATE, todoValidation, type Todo } from "@/lib/todos";
-import { convertNoteToTodo } from "@/models/todos";
+import { convertNoteToTodo } from "@/models/users/todos";
 import { JournalSkeleton } from "@/components/journal-skeleton";
 import { SideMenu } from "@/components/side-menu";
 

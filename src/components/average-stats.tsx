@@ -20,10 +20,10 @@ import { isOutsideEatingWindow } from "@/lib/eating-window";
 import { Icon, type IconName } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
 import { Tip } from "@/components/tip";
-import { todayKey, type DailyEntry } from "@/models/dailies";
-import { dailyBpAverages, type DailyBp } from "@/models/bp";
-import { dailyWaterTotals, type DailyWater } from "@/models/water";
-import { dailyIntake, type DailyIntake } from "@/models/intake";
+import { todayKey, type DailyEntry } from "@/models/users/dailies";
+import { dailyBpAverages, type DailyBp } from "@/models/users/bp-readings";
+import { dailyWaterTotals, type DailyWater } from "@/models/users/water-logs";
+import { dailyIntake, type DailyIntake } from "@/models/users/intake";
 import { useUnits } from "@/components/units-provider";
 import {
   convertRange,
@@ -40,7 +40,7 @@ import {
   rangeText,
   worstStatus,
   type IdealStatus,
-} from "@/models/ideals";
+} from "@/models/users/ideals";
 
 const RANGE_STORAGE_KEY = "averages-range";
 const RAIL_GAP = 12;

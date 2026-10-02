@@ -12,7 +12,7 @@ test("to-do and list lifecycle self-echo offline, including old unfinished and a
   const app = initializeApp({ projectId: "demo-todos-offline" }, "todos-offline-test");
   const db = firestore.initializeFirestore(app, { localCache: firestore.memoryLocalCache() });
   await firestore.disableNetwork(db);
-  const output = ts.transpileModule(fs.readFileSync("src/models/todos.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
+  const output = ts.transpileModule(fs.readFileSync("src/models/users/todos.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
   const models = {};
   vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(models, (name) => {
     if (name === "@/lib/firebase") return { getFirebaseDb: () => db };

@@ -11,11 +11,11 @@ import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { useUnits } from "@/components/units-provider";
 import { formatVolume, formatWeight } from "@/lib/units";
-import { type DailyEntry } from "@/models/dailies";
-import { type HabitEntry } from "@/models/habits";
-import { formatWaterTime, type WaterLog } from "@/models/water";
-import { formatBpTime, type BpReading } from "@/models/bp";
-import { formatIntakeTime, type IntakeEntry } from "@/models/intake";
+import { type DailyEntry } from "@/models/users/dailies";
+import { type HabitEntry } from "@/models/users/habits";
+import { formatWaterTime, type WaterLog } from "@/models/users/water-logs";
+import { formatBpTime, type BpReading } from "@/models/users/bp-readings";
+import { formatIntakeTime, type IntakeEntry } from "@/models/users/intake";
 import { PageHeading } from "@/components/page-heading";
 
 const pagination = {

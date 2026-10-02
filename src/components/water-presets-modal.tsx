@@ -18,7 +18,7 @@ import {
   addWaterPreset,
   deleteWaterPreset,
   type WaterPreset,
-} from "@/models/presets";
+} from "@/models/users/presets";
 
 export function WaterPresetsModal({
   open,

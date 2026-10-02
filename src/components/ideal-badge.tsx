@@ -2,7 +2,7 @@
 
 import { Tag } from "antd";
 import { useIsDark, TERRACOTTA, TERRACOTTA_DARK } from "@/components/theme-provider";
-import type { IdealStatus } from "@/models/ideals";
+import type { IdealStatus } from "@/models/users/ideals";
 
 const LABELS: Record<Exclude<IdealStatus, "unset">, string> = {
   ok: "In range",

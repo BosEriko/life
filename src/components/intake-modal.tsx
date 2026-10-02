@@ -41,8 +41,8 @@ import {
   enrichIntakeIfNeeded,
   recalcIntakeNutrition,
 } from "@/models/claude-integration";
-import { relativeDate, todayKey } from "@/models/dailies";
-import { evaluateIdeal, rangeText } from "@/models/ideals";
+import { relativeDate, todayKey } from "@/models/users/dailies";
+import { evaluateIdeal, rangeText } from "@/models/users/ideals";
 import {
   addIntake,
   dailyIntake,
@@ -52,7 +52,7 @@ import {
   formatIntakeTime,
   type IntakeEntry,
   type IntakeKind,
-} from "@/models/intake";
+} from "@/models/users/intake";
 import { watchFoods, type FoodItem } from "@/models/foods";
 
 const KIND_OPTIONS = [

@@ -12,7 +12,7 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
 import { ACCOUNT_TYPES, accountTextColor, money, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
-import { recalculateFinanceAccounts } from "@/models/finance";
+import { recalculateFinanceAccounts } from "@/models/users/finance";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 

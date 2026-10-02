@@ -5,7 +5,7 @@ import { AppModal } from "@/components/app-modal";
 import { useState } from "react";
 import { App, Flex, Segmented, Typography } from "antd";
 import { useAuth } from "@/components/auth-provider";
-import { saveProfile } from "@/models/profile";
+import { saveProfile } from "@/models/users/profile";
 import {
   type HeightUnit,
   type Units,

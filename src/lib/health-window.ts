@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { todayKey } from "@/models/dailies";
+import { todayKey } from "@/models/users/dailies";
 
 export const HEALTH_WINDOW_DAYS = 400;
 

@@ -18,14 +18,14 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useIsIntelligent } from "@/components/use-is-intelligent";
 import { enrichIntakeIfNeeded } from "@/models/claude-integration";
-import { todayKey } from "@/models/dailies";
+import { todayKey } from "@/models/users/dailies";
 import {
   DRINK_CATEGORIES,
   FOOD_CATEGORIES,
   updateIntake,
   type IntakeEntry,
   type IntakeKind,
-} from "@/models/intake";
+} from "@/models/users/intake";
 
 const KIND_OPTIONS = [
   { label: "Food", value: "food" },

@@ -11,7 +11,7 @@ test("offline records self-echo and atomically update stored balances, including
   const app = initializeApp({ projectId: "demo-finance-offline" }, "finance-offline-test");
   const db = firestore.initializeFirestore(app, { localCache: firestore.memoryLocalCache() });
   await firestore.disableNetwork(db);
-  const output = ts.transpileModule(fs.readFileSync("src/models/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const output = ts.transpileModule(fs.readFileSync("src/models/users/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   const models = {};
   vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(models, (name) => {
     if (name === "@/lib/firebase") return { getFirebaseDb: () => db };
@@ -86,7 +86,7 @@ test("recalculation repairs all balances together and refuses stale record histo
   const records = [{ id: "transfer", type: "transfer", amountMinor: 2000, accountId: "cash", destinationId: "bank", currency: "PHP", date: "2020-01-01", occurredAt: "2020-01-01T12:00:00Z", category: "Transfer", labels: [], description: "" }];
   let revision = 1;
   let committed = [];
-  const output = ts.transpileModule(fs.readFileSync("src/models/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const output = ts.transpileModule(fs.readFileSync("src/models/users/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   const models = {};
   vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(models, (name) => {
     if (name === "@/lib/firebase") return { getFirebaseDb: () => db };

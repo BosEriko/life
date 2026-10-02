@@ -10,11 +10,11 @@ import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { useIsDark } from "@/components/theme-provider";
 import { accentColor } from "@/lib/accents";
-import { dailyBpAverages } from "@/models/bp";
-import { dailyWaterTotals } from "@/models/water";
+import { dailyBpAverages } from "@/models/users/bp-readings";
+import { dailyWaterTotals } from "@/models/users/water-logs";
 import { useUnits } from "@/components/units-provider";
 import { convertRange, fromKg, fromMl } from "@/lib/units";
-import type { IdealRange } from "@/models/ideals";
+import type { IdealRange } from "@/models/users/ideals";
 
 type Metric = "weight" | "bp" | "water";
 

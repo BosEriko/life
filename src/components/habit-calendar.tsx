@@ -14,8 +14,8 @@ import {
   TERRACOTTA_DARK,
   useIsDark,
 } from "@/components/theme-provider";
-import { type HabitEntry } from "@/models/habits";
-import { dailyIntake, type DailyIntake } from "@/models/intake";
+import { type HabitEntry } from "@/models/users/habits";
+import { dailyIntake, type DailyIntake } from "@/models/users/intake";
 
 const WEEKS = 26;
 const WEEKS_SM = 13;

@@ -14,7 +14,7 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon, type IconName } from "@/components/icon";
-import { saveIdeals, type IdealKey, type Ideals } from "@/models/ideals";
+import { saveIdeals, type IdealKey, type Ideals } from "@/models/users/ideals";
 import { useUnits } from "@/components/units-provider";
 import {
   fromKg,

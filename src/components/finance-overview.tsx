@@ -10,7 +10,7 @@ import { RangeFilter, useDateRange } from "@/components/range-filter";
 import { useIsDark } from "@/components/theme-provider";
 import { currencyDigits, money } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
-import { todayKey } from "@/models/dailies";
+import { todayKey } from "@/models/users/dailies";
 
 const chartLoading = () => <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex>;
 const FinanceMonthChart = dynamic(() => import("@/components/finance-month-chart").then((mod) => mod.FinanceMonthChart), { ssr: false, loading: chartLoading });

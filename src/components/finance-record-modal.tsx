@@ -8,7 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceDay } from "@/components/use-day-records";
 import { CATEGORIES, currencyDigits, recordValidation, toMinor, type FinanceRecord } from "@/lib/finance";
-import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/finance";
+import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 
 export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: FinanceRecord; onClose: () => void; onSaved: () => void }) {

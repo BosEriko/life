@@ -32,14 +32,14 @@ import {
   volumeStep,
   volumeSuffix,
 } from "@/lib/units";
-import { relativeDate, todayKey } from "@/models/dailies";
-import { evaluateIdeal, rangeText } from "@/models/ideals";
+import { relativeDate, todayKey } from "@/models/users/dailies";
+import { evaluateIdeal, rangeText } from "@/models/users/ideals";
 import {
   addWaterLog,
   dailyWaterTotals,
   deleteWaterLog,
   formatWaterTime,
-} from "@/models/water";
+} from "@/models/users/water-logs";
 
 const FALLBACK_AMOUNTS = [500, 1000];
 

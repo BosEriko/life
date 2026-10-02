@@ -19,7 +19,7 @@ import {
   deleteMedicalTag,
   watchMedicalTags,
   type MedicalTag,
-} from "@/models/medical-tags";
+} from "@/models/users/medical-tags";
 
 export function MedicalTagsCard() {
   const { user } = useAuth();

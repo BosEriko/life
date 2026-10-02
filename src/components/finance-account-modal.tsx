@@ -6,7 +6,7 @@ import { BankOutlined, CreditCardOutlined, DeleteOutlined, DollarOutlined, Ellip
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
 import { ACCOUNT_TYPES, CURRENCIES, accountValidation, currencyDigits, toMinor, type FinanceAccount } from "@/lib/finance";
-import { deleteFinanceAccount, editFinanceAccount, saveFinanceAccount } from "@/models/finance";
+import { deleteFinanceAccount, editFinanceAccount, saveFinanceAccount } from "@/models/users/finance";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
 
 const TYPE_ICONS = [WalletOutlined, BankOutlined, SafetyOutlined, CreditCardOutlined, FundOutlined, DollarOutlined, EllipsisOutlined];

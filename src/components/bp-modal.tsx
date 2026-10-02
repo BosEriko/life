@@ -21,8 +21,8 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useDayBp } from "@/components/use-day-records";
 import { Icon } from "@/components/icon";
 import { IdealTip, idealTipProps } from "@/components/ideal-tip";
-import { relativeDate, todayKey } from "@/models/dailies";
-import { evaluateIdeal } from "@/models/ideals";
+import { relativeDate, todayKey } from "@/models/users/dailies";
+import { evaluateIdeal } from "@/models/users/ideals";
 import {
   addBpReading,
   dailyBpAverages,
@@ -30,7 +30,7 @@ import {
   formatBpTime,
   type BpArm,
   type BpPosture,
-} from "@/models/bp";
+} from "@/models/users/bp-readings";
 
 const POSTURE_OPTIONS = [
   { label: "Sitting", value: "sitting" },

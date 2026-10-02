@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { isAdminEmail } from "@/lib/admin";
-import { watchAdminRole } from "@/models/admin-role";
+import { watchAdminRole } from "@/models/admins";
 
 export function useIsAdmin(): boolean {
   const { user } = useAuth();

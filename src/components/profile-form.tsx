@@ -27,7 +27,7 @@ import {
   watchProfile,
   type Profile,
   type Sex,
-} from "@/models/profile";
+} from "@/models/users/profile";
 import {
   DEFAULT_UNITS,
   cmToFeetInches,

@@ -17,7 +17,7 @@ import { useTodoDay } from "@/components/use-day-records";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
 import { todoListName, isKnownList, fixedListOptions, ARCHIVE_LIST_ID, filterTodos, isTodoOverdue, todoListId, todoViewFromQuery, type Todo, type TodoList, type TodoPriority, type TodoSort, type TodoView } from "@/lib/todos";
-import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/todos";
+import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/users/todos";
 import { Tip } from "@/components/tip";
 import { RichTextView } from "@/components/rich-text-view";
 import { SideMenu } from "@/components/side-menu";

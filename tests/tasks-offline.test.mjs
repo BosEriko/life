@@ -11,7 +11,7 @@ test("offline task creation, edits, per-day completion, undo and deletion self-e
   const app = initializeApp({ projectId: "demo-task-offline" }, "task-offline-test");
   const db = firestore.initializeFirestore(app, { localCache: firestore.memoryLocalCache() });
   await firestore.disableNetwork(db);
-  const output = ts.transpileModule(fs.readFileSync("src/models/tasks.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const output = ts.transpileModule(fs.readFileSync("src/models/users/tasks.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   const exports = {};
   vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(exports, (name) => {
     if (name === "@/lib/firebase") return { getFirebaseDb: () => db };

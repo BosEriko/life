@@ -1,4 +1,4 @@
-import type { EatingWindow } from "@/models/ideals";
+import type { EatingWindow } from "@/models/users/ideals";
 
 export function isOutsideEatingWindow(
   time: string,
