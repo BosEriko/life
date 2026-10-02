@@ -111,7 +111,7 @@ export function MobileNav() {
           >
             <Icon
               name="logEntry"
-              style={{ marginRight: 0, opacity: 1, fontSize: 18 }}
+              style={{ marginRight: 0, opacity: 1, fontSize: 18, color: "inherit" }}
             />
           </button>
         </div>

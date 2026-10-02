@@ -8,11 +8,8 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { Icon } from "@/components/icon";
 import { IdealTip, idealTipProps } from "@/components/ideal-tip";
-import {
-  TERRACOTTA,
-  TERRACOTTA_DARK,
-  useIsDark,
-} from "@/components/theme-provider";
+import { useIsDark } from "@/components/theme-provider";
+import { accentColor } from "@/lib/accents";
 import {
   EMPTY_IDEALS,
   evaluateIdeal,
@@ -363,7 +360,6 @@ export function InviteViewer({ code }: { code: string }) {
     "mg",
   );
 
-  const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const ascending = [...rows].reverse();
 
   const weightPoints: ChartPoint[] = ascending
@@ -728,7 +724,7 @@ export function InviteViewer({ code }: { code: string }) {
           title="Weight"
           points={weightPoints}
           guides={weightGuides}
-          colorRange={[token.colorPrimary]}
+          colorRange={[accentColor("weight", isDark)]}
           legend={false}
           isDark={isDark}
         />
@@ -736,7 +732,7 @@ export function InviteViewer({ code }: { code: string }) {
           title="Water"
           points={waterPoints}
           guides={waterGuides}
-          colorRange={[token.colorPrimary]}
+          colorRange={[accentColor("water", isDark)]}
           legend={false}
           isDark={isDark}
         />
@@ -744,7 +740,7 @@ export function InviteViewer({ code }: { code: string }) {
           title="Blood pressure"
           points={bpPoints}
           guides={bpGuides}
-          colorRange={[terracotta, token.colorPrimary]}
+          colorRange={[accentColor("bp", isDark), accentColor("bpLow", isDark)]}
           legend={bpPoints.length > 0}
           isDark={isDark}
         />

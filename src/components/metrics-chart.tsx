@@ -8,11 +8,8 @@ import { Icon } from "@/components/icon";
 import { useHealthData } from "@/components/health-data-provider";
 import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
-import {
-  TERRACOTTA,
-  TERRACOTTA_DARK,
-  useIsDark,
-} from "@/components/theme-provider";
+import { useIsDark } from "@/components/theme-provider";
+import { accentColor } from "@/lib/accents";
 import { dailyBpAverages } from "@/models/bp";
 import { dailyWaterTotals } from "@/models/water";
 import { useUnits } from "@/components/units-provider";
@@ -206,13 +203,12 @@ export function MetricsChart({
     [idealLines, token],
   );
 
-  const terracotta = isDark ? TERRACOTTA_DARK : TERRACOTTA;
   const colorRange =
     metric === "weight"
-      ? [token.colorPrimary]
+      ? [accentColor("weight", isDark)]
       : metric === "water"
-        ? [token.colorPrimary]
-        : [terracotta, token.colorPrimary];
+        ? [accentColor("water", isDark)]
+        : [accentColor("bp", isDark), accentColor("bpLow", isDark)];
 
   return (
     <div>

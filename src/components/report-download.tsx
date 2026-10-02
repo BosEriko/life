@@ -189,7 +189,7 @@ export function ReportDownload() {
           <FloatButton
             type="primary"
             icon={
-              <Icon name="logEntry" style={{ marginRight: 0, opacity: 1 }} />
+              <Icon name="logEntry" style={{ marginRight: 0, opacity: 1, color: "inherit" }} />
             }
             tooltip={tip("Notes")}
             onClick={() => setNotesOpen(true)}

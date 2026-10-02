@@ -2,6 +2,8 @@
 
 import type { CSSProperties } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useIsDark } from "@/components/theme-provider";
+import { accentColor, type Accent } from "@/lib/accents";
 import {
   faArrowLeftLong,
   faArrowRightLong,
@@ -67,6 +69,22 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS;
 
+const ICON_ACCENTS: Partial<Record<IconName, Accent>> = {
+  weight: "weight",
+  bp: "bp",
+  water: "water",
+  drink: "water",
+  calories: "calories",
+  intake: "calories",
+  food: "calories",
+  sodium: "sodium",
+  habits: "habits",
+  bath: "habits",
+  brush: "habits",
+  steps: "habits",
+  logEntry: "notes",
+};
+
 export function Icon({
   name,
   style,
@@ -74,10 +92,16 @@ export function Icon({
   name: IconName;
   style?: CSSProperties;
 }) {
+  const dark = useIsDark();
+  const accent = ICON_ACCENTS[name];
   return (
     <FontAwesomeIcon
       icon={ICONS[name]}
-      style={{ marginRight: 8, opacity: 0.7, ...style }}
+      style={{
+        marginRight: 8,
+        ...(accent ? { opacity: 1, color: accentColor(accent, dark) } : { opacity: 0.7 }),
+        ...style,
+      }}
     />
   );
 }
