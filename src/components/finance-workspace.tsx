@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Alert, App, Button, Card, Empty, Flex, Grid, Input, Pagination, Select, Spin, Tag, Typography, theme } from "antd";
-import { HolderOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, WalletOutlined } from "@ant-design/icons";
+import { HolderOutlined, LockOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, WalletOutlined, UnlockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { PageHeading } from "@/components/page-heading";
 import { FinanceAccountModal } from "@/components/finance-account-modal";
@@ -12,19 +12,20 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
 import { ACCOUNT_TYPES, accountTextColor, money, sortAccounts, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
-import { recalculateFinanceAccounts, reorderFinanceAccounts } from "@/models/users/finance";
+import { recalculateFinanceAccounts, reorderFinanceAccounts, setFinanceAccountsLocked } from "@/models/users/finance";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 import { AccountTypeIcon, CategoryIcon } from "@/components/finance-category-icon";
 import { mergeSubsetOrder } from "@/lib/reorder";
 import { SortableList } from "@/components/sortable-list";
+import { Tip } from "@/components/tip";
 
 export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "records" }) {
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const { user } = useAuth();
   const screens = Grid.useBreakpoint();
-  const { financeAccounts: allAccounts, financeRecords: records, financeReady, financeError, cutoff } = useHealthData();
+  const { financeAccounts: allAccounts, financeAccountsLocked: locked, financeRecords: records, financeReady, financeError, cutoff } = useHealthData();
   const accounts = sortAccounts(allAccounts.filter((account) => !account.deletedAt));
   const history = useFinanceHistory(view === "records", cutoff);
   const [modal, setModal] = useState<"account" | "record" | null>(null);
@@ -50,7 +51,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     if (user) void reorderFinanceAccounts(user.uid, order).catch(() => message.error("Could not save the new order."));
   };
   const saveSubsetOrder = (order: string[]) => saveOrder(mergeSubsetOrder(accounts.map((account) => account.id), order));
-  const handle = <span aria-hidden style={{ display: "inline-flex", opacity: 0.7 }}><HolderOutlined /></span>;
+  const handle = locked ? null : <span aria-hidden style={{ display: "inline-flex", opacity: 0.7 }}><HolderOutlined /></span>;
+  const reorderHint = locked ? "" : " Press Space to pick up and reorder.";
   const accountRow = (account: FinanceAccount) => (
   <Flex align="center" gap={12}>
     {handle}
@@ -102,7 +104,21 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
       {!financeReady ? <Spin /> : <>
         {view !== "records" && <>
         {view === "dashboard" && <EmergencyFundBanner />}
-        {view === "dashboard" && <Typography.Title level={2} style={{ fontSize: 18, marginBottom: 16 }}>Accounts</Typography.Title>}
+        {view === "dashboard" && <Flex align="center" justify="space-between" gap={12} style={{ marginBottom: 16 }}>
+          <Typography.Title level={2} style={{ fontSize: 18, margin: 0 }}>Accounts</Typography.Title>
+          {accounts.length > 1 && <Tip title={locked ? "Unlock to reorder accounts" : "Lock account order"}>
+            <Button
+              type="text"
+              size="small"
+              aria-label={locked ? "Unlock account order" : "Lock account order"}
+              aria-pressed={locked}
+              icon={locked ? <LockOutlined /> : <UnlockOutlined />}
+              disabled={!financeReady || financeError}
+              onClick={() => { if (user) void setFinanceAccountsLocked(user.uid, !locked).catch(() => message.error("Could not update the lock.")); }}
+              style={{ color: locked ? token.colorPrimary : token.colorTextSecondary, marginBlock: -6 }}
+            />
+          </Tip>}
+        </Flex>}
         {view === "accounts" ? <div style={twoColumns}>
           <Card title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
             <Flex vertical gap={12}>
@@ -128,9 +144,9 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
         {accounts.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Add your first account to start tracking your money."><Button type="primary" icon={<PlusOutlined />} onClick={() => setModal("account")}>Create account</Button></Empty></Card> :
           <Card styles={{ body: { padding: filteredAccounts.length ? "0 20px" : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
             {filteredAccounts.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." /> :
-              <SortableList ids={filteredAccounts.map((account) => account.id)} layout="list" disabled={!financeReady || financeError} onReorder={saveSubsetOrder}
+              <SortableList ids={filteredAccounts.map((account) => account.id)} layout="list" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
                 renderOverlay={(id) => { const account = accountsById.get(id); return account ? <div style={{ padding: "16px 20px", background: token.colorBgContainer, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG }}>{accountRow(account)}</div> : null; }}
-                renderItem={(id, { ref, style, handlers, index, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <div key={id} ref={ref} {...handlers} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}. Press Space to pick up and reorder.`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...style, padding: "16px 0", cursor: "pointer", background: token.colorBgContainer, borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
+                renderItem={(id, { ref, style, handlers, index, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <div key={id} ref={ref} {...handlers} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...style, padding: "16px 0", cursor: "pointer", background: token.colorBgContainer, borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
                   {accountRow(account)}
                 </div>; }} />}
           </Card>}
@@ -139,9 +155,9 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
         {accounts.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Add your first account to start tracking your money."><Button type="primary" icon={<PlusOutlined />} onClick={() => setModal("account")}>Create account</Button></Empty></Card> :
           <div className="account-cards">
             {filteredAccounts.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." />}
-            <SortableList ids={filteredAccounts.map((account) => account.id)} layout="grid" disabled={!financeReady || financeError} onReorder={saveSubsetOrder}
+            <SortableList ids={filteredAccounts.map((account) => account.id)} layout="grid" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
               renderOverlay={(id) => { const account = accountsById.get(id); return account ? <Card style={{ ...accountCardStyle(account), height: "100%" }}>{accountCardBody(account)}</Card> : null; }}
-              renderItem={(id, { ref, style, handlers, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <Card key={id} ref={ref} {...handlers} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}. Press Space to pick up and reorder.`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...accountCardStyle(account), ...style, cursor: "pointer" }}>
+              renderItem={(id, { ref, style, handlers, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <Card key={id} ref={ref} {...handlers} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...accountCardStyle(account), ...style, cursor: "pointer" }}>
                 {accountCardBody(account)}
               </Card>; }} />
           </div>}

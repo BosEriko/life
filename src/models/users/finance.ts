@@ -88,8 +88,12 @@ export function recalculateFinanceAccounts(uid: string, records: FinanceRecord[]
   });
 }
 
-export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[]) => void, fail: (error: Error) => void) {
-  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {})), fail);
+export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean }) => void, fail: (error: Error) => void) {
+  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true }), fail);
+}
+
+export function setFinanceAccountsLocked(uid: string, locked: boolean) {
+  return setDoc(settingsRef(uid), { accountsLocked: locked }, { merge: true });
 }
 
 export function mapFinanceRecord(snapshot: QueryDocumentSnapshot<DocumentData>): FinanceRecord {

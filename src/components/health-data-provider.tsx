@@ -28,6 +28,7 @@ import { watchFinanceAccounts, watchFinanceRecords } from "@/models/users/financ
 
 type HealthData = {
   financeAccounts: FinanceAccount[];
+  financeAccountsLocked: boolean;
   financeRecords: FinanceRecord[];
   financeReady: boolean;
   financeError: boolean;
@@ -52,6 +53,7 @@ type HealthData = {
 
 const HealthDataContext = createContext<HealthData>({
   financeAccounts: [],
+  financeAccountsLocked: false,
   financeRecords: [],
   financeReady: false,
   financeError: false,
@@ -97,7 +99,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const [todoRecords, setTodoRecords] = useState<{ uid: string; rows: Todo[] } | null>(null);
   const [todoSettings, setTodoSettings] = useState<{ uid: string; lists: TodoList[] } | null>(null);
   const [todoFailure, setTodoFailure] = useState<string | null>(null);
-  const [financeAccountsState, setFinanceAccountsState] = useState<{ uid: string; rows: FinanceAccount[] } | null>(null);
+  const [financeAccountsState, setFinanceAccountsState] = useState<{ uid: string; rows: FinanceAccount[]; locked: boolean } | null>(null);
   const [financeRecordsState, setFinanceRecordsState] = useState<{ uid: string; rows: FinanceRecord[] } | null>(null);
   const [financeFailure, setFinanceFailure] = useState<string | null>(null);
   const seen = useRef({
@@ -132,7 +134,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
     };
 
     const unsubscribers = [
-      watchFinanceAccounts(user.uid, (rows) => setFinanceAccountsState({ uid: user.uid, rows }), () => setFinanceFailure(user.uid)),
+      watchFinanceAccounts(user.uid, (rows, settings) => setFinanceAccountsState({ uid: user.uid, rows, locked: settings.accountsLocked }), () => setFinanceFailure(user.uid)),
       watchFinanceRecords(user.uid, cutoff, (rows) => setFinanceRecordsState({ uid: user.uid, rows }), () => setFinanceFailure(user.uid)),
       watchTodos(user.uid, cutoff, (rows) => setTodoRecords({ uid: user.uid, rows }), () => setTodoFailure(user.uid)),
       watchTodoSettings(user.uid, (lists) => setTodoSettings({ uid: user.uid, lists }), () => setTodoFailure(user.uid)),
@@ -197,6 +199,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<HealthData>(
     () => ({
       financeAccounts: financeAccountsState?.uid === user?.uid ? financeAccountsState?.rows ?? [] : [],
+      financeAccountsLocked: financeAccountsState?.uid === user?.uid ? financeAccountsState?.locked ?? false : false,
       financeRecords: financeRecordsState?.uid === user?.uid ? financeRecordsState?.rows ?? [] : [],
       financeReady: !!user && financeAccountsState?.uid === user.uid && financeRecordsState?.uid === user.uid,
       financeError: !!user && financeFailure === user.uid,
