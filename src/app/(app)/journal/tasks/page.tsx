@@ -7,6 +7,7 @@ import { CalendarOutlined, ClockCircleOutlined, ScheduleOutlined, SyncOutlined }
 import { PageHeading } from "@/components/page-heading";
 import { AddTaskModal, TasksList, type TaskView } from "@/components/tasks-card";
 import { journalViewUrl, taskViewFromQuery } from "@/lib/journal-views";
+import { JournalSkeleton } from "@/components/journal-skeleton";
 
 const VIEWS = [
   { value: "today" as const, label: "Today", Icon: CalendarOutlined },
@@ -17,7 +18,7 @@ const VIEWS = [
 ];
 
 export default function TasksPage() {
-  return <Suspense fallback={<p>Loading tasks…</p>}><TasksContent /></Suspense>;
+  return <Suspense fallback={<JournalSkeleton />}><TasksContent /></Suspense>;
 }
 
 function TasksContent() {

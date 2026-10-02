@@ -1,6 +1,7 @@
 import { TodoWorkspace } from "@/components/todo-workspace";
 import { Suspense } from "react";
+import { JournalSkeleton } from "@/components/journal-skeleton";
 
 export default function TodoPage() {
-  return <Suspense fallback={<p>Loading to-dos…</p>}><TodoWorkspace /></Suspense>;
+  return <Suspense fallback={<JournalSkeleton />}><TodoWorkspace /></Suspense>;
 }

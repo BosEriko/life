@@ -414,3 +414,16 @@ body.todo-board-grabbing * {
 .board-more:focus-visible {
   background: var(--board-more-hover);
 }
+
+.journal-skeleton {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .journal-skeleton {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}

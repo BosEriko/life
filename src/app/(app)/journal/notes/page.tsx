@@ -46,9 +46,10 @@ import { RichTextView } from "@/components/rich-text-view";
 import { plainTextToHtml } from "@/components/rich-text-editor";
 import { ACTIVE_TODO_DATE, todoValidation, type Todo } from "@/lib/todos";
 import { convertNoteToTodo } from "@/models/todos";
+import { JournalSkeleton } from "@/components/journal-skeleton";
 
 export default function NotesPage() {
-  return <Suspense fallback={<p>Loading notes…</p>}><NotesContent /></Suspense>;
+  return <Suspense fallback={<JournalSkeleton />}><NotesContent /></Suspense>;
 }
 
 function NotesContent() {
