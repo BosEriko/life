@@ -12,12 +12,14 @@ import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useTaskDay } from "@/components/use-day-records";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
-import { RichText, plainText } from "@/components/rich-text";
+import { RichText, markdownLiteToHtml, plainText } from "@/components/rich-text";
 import { Tip } from "@/components/tip";
 import { allTaskSubtasksDone, formatTaskTime, pendingTaskDate, taskSubtaskChecks, type Task } from "@/lib/task-schedule";
 import { TaskSubtasks } from "@/components/task-subtasks";
 import { removeTask, saveTask, setTaskChecked } from "@/models/tasks";
 import { todayKey } from "@/models/dailies";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import { TaskDescription } from "@/components/task-description";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REPEATS = ["daily", "weekly", "monthly", "yearly"] as const;
@@ -44,7 +46,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
   const [draft, setDraft] = useState(initial);
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const patch = (values: Partial<Task>) => setDraft((current) => ({ ...current, ...values }));
-  const valid = draft.title.trim().length > 0 && draft.time && draft.startDate && Number.isInteger(draft.interval) && draft.interval >= 1 && (draft.repeat !== "weekly" || draft.weekdays.length > 0) && (draft.subtasks ?? []).every((subtask) => subtask.title.trim().length > 0);
+  const valid = draft.title.trim().length > 0 && draft.description.length <= 2000 && draft.time && draft.startDate && Number.isInteger(draft.interval) && draft.interval >= 1 && (draft.repeat !== "weekly" || draft.weekdays.length > 0) && (draft.subtasks ?? []).every((subtask) => subtask.title.trim().length > 0);
 
   function addSubtask() {
     if (!subtaskTitle.trim() || (draft.subtasks?.length ?? 0) >= 50) return;
@@ -68,7 +70,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
           <TimePicker aria-label="Task time" format="h:mm A" use12Hours needConfirm={false} allowClear={false} value={dayjs(`${draft.startDate}T${draft.time}`)} onChange={(time) => time && patch({ time: time.format("HH:mm") })} style={{ width: 130 }} />
         </Flex>
         <Input aria-label="Task title" placeholder="Task title" prefix={<ScheduleOutlined style={{ opacity: 0.45 }} />} maxLength={120} value={draft.title} onChange={(event) => patch({ title: event.target.value })} autoFocus />
-        <Input.TextArea aria-label="Task description" placeholder="Description (Optional)" maxLength={2000} autoSize={{ minRows: 2, maxRows: 4 }} value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
+        <RichTextEditor ariaLabel="Task description" placeholder="Description (Optional)" minHeight={64} initialHtml={initial.descriptionHtml || markdownLiteToHtml(initial.description)} onChange={(html, text) => patch({ descriptionHtml: html, description: text })} />
         <Typography.Text strong>Subtasks (optional)</Typography.Text>
         <Flex vertical gap={8}>
           {(draft.subtasks ?? []).map((subtask) => <Flex key={subtask.id} gap={8} align="center">
@@ -160,7 +162,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
           }} />}
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
             <Typography.Text strong delete={!manage && checked}><RichText text={task.title} /></Typography.Text>
-            {task.description && <Flex gap={8} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
+            {task.description && <Flex gap={8} align="baseline" style={{ margin: "4px 0" }}><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Text type="secondary" style={{ minWidth: 0, flex: 1 }}><TaskDescription task={task} /></Typography.Text></Flex>}
             <Flex gap={12} wrap style={{ fontSize: 12 }}>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined style={{ marginRight: 6 }} />{formatTaskTime(task.time)}</Typography.Text>
               <Tip title={scheduleHint(task)}><Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined style={{ marginRight: 6 }} />{task.interval === 1 ? `Every ${UNITS[task.repeat]}` : `Every ${task.interval} ${unit(task.repeat, task.interval)}`}</Typography.Text></Tip>

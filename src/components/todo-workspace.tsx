@@ -2,11 +2,11 @@
 
 import { AppModal } from "@/components/app-modal";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Select, Spin, Tag, theme, Typography } from "antd";
-import { CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ClockCircleOutlined, EditOutlined, FlagOutlined, FolderOutlined, InboxOutlined, PlusOutlined, SearchOutlined, UnorderedListOutlined, UndoOutlined } from "@ant-design/icons";
+import { CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, ClockCircleOutlined, EditOutlined, FlagOutlined, FolderOutlined, InboxOutlined, PlusOutlined, SearchOutlined, UnorderedListOutlined, UndoOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
@@ -16,7 +16,7 @@ import { useTodoHistory } from "@/components/use-health-history";
 import { useTodoDay } from "@/components/use-day-records";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
-import { filterTodos, isTodoOverdue, todoListId, todoViewFromQuery, type Todo, type TodoList, type TodoPriority, type TodoSort, type TodoView } from "@/lib/todos";
+import { todoListName, isKnownList, fixedListOptions, ARCHIVE_LIST_ID, filterTodos, isTodoOverdue, todoListId, todoViewFromQuery, type Todo, type TodoList, type TodoPriority, type TodoSort, type TodoView } from "@/lib/todos";
 import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/todos";
 import { Tip } from "@/components/tip";
 import { RichTextView } from "@/components/rich-text-view";
@@ -78,13 +78,35 @@ function CompletedDetails({ initial, onClose }: { initial: Todo; onClose: () => 
   </AppModal>;
 }
 
+const COLLAPSED_HEIGHT = "4.6em";
+const FADE = "linear-gradient(to bottom, #000 45%, transparent)";
+
 function DescriptionPreview({ todo }: { todo: Todo }) {
   const { token } = theme.useToken();
+  const body = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const [maxHeight, setMaxHeight] = useState(COLLAPSED_HEIGHT);
   const long = todo.description.length > 160 || todo.description.split("\n").length > 3;
+
+  function toggle() {
+    const element = body.current;
+    if (!element) return;
+    setMaxHeight(`${element.scrollHeight}px`);
+    setExpanded(!expanded);
+    if (expanded) requestAnimationFrame(() => requestAnimationFrame(() => setMaxHeight(COLLAPSED_HEIGHT)));
+  }
+
+  if (!long) return <div style={{ margin: "4px 0", color: token.colorTextSecondary }}><RichTextView html={todo.descriptionHtml} text={todo.description} /></div>;
+
   return <div style={{ margin: "4px 0", color: token.colorTextSecondary }}>
-    <RichTextView html={todo.descriptionHtml} text={todo.description} style={long && !expanded ? { maxHeight: "4.6em", overflow: "hidden" } : undefined} />
-    {long && <Button type="link" size="small" style={{ padding: 0, height: "auto" }} onClick={() => setExpanded((value) => !value)}>{expanded ? "Less" : "More"}</Button>}
+    <div
+      ref={body}
+      onTransitionEnd={() => { if (expanded) setMaxHeight("none"); }}
+      style={{ maxHeight, overflow: "hidden", transition: "max-height 260ms ease", ...(expanded ? {} : { maskImage: FADE, WebkitMaskImage: FADE }) }}
+    >
+      <RichTextView html={todo.descriptionHtml} text={todo.description} />
+    </div>
+    <Button type="link" size="small" aria-expanded={expanded} style={{ padding: 0, height: "auto" }} onClick={toggle}>{expanded ? "Less" : "More"}</Button>
   </div>;
 }
 
@@ -107,12 +129,12 @@ export function TodoWorkspace() {
   const [reviewing, setReviewing] = useState<Todo | null>(null);
   const history = useTodoHistory(view === "completed", cutoff);
   const all = mergeById(todos, history.todos);
-  const selectedList = listId === "all" || listId === "inbox" || lists.some((list) => list.id === listId) ? listId : "inbox";
+  const selectedList = listId === "all" || isKnownList(listId, lists) ? listId : "inbox";
   const shown = filterTodos(all, lists, { view, listId: selectedList, search, priority, status, sort, now });
   const active = todos.filter((todo) => todo.status !== "done");
   const currentView = VIEWS.find((item) => item.value === view)!;
   const currentList = lists.find((list) => list.id === selectedList);
-  const heading = selectedList === "all" ? currentView.label : selectedList === "inbox" ? "Inbox" : lists.find((list) => list.id === selectedList)?.name ?? "Inbox";
+  const heading = selectedList === "all" ? currentView.label : selectedList === "inbox" ? "Inbox" : selectedList === ARCHIVE_LIST_ID ? "Archive" : lists.find((list) => list.id === selectedList)?.name ?? "Inbox";
   const write = (promise: Promise<void>, error: string) => { promise.catch(() => message.error(error)); };
 
   function navigateView(nextView: TodoView, nextList = "all") {
@@ -154,6 +176,7 @@ export function TodoWorkspace() {
         </Flex>
         {navButton("Inbox", active.filter((todo) => todoListId(todo, lists) === "inbox").length, selectedList === "inbox", <InboxOutlined />, () => navigateView("all", "inbox"))}
         {lists.map((list) => <div key={list.id}>{navButton(list.name, active.filter((todo) => todo.listId === list.id).length, selectedList === list.id, <FolderOutlined />, () => navigateView("all", list.id))}</div>)}
+        {navButton("Archive", active.filter((todo) => todoListId(todo, lists) === ARCHIVE_LIST_ID).length, selectedList === ARCHIVE_LIST_ID, <ContainerOutlined />, () => navigateView("all", ARCHIVE_LIST_ID))}
       </Card>
       <Card styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
         <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 16 }}>
@@ -169,7 +192,7 @@ export function TodoWorkspace() {
         {view === "today" && <Typography.Paragraph type="secondary">Due today, plus unfinished work from earlier days.</Typography.Paragraph>}
         <Input aria-label="Search to-dos" prefix={<SearchOutlined />} placeholder="Search titles, details, lists, or subtasks" allowClear value={search} onChange={(event) => setSearch(event.target.value)} style={{ marginBottom: 12 }} />
         <Flex gap={8} wrap style={{ marginBottom: 20 }}>
-          <Select aria-label="Filter list" value={selectedList} onChange={(nextList) => navigateView(view, nextList)} style={{ width: 140 }} options={[{ value: "all", label: "All lists" }, { value: "inbox", label: "Inbox" }, ...lists.map((list) => ({ value: list.id, label: list.name }))]} />
+          <Select aria-label="Filter list" value={selectedList} onChange={(nextList) => navigateView(view, nextList)} style={{ width: 140 }} options={[{ value: "all", label: "All lists" }, ...fixedListOptions(lists)]} />
           <Select aria-label="Filter priority" value={priority} onChange={setPriority} style={{ width: 140 }} options={[{ value: "all", label: "All priorities" }, ...["high", "medium", "low", "none"].map((value) => ({ value, label: value === "none" ? "No priority" : `${value[0].toUpperCase()}${value.slice(1)} priority` }))]} />
           {view !== "completed" && <Select aria-label="Filter status" value={status} onChange={setStatus} style={{ width: 140 }} options={[{ value: "all", label: "All statuses" }, { value: "todo", label: "To do" }, { value: "doing", label: "In progress" }]} />}
           {view !== "completed" && <Select aria-label="Sort to-dos" value={sort} onChange={setSort} style={{ width: 150 }} options={[{ value: "due", label: "Due date first" }, { value: "priority", label: "Priority first" }, { value: "newest", label: "Newest first" }]} />}
@@ -180,7 +203,7 @@ export function TodoWorkspace() {
             const subtasks = Object.values(todo.subtasks);
             const completed = todo.status === "done";
             const overdue = isTodoOverdue(todo, now);
-            const listName = lists.find((list) => list.id === todo.listId)?.name ?? "Inbox";
+            const listName = todoListName(todo, lists);
             return <div key={todo.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
               <Flex gap={12} align="flex-start">
                 <Checkbox aria-label={`Complete ${todo.title}`} checked={completed} disabled={completed || todoError} onChange={() => write(completeTodo(user.uid, todo), "Could not complete to-do.")} />

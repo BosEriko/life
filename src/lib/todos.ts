@@ -50,8 +50,25 @@ export function todoMovePatch(todo: Todo, column: TodoColumn, now: Date) {
   };
 }
 
+export const ARCHIVE_LIST_ID = "archive";
+
 export function todoListId(todo: Todo, lists: TodoList[]): string {
+  if (todo.listId === ARCHIVE_LIST_ID) return ARCHIVE_LIST_ID;
   return lists.some((list) => list.id === todo.listId) ? todo.listId! : "inbox";
+}
+
+export function todoListName(todo: Todo, lists: TodoList[]): string {
+  const id = todoListId(todo, lists);
+  if (id === ARCHIVE_LIST_ID) return "Archive";
+  return lists.find((list) => list.id === id)?.name ?? "Inbox";
+}
+
+export function fixedListOptions(lists: TodoList[]) {
+  return [{ value: "inbox", label: "Inbox" }, ...lists.map((list) => ({ value: list.id, label: list.name })), { value: ARCHIVE_LIST_ID, label: "Archive" }];
+}
+
+export function isKnownList(listId: string, lists: TodoList[]): boolean {
+  return listId === "inbox" || listId === ARCHIVE_LIST_ID || lists.some((list) => list.id === listId);
 }
 
 export function isTodoOverdue(todo: Todo, now: Date): boolean {
@@ -93,7 +110,7 @@ export function filterTodos(todos: Todo[], lists: TodoList[], options: {
     if (options.view === "today" && (!todo.dueDate || todo.dueDate > today)) return false;
     if (options.view === "upcoming" && (!todo.dueDate || todo.dueDate <= today)) return false;
     if (options.view === "overdue" && !isTodoOverdue(todo, options.now)) return false;
-    const listName = lists.find((list) => list.id === todo.listId)?.name ?? "Inbox";
+    const listName = todoListName(todo, lists);
     return !search || [todo.title, todo.description, listName, ...Object.values(todo.subtasks).map((subtask) => subtask.title)].some((value) => value.toLocaleLowerCase().includes(search));
   }).sort((a, b) => {
     if (options.view === "completed") return (b.completedAt ?? "").localeCompare(a.completedAt ?? "");

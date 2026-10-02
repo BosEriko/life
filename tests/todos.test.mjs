@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ACTIVE_TODO_DATE, filterTodos, isTodoOverdue, isTodoPastDate, todoColumn, todoMovePatch, todoListId, todoValidation, todoViewFromQuery } from "../src/lib/todos.ts";
+import { ACTIVE_TODO_DATE, ARCHIVE_LIST_ID, filterTodos, isKnownList, todoListName, isTodoOverdue, isTodoPastDate, todoColumn, todoMovePatch, todoListId, todoValidation, todoViewFromQuery } from "../src/lib/todos.ts";
 
 test("To-do URL views accept all supported views and fall back safely", () => {
   for (const view of ["all", "today", "upcoming", "overdue", "completed"]) assert.equal(todoViewFromQuery(view), view);
@@ -72,6 +72,15 @@ test("list deletion moves orphaned to-dos to Inbox without losing them", () => {
   assert.equal(todoListId(base, lists), "personal");
   assert.equal(todoListId(base, []), "inbox");
   assert.equal(filterTodos([base], [], { ...options, listId: "inbox" }).length, 1);
+});
+
+test("Archive is a fixed list that survives without a matching user list", () => {
+  const archived = { ...base, listId: ARCHIVE_LIST_ID };
+  assert.equal(todoListId(archived, []), ARCHIVE_LIST_ID);
+  assert.equal(todoListName(archived, []), "Archive");
+  assert.equal(isKnownList(ARCHIVE_LIST_ID, []), true);
+  assert.equal(filterTodos([archived, base], lists, { ...options, listId: ARCHIVE_LIST_ID }).length, 1);
+  assert.equal(filterTodos([archived], lists, { ...options, listId: "inbox" }).length, 0);
 });
 
 test("search includes descriptions, lists and subtasks and combines with filters", () => {

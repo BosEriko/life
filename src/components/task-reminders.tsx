@@ -11,6 +11,7 @@ import { allTaskSubtasksDone, formatTaskTime, overdueTasks, taskSubtaskChecks } 
 import { setTaskChecked } from "@/models/tasks";
 import { TaskSubtasks } from "@/components/task-subtasks";
 import { Tip } from "@/components/tip";
+import { TaskDescription } from "@/components/task-description";
 
 const HINT = "Today’s tasks whose time has arrived, plus any monthly or yearly tasks you haven’t finished yet.";
 
@@ -86,7 +87,7 @@ export function TaskReminders() {
               <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
                 <Typography.Text strong><RichText text={task.title} /></Typography.Text>
                 <Flex gap={8} align="center"><Typography.Text type="secondary"><ClockCircleOutlined /></Typography.Text><Typography.Text type="secondary">{formatTaskTime(task.time)}</Typography.Text></Flex>
-                {task.description && <Flex gap={8} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><Typography.Paragraph style={{ marginBottom: 0, whiteSpace: "pre-wrap", minWidth: 0 }}><RichText text={task.description} /></Typography.Paragraph></Flex>}
+                {task.description && <Flex gap={8} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><div style={{ minWidth: 0, flex: 1 }}><TaskDescription task={task} /></div></Flex>}
                 <TaskSubtasks task={task} date={date} completed={subtasks} />
               </div>
             </Flex>

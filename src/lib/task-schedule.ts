@@ -7,6 +7,7 @@ export type Task = {
   id: string;
   title: string;
   description: string;
+  descriptionHtml?: string;
   time: string;
   startDate: string;
   repeat: "daily" | "weekly" | "monthly" | "yearly";

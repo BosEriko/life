@@ -14,7 +14,7 @@ import { useTodoDay } from "@/components/use-day-records";
 import { PageHeading } from "@/components/page-heading";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
-import { isTodoPastDate, todoColumn, todoListId, type Todo, type TodoColumn } from "@/lib/todos";
+import { isKnownList, fixedListOptions, ARCHIVE_LIST_ID, isTodoPastDate, todoColumn, todoListId, type Todo, type TodoColumn } from "@/lib/todos";
 import { moveTodo } from "@/models/todos";
 
 const COLUMNS = [
@@ -95,8 +95,8 @@ export function TodoBoard() {
   const suppressClick = useRef(false);
   const rail = useRef<HTMLDivElement>(null);
   const all = mergeById(todos, history.todos);
-  const selectedList = listId === "all" || listId === "inbox" || todoLists.some((list) => list.id === listId) ? listId : "inbox";
-  const filtered = all.filter((todo) => selectedList === "all" || todoListId(todo, todoLists) === selectedList);
+  const selectedList = listId === "all" || isKnownList(listId, todoLists) ? listId : "inbox";
+  const filtered = all.filter((todo) => selectedList === "all" ? todoListId(todo, todoLists) !== ARCHIVE_LIST_ID : todoListId(todo, todoLists) === selectedList);
   const viewHref = (view: string) => `/journal/todo?view=${view}${selectedList === "all" ? "" : `&list=${encodeURIComponent(selectedList)}`}`;
   const draggedTodo = all.find((todo) => todo.id === drag?.id);
   const isDragging = drag !== null;
@@ -164,7 +164,7 @@ export function TodoBoard() {
 
   return <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
     <PageHeading title="Board" subtitle="The same to-dos, organized by what comes next." extra={<>
-      <Select aria-label="Filter list" value={selectedList} onChange={setListId} style={{ width: 180, maxWidth: "100%" }} options={[{ value: "all", label: "All lists" }, { value: "inbox", label: "Inbox" }, ...todoLists.map((list) => ({ value: list.id, label: list.name }))]} />
+      <Select aria-label="Filter list" value={selectedList} onChange={setListId} style={{ width: 180, maxWidth: "100%" }} options={[{ value: "all", label: "All lists" }, ...fixedListOptions(todoLists)]} />
       <Button type="primary" icon={<CheckSquareOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>
     </>} />
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}

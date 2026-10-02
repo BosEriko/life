@@ -30,3 +30,22 @@ export function plainText(text: string): string {
   const inner = match.slice(1).find((group) => group !== undefined) ?? "";
   return text.slice(0, match.index) + plainText(inner) + plainText(text.slice(match.index + match[0].length));
 }
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+export function markdownLiteToHtml(text: string): string {
+  if (!text) return "";
+  return text
+    .split("\n")
+    .map((line) => {
+      const html = escapeHtml(line)
+        .replace(/\*\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*\*/g, "<strong><em>$1</em></strong>")
+        .replace(/\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*/g, "<strong>$1</strong>")
+        .replace(/~~(?=\S)([\s\S]+?)(?<=\S)~~/g, "<s>$1</s>")
+        .replace(/\*(?=\S)([\s\S]+?)(?<=\S)\*/g, "<em>$1</em>");
+      return `<p>${html}</p>`;
+    })
+    .join("");
+}

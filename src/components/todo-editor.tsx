@@ -3,11 +3,11 @@
 import { AppModal } from "@/components/app-modal";
 
 import { useState } from "react";
-import { App, Button, Checkbox, DatePicker, Flex, Form, Input, Select, TimePicker, Typography } from "antd";
+import { App, Button, Checkbox, DatePicker, Flex, Form, Input, Segmented, Select, TimePicker, Typography } from "antd";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { ACTIVE_TODO_DATE, TODO_PRIORITIES, todoValidation, type Todo, type TodoList } from "@/lib/todos";
+import { todoListId, isKnownList, fixedListOptions, ACTIVE_TODO_DATE, TODO_PRIORITIES, todoValidation, type Todo, type TodoList } from "@/lib/todos";
 import { saveTodo } from "@/models/todos";
 import { RichTextEditor, plainTextToHtml } from "@/components/rich-text-editor";
 
@@ -21,7 +21,7 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
   const { message } = App.useApp();
   const [draft, setDraft] = useState<Todo>(() => initial ?? {
     id: "", date: ACTIVE_TODO_DATE, title: "", description: "",
-    listId: lists.some((list) => list.id === listId) ? listId : null,
+    listId: listId !== "inbox" && isKnownList(listId, lists) ? listId : null,
     priority: "none", status: "todo", dueDate: null, dueTime: null,
     subtasks: {}, createdAt: new Date().toISOString(), updatedAt: "", completedAt: null,
   });
@@ -61,7 +61,7 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
         </Form.Item>
         <Flex gap={12} wrap>
           <Form.Item label="List" style={{ flex: 1, minWidth: 140 }}>
-            <Select aria-label="To-do list" value={lists.some((list) => list.id === draft.listId) ? draft.listId : "inbox"} options={[{ value: "inbox", label: "Inbox" }, ...lists.map((list) => ({ value: list.id, label: list.name }))]} onChange={(value) => patch({ listId: value === "inbox" ? null : value })} />
+            <Select aria-label="To-do list" value={todoListId(draft, lists)} options={fixedListOptions(lists)} onChange={(value) => patch({ listId: value === "inbox" ? null : value })} />
           </Form.Item>
           <Form.Item label="Priority" style={{ flex: 1, minWidth: 120 }}>
             <Select aria-label="To-do priority" value={draft.priority} options={TODO_PRIORITIES.map((value) => ({ value, label: value === "none" ? "No priority" : `${value[0].toUpperCase()}${value.slice(1)}` }))} onChange={(priority) => patch({ priority })} />
@@ -76,7 +76,7 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
           </Form.Item>
         </Flex>
         <Form.Item label="Status">
-          <Select aria-label="To-do status" value={draft.status} options={[{ value: "todo", label: "To do" }, { value: "doing", label: "In progress" }, ...(initial?.status === "done" ? [{ value: "done", label: "Completed" }] : [])]} onChange={(status) => patch({ status })} />
+          <Segmented block aria-label="To-do status" value={draft.status} options={[{ value: "todo", label: "To do" }, { value: "doing", label: "In progress" }, ...(initial?.status === "done" ? [{ value: "done", label: "Completed" }] : [])]} onChange={(status) => patch({ status: status as Todo["status"] })} />
         </Form.Item>
         <Form.Item label="Subtasks">
           <Flex vertical gap={8}>
