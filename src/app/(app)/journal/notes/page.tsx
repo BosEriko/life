@@ -6,14 +6,15 @@ import { useSearchParams } from "next/navigation";
 import {
   App,
   Button,
+  Calendar,
   Card,
-  DatePicker,
   Empty,
   Flex,
   Grid,
+  Segmented,
   Spin,
-  theme,
   Typography,
+  theme,
 } from "antd";
 import {
   CalendarFilled,
@@ -24,6 +25,7 @@ import {
   EditOutlined,
   LeftOutlined,
   RightOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -47,6 +49,7 @@ import { plainTextToHtml } from "@/components/rich-text-editor";
 import { ACTIVE_TODO_DATE, todoValidation, type Todo } from "@/lib/todos";
 import { convertNoteToTodo } from "@/models/todos";
 import { JournalSkeleton } from "@/components/journal-skeleton";
+import { SideMenu } from "@/components/side-menu";
 
 export default function NotesPage() {
   return <Suspense fallback={<JournalSkeleton />}><NotesContent /></Suspense>;
@@ -63,6 +66,7 @@ function NotesContent() {
   const selectedDateKey = noteDateFromQuery(params.get("view"), todayKey());
   const date = dayjs(selectedDateKey);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [datesView, setDatesView] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
     if (!user) return;
@@ -135,6 +139,7 @@ function NotesContent() {
     }
     return Array.from(counts, ([key, count]) => ({ key, count }));
   }, [sortedNotes]);
+  const noteCounts = new Set(datesWithNotes.map(({ key }) => key));
   const shown = sortedNotes.filter((note) => note.date === selectedDateKey);
 
   const isToday = date.isSame(dayjs(todayKey()), "day");
@@ -175,80 +180,82 @@ function NotesContent() {
           alignItems: "start",
         }}
       >
-        <Card styles={{ body: { padding: 20 } }} style={{ boxShadow: token.boxShadowTertiary }}>
-          <Typography.Text style={{ display: "block", fontSize: 17, marginBottom: 12 }}>
-            Dates with notes
-          </Typography.Text>
-          <Flex vertical gap={4}>
-          {!loaded ? (
-            <Flex justify="center" style={{ padding: 24 }}>
-              <Spin size="small" />
-            </Flex>
-          ) : datesWithNotes.length === 0 ? (
-            <Typography.Text type="secondary">No notes yet.</Typography.Text>
-          ) : (
-            datesWithNotes.map(({ key, count }) => {
-              const selected = key === selectedDateKey;
-              return (
-                <Button
-                  key={key}
-                  type="text"
-                  aria-current={selected ? "date" : undefined}
-                  onClick={() => setDate(dayjs(key))}
-                  style={{
-                    height: 42,
-                    paddingInline: 12,
-                    fontWeight: selected ? 700 : 400,
-                    background: selected ? token.colorPrimaryBg : undefined,
-                  }}
-                >
-                  <Flex align="center" justify="space-between" style={{ width: "100%" }}>
-                    <span>{dayjs(key).format("MMMM D, YYYY")}</span>
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        color: selected ? token.colorPrimary : token.colorTextSecondary,
-                        background: selected
-                          ? token.colorBgContainer
-                          : token.colorFillSecondary,
-                        fontSize: 12,
-                      }}
-                    >
-                      {count}
-                    </span>
-                  </Flex>
-                </Button>
-              );
-            })
-          )}
-          </Flex>
-        </Card>
+        <SideMenu
+          ariaLabel="Dates with notes"
+          title="Dates with notes"
+          extra={
+            <Segmented
+              size="small"
+              aria-label="Dates view"
+              value={datesView}
+              onChange={(value) => setDatesView(value as "list" | "calendar")}
+              options={[
+                { value: "list", icon: <UnorderedListOutlined />, title: "List" },
+                { value: "calendar", icon: <CalendarOutlined />, title: "Calendar" },
+              ]}
+            />
+          }
+          items={loaded ? datesWithNotes.map(({ key, count }) => ({ key, label: dayjs(key).format("MMMM D, YYYY"), count })) : []}
+          selectedKey={selectedDateKey}
+          onSelect={(key) => setDate(dayjs(key))}
+          empty={loaded ? <Typography.Text type="secondary">No notes yet.</Typography.Text> : <Flex justify="center"><Spin size="small" /></Flex>}
+        >
+          {datesView === "calendar" ? (
+            <Calendar
+              key={selectedDateKey}
+              fullscreen={false}
+              defaultValue={date}
+              disabledDate={(day) => day.isAfter(dayjs(todayKey()), "day")}
+              headerRender={({ value, onChange }) => (
+                <Flex align="center" justify="space-between" style={{ padding: "8px 0" }}>
+                  <Button type="text" size="small" aria-label="Previous month" icon={<LeftOutlined />} onClick={() => onChange(value.subtract(1, "month"))} />
+                  <Typography.Text strong>{value.format("MMMM YYYY")}</Typography.Text>
+                  <Button
+                    type="text"
+                    size="small"
+                    aria-label="Next month"
+                    icon={<RightOutlined />}
+                    disabled={value.add(1, "month").startOf("month").isAfter(dayjs(todayKey()))}
+                    onClick={() => onChange(value.add(1, "month"))}
+                  />
+                </Flex>
+              )}
+              onSelect={(day, info) => {
+                if (info.source === "date") setDate(day);
+              }}
+              fullCellRender={(day, info) => {
+                if (info.type !== "date") return info.originNode;
+                const hasNotes = noteCounts.has(day.format("YYYY-MM-DD"));
+                return (
+                  <div className="ant-picker-cell-inner" style={{ position: "relative" }}>
+                    {day.date()}
+                    {hasNotes ? (
+                      <span
+                        aria-hidden
+                        style={{ position: "absolute", left: "50%", bottom: 1, width: 4, height: 4, marginLeft: -2, borderRadius: "50%", background: "currentColor" }}
+                      />
+                    ) : null}
+                  </div>
+                );
+              }}
+              style={{ padding: "0 8px 8px" }}
+            />
+          ) : null}
+        </SideMenu>
 
         <Card
           styles={{ body: { padding: 20 } }}
           style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}
         >
-          <Typography.Text style={{ display: "block", fontSize: 17, marginBottom: 12 }}>
+          <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 20 }}>
+          <Typography.Text style={{ fontSize: 17 }}>
             {date.format("dddd, MMMM D, YYYY")}
           </Typography.Text>
-          <Flex align="center" gap={8} wrap style={{ marginBottom: 20 }}>
+          <Flex align="center" gap={8} wrap>
             <Button
               aria-label="Previous day"
               icon={<LeftOutlined />}
               onClick={() => changeDay(-1)}
-            />
-            <DatePicker
-              value={date}
-              onChange={(next) => next && setDate(next)}
-              format="YYYY-MM-DD"
-              maxDate={dayjs(todayKey())}
-              allowClear={false}
-              style={{ minWidth: 160 }}
             />
             <Button
               aria-label="Next day"
@@ -268,6 +275,7 @@ function NotesContent() {
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {shown.length} {shown.length === 1 ? "note" : "notes"}
             </Typography.Text>
+          </Flex>
           </Flex>
 
           {!loaded ? (

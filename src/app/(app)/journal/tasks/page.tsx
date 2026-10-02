@@ -2,12 +2,13 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button, Card, Flex, Grid, Typography, theme } from "antd";
+import { Button, Card, Grid, Typography, theme } from "antd";
 import { CalendarOutlined, ClockCircleOutlined, ScheduleOutlined, SyncOutlined } from "@ant-design/icons";
 import { PageHeading } from "@/components/page-heading";
 import { AddTaskModal, TasksList, type TaskView } from "@/components/tasks-card";
 import { journalViewUrl, taskViewFromQuery } from "@/lib/journal-views";
 import { JournalSkeleton } from "@/components/journal-skeleton";
+import { SideMenu } from "@/components/side-menu";
 
 const VIEWS = [
   { value: "today" as const, label: "Today", Icon: CalendarOutlined },
@@ -45,11 +46,12 @@ function TasksContent() {
         }
       />
       <div style={{ display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" }}>
-        <Card styles={{ body: { padding: 16 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
-          <nav aria-label="Task views"><Flex vertical gap={4}>
-            {VIEWS.map(({ value, label, Icon }) => <Button key={value} type="text" icon={<Icon />} aria-pressed={view === value} onClick={() => setView(value)} style={{ width: "100%", height: 42, justifyContent: "flex-start", background: view === value ? token.colorPrimaryBg : undefined, color: view === value ? token.colorPrimary : undefined, fontWeight: view === value ? 700 : 400 }}>{label}</Button>)}
-          </Flex></nav>
-        </Card>
+        <SideMenu
+          ariaLabel="Task views"
+          items={VIEWS.map(({ value, label, Icon }) => ({ key: value, icon: <Icon />, label }))}
+          selectedKey={view}
+          onSelect={(key) => setView(key as TaskView)}
+        />
         <Card styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
           <Typography.Title level={4} style={{ margin: "0 0 16px" }}>{VIEWS.find((item) => item.value === view)?.label}</Typography.Title>
           <TasksList view={view} />

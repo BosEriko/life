@@ -5,7 +5,7 @@ import { AppModal } from "@/components/app-modal";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Select, Spin, Tag, theme, Typography } from "antd";
+import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Select, Spin, Tag, Typography, theme } from "antd";
 import { CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, ClockCircleOutlined, EditOutlined, FlagOutlined, FolderOutlined, InboxOutlined, PlusOutlined, SearchOutlined, UnorderedListOutlined, UndoOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -20,6 +20,7 @@ import { todoListName, isKnownList, fixedListOptions, ARCHIVE_LIST_ID, filterTod
 import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/todos";
 import { Tip } from "@/components/tip";
 import { RichTextView } from "@/components/rich-text-view";
+import { SideMenu } from "@/components/side-menu";
 
 const VIEWS = [
   { value: "all" as const, label: "All to-dos", Icon: UnorderedListOutlined },
@@ -157,27 +158,32 @@ export function TodoWorkspace() {
   if (loading) return <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex>;
   if (!user) return <Empty description="Sign in to organize your to-dos."><Link href="/login"><Button type="primary">Sign in</Button></Link></Empty>;
 
-  const navButton = (label: string, count: number | undefined, selected: boolean, icon: React.ReactNode, onClick: () => void) => <Button type="text" icon={icon} onClick={onClick} aria-pressed={selected} style={{ width: "100%", height: 42, justifyContent: "flex-start", background: selected ? token.colorPrimaryBg : undefined, color: selected ? token.colorPrimary : undefined, fontWeight: selected ? 700 : 400 }}>
-    <span style={{ flex: 1, textAlign: "left", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
-    {count !== undefined && <Typography.Text type="secondary" style={{ fontSize: 12 }}>{count}</Typography.Text>}
-  </Button>;
+  const listCount = (id: string) => active.filter((todo) => todoListId(todo, lists) === id).length;
 
   return <div style={{ paddingRight: screens.md === true ? 56 : 0 }}>
     <PageHeading title="To-do" subtitle="A place for projects, next steps, and everything you want to finish." extra={<Button type="primary" icon={<CheckSquareOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>} />
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}
     <div style={{ display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" }}>
-      <Card styles={{ body: { padding: 16 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
-        <Flex vertical gap={4}>
-          {VIEWS.map(({ value, label, Icon }) => <div key={value}>{navButton(label, value === "completed" ? undefined : filterTodos(active, lists, { view: value, listId: "all", search: "", priority: "all", status: "all", sort: "due", now }).length, view === value && selectedList === "all", <Icon />, () => navigateView(value))}</div>)}
-        </Flex>
-        <Flex align="center" justify="space-between" style={{ marginTop: 24, marginBottom: 8 }}>
-          <Typography.Text strong>Lists</Typography.Text>
-          <Button type="text" size="small" icon={<PlusOutlined />} aria-label="Add list" disabled={!todosReady || todoError} onClick={() => setListEditor(null)} />
-        </Flex>
-        {navButton("Inbox", active.filter((todo) => todoListId(todo, lists) === "inbox").length, selectedList === "inbox", <InboxOutlined />, () => navigateView("all", "inbox"))}
-        {lists.map((list) => <div key={list.id}>{navButton(list.name, active.filter((todo) => todo.listId === list.id).length, selectedList === list.id, <FolderOutlined />, () => navigateView("all", list.id))}</div>)}
-        {navButton("Archive", active.filter((todo) => todoListId(todo, lists) === ARCHIVE_LIST_ID).length, selectedList === ARCHIVE_LIST_ID, <ContainerOutlined />, () => navigateView("all", ARCHIVE_LIST_ID))}
-      </Card>
+      <Flex vertical gap={16} style={{ minWidth: 0 }}>
+        <SideMenu
+          ariaLabel="To-do views"
+          items={VIEWS.map(({ value, label, Icon }) => ({ key: value, icon: <Icon />, label, count: value === "completed" ? undefined : filterTodos(active, lists, { view: value, listId: "all", search: "", priority: "all", status: "all", sort: "due", now }).length }))}
+          selectedKey={selectedList === "all" ? view : undefined}
+          onSelect={(key) => navigateView(key as TodoView)}
+        />
+        <SideMenu
+          ariaLabel="To-do lists"
+          title="Lists"
+          extra={<Button type="text" size="small" icon={<PlusOutlined />} aria-label="Add list" disabled={!todosReady || todoError} onClick={() => setListEditor(null)} />}
+          items={[
+            { key: "inbox", icon: <InboxOutlined />, label: "Inbox", count: listCount("inbox") },
+            ...lists.map((list) => ({ key: list.id, icon: <FolderOutlined />, label: list.name, count: listCount(list.id) })),
+            { key: ARCHIVE_LIST_ID, icon: <ContainerOutlined />, label: "Archive", count: listCount(ARCHIVE_LIST_ID) },
+          ]}
+          selectedKey={selectedList === "all" ? undefined : selectedList}
+          onSelect={(key) => navigateView("all", key)}
+        />
+      </Flex>
       <Card styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
         <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 16 }}>
           <Typography.Title level={4} style={{ margin: 0, overflowWrap: "anywhere" }}>{heading}</Typography.Title>

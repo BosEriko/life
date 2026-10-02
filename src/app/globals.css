@@ -427,3 +427,31 @@ body.todo-board-grabbing * {
     grid-template-columns: 240px minmax(0, 1fr);
   }
 }
+
+.side-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 0;
+  border-top: 1px solid var(--side-menu-line);
+  font: inherit;
+  cursor: pointer;
+  background: transparent;
+  transition: background-color 150ms ease;
+}
+
+.side-menu li:first-child > .side-menu-item {
+  border-top: 0;
+}
+
+.side-menu-item:not([aria-current]):hover {
+  background: var(--side-menu-hover) !important;
+}
+
+.side-menu-item:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
