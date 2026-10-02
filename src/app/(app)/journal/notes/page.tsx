@@ -1,6 +1,5 @@
 "use client";
 
-import { AppModal } from "@/components/app-modal";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -19,12 +18,12 @@ import {
 import {
   CalendarFilled,
   CalendarOutlined,
+  CheckSquareFilled,
+  CheckSquareOutlined,
   ClockCircleOutlined,
-  CopyOutlined,
   EditOutlined,
   LeftOutlined,
   RightOutlined,
-  SendOutlined,
 } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
@@ -32,7 +31,6 @@ import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Icon } from "@/components/icon";
 import { NotesModal } from "@/components/notes-modal";
-import { Tip } from "@/components/tip";
 import { relativeDate, todayKey } from "@/models/dailies";
 import {
   deleteNote,
@@ -45,6 +43,9 @@ import {
 import { PageHeading } from "@/components/page-heading";
 import { journalViewUrl, noteDateFromQuery } from "@/lib/journal-views";
 import { RichTextView } from "@/components/rich-text-view";
+import { plainTextToHtml } from "@/components/rich-text-editor";
+import { ACTIVE_TODO_DATE, todoValidation, type Todo } from "@/lib/todos";
+import { convertNoteToTodo } from "@/models/todos";
 
 export default function NotesPage() {
   return <Suspense fallback={<p>Loading notes…</p>}><NotesContent /></Suspense>;
@@ -60,9 +61,7 @@ function NotesContent() {
   const params = useSearchParams();
   const selectedDateKey = noteDateFromQuery(params.get("view"), todayKey());
   const date = dayjs(selectedDateKey);
-  const [noteToShare, setNoteToShare] = useState<Note | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
-  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -93,23 +92,38 @@ function NotesContent() {
     );
   }
 
-  function sharedNoteText(note: Note) {
-    const dateLabel = dayjs(note.date).format("MMMM D, YYYY");
-    return `${note.text}\n\n${dateLabel} at ${formatNoteTime(note.date, note.time)}`;
-  }
-
-  async function copySharedNote() {
-    if (!noteToShare) return;
-    setCopying(true);
-    try {
-      await navigator.clipboard.writeText(sharedNoteText(noteToShare));
-      setNoteToShare(null);
-      message.success("Note copied");
-    } catch {
-      message.error("Could not copy note.");
-    } finally {
-      setCopying(false);
+  function handleConvert(note: Note) {
+    if (!user) return;
+    const plain = note.text.replace(/\s+/g, " ").trim();
+    const todo: Todo = {
+      id: crypto.randomUUID(),
+      date: ACTIVE_TODO_DATE,
+      title: plain.slice(0, 120),
+      description: note.text.trim(),
+      descriptionHtml: note.html ?? plainTextToHtml(note.text),
+      listId: null,
+      priority: "none",
+      status: "todo",
+      dueDate: null,
+      dueTime: null,
+      subtasks: {},
+      createdAt: new Date().toISOString(),
+      updatedAt: "",
+      completedAt: null,
+    };
+    if (todo.description.length > 2000) {
+      message.error("This note is too long to become a to-do (2,000 characters max).");
+      return;
     }
+    const invalid = todoValidation(todo);
+    if (invalid) {
+      message.error(invalid);
+      return;
+    }
+    convertNoteToTodo(user.uid, note.id, todo).catch(() =>
+      message.error("Could not convert note."),
+    );
+    message.success(navigator.onLine ? "Note moved to To-do" : "Saved offline · will sync");
   }
 
   const sortedNotes = useMemo(() => sortNotes(notes), [notes]);
@@ -300,15 +314,15 @@ function NotesContent() {
                           onConfirm={() => handleMoveToToday(note.id)}
                         />
                       )}
-                      <Tip title="Share">
-                        <Button
-                          type="text"
-                          size="small"
-                          aria-label="Share note"
-                          icon={<SendOutlined />}
-                          onClick={() => setNoteToShare(note)}
-                        />
-                      </Tip>
+                      <ConfirmActionButton
+                        type="text"
+                        size="small"
+                        ariaLabel="Convert to to-do"
+                        hint="Tap again to turn this note into a to-do"
+                        icon={<CheckSquareOutlined />}
+                        armedIcon={<CheckSquareFilled />}
+                        onConfirm={() => handleConvert(note)}
+                      />
                       <ConfirmDeleteButton
                         ariaLabel="Delete note"
                         onConfirm={() => handleDelete(note.id)}
@@ -322,40 +336,6 @@ function NotesContent() {
         </Card>
       </div>
 
-      <AppModal
-        open={noteToShare !== null}
-        centered
-        title={
-          <>
-            <SendOutlined style={{ marginRight: 8 }} />
-            Share note
-          </>
-        }
-        okText="Copy note"
-        okButtonProps={{ icon: <CopyOutlined /> }}
-        confirmLoading={copying}
-        onOk={copySharedNote}
-        onCancel={() => setNoteToShare(null)}
-      >
-        <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-          Copy this note, then paste it into the conversation or app where you
-          want to share it.
-        </Typography.Paragraph>
-        {noteToShare && (
-          <Card size="small">
-            <Typography.Paragraph
-              style={{ whiteSpace: "pre-wrap", marginBottom: 8 }}
-            >
-              {noteToShare.text}
-            </Typography.Paragraph>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              <ClockCircleOutlined style={{ marginRight: 5 }} />
-              {dayjs(noteToShare.date).format("MMMM D, YYYY")} ·{" "}
-              {formatNoteTime(noteToShare.date, noteToShare.time)}
-            </Typography.Text>
-          </Card>
-        )}
-      </AppModal>
       {notesOpen && (
         <NotesModal
           open

@@ -1,6 +1,6 @@
 import {
   collection, deleteDoc, deleteField, doc, FieldPath, onSnapshot, orderBy,
-  query, setDoc, updateDoc, where, type DocumentData, type QueryDocumentSnapshot,
+  query, setDoc, updateDoc, where, writeBatch, type DocumentData, type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import dayjs from "dayjs";
 import { getFirebaseDb } from "@/lib/firebase";
@@ -9,16 +9,29 @@ import { ACTIVE_TODO_DATE, todoMovePatch, todoValidation, type Todo, type TodoCo
 const todoRef = (uid: string, id: string) => doc(getFirebaseDb(), "users", uid, "todos", id);
 const settingsRef = (uid: string) => doc(getFirebaseDb(), "users", uid, "todoSettings", "current");
 
-export function saveTodo(uid: string, todo: Todo) {
-  const error = todoValidation(todo);
-  if (error) return Promise.reject(new Error(error));
-  return setDoc(todoRef(uid, todo.id), {
+function todoData(todo: Todo) {
+  return {
     ...todo,
     title: todo.title.trim(),
     description: todo.description.trim(),
     date: todo.status === "done" ? todo.date : ACTIVE_TODO_DATE,
     updatedAt: new Date().toISOString(),
-  });
+  };
+}
+
+export function saveTodo(uid: string, todo: Todo) {
+  const error = todoValidation(todo);
+  if (error) return Promise.reject(new Error(error));
+  return setDoc(todoRef(uid, todo.id), todoData(todo));
+}
+
+export function convertNoteToTodo(uid: string, noteId: string, todo: Todo) {
+  const error = todoValidation(todo);
+  if (error) return Promise.reject(new Error(error));
+  const batch = writeBatch(getFirebaseDb());
+  batch.set(todoRef(uid, todo.id), todoData(todo));
+  batch.delete(doc(getFirebaseDb(), "users", uid, "notes", noteId));
+  return batch.commit();
 }
 
 export function completeTodo(uid: string, todo: Todo) {
