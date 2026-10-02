@@ -163,7 +163,7 @@ export function TodoBoard() {
             <Flex vertical gap={12}>
               {value === "done" && !history.ready && <Spin size="small" />}
               {items.length === 0 && <Typography.Text type="secondary" style={{ padding: "24px 4px", textAlign: "center" }}>No to-dos here</Typography.Text>}
-              {visible.map((todo) => <Card key={todo.id} size="small" className="todo-board-card" role="button" tabIndex={todoError || archivedMove ? -1 : 0} aria-label={`Edit ${todo.title}`} aria-disabled={todoError || !!archivedMove} style={{ minWidth: 0, userSelect: "none", touchAction: "none", opacity: drag?.id === todo.id && drag.moved ? 0.25 : 1, boxShadow: token.boxShadowTertiary, borderColor: isTodoPastDate(todo, now) ? token.colorError : undefined }}
+              {visible.map((todo) => <Card key={todo.id} size="small" className="todo-board-card" role="button" tabIndex={todoError || archivedMove ? -1 : 0} aria-label={`Edit ${todo.title}`} aria-disabled={todoError || !!archivedMove} style={{ minWidth: 0, userSelect: "none", touchAction: "none", opacity: drag?.id === todo.id && drag.moved ? 0.25 : 1, boxShadow: token.boxShadowTertiary, ...(isTodoPastDate(todo, now) && todoColumn(todo, now) !== "done" ? { background: token.colorErrorBg, borderColor: token.colorErrorBorder } : {}) }}
                 onPointerDown={(event) => dragStart(event, todo)} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { suppressClick.current = true; pointer.current = null; setDrag(null); }}
                 onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!todoError && !archivedMove) setEditor(todo); }}
                 onKeyDown={(event) => {
@@ -181,7 +181,7 @@ export function TodoBoard() {
         })}
       </div>
     </div>}
-    {drag?.moved && draggedTodo && createPortal(<Card size="small" aria-hidden className="todo-board-drag-preview" style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width, pointerEvents: "none", zIndex: 1100, transform: "rotate(4deg)", boxShadow: token.boxShadow, borderColor: isTodoPastDate(draggedTodo, now) ? token.colorError : undefined }}><CardContent todo={draggedTodo} upcoming={todoColumn(draggedTodo, now) === "upcoming"} /></Card>, document.body)}
+    {drag?.moved && draggedTodo && createPortal(<Card size="small" aria-hidden className="todo-board-drag-preview" style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width, pointerEvents: "none", zIndex: 1100, transform: "rotate(4deg)", boxShadow: token.boxShadow, ...(isTodoPastDate(draggedTodo, now) && todoColumn(draggedTodo, now) !== "done" ? { background: token.colorErrorBg, borderColor: token.colorErrorBorder } : {}) }}><CardContent todo={draggedTodo} upcoming={todoColumn(draggedTodo, now) === "upcoming"} /></Card>, document.body)}
     {editor === null && <TodoEditor initial={null} lists={todoLists} listId={selectedList === "all" ? "inbox" : selectedList} onClose={() => setEditor(undefined)} />}
     {editor && <BoardEditor key={editor.id} todo={editor} lists={todoLists} onClose={() => { setEditor(undefined); history.refresh(); }} />}
     {archivedMove && <ArchivedMove key={archivedMove.todo.id} {...archivedMove} onClose={() => { setArchivedMove(null); history.refresh(); }} />}

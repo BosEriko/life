@@ -33,6 +33,7 @@ const LIGHT_TOKENS = {
   colorPrimaryBg: "#e1efe5",
   colorPrimaryBgHover: "#d2e7d8",
   colorError: TERRACOTTA,
+  colorErrorBg: "#f8e9e3",
   colorText: "#172019",
   colorTextSecondary: "#607066",
   colorBgLayout: "#f2fcf5",
