@@ -14,6 +14,7 @@ import { ACCOUNT_TYPES, accountTextColor, money, type FinanceAccount, type Finan
 import { mergeById } from "@/lib/merge-records";
 import { recalculateFinanceAccounts } from "@/models/finance";
 import { FinanceOverview } from "@/components/finance-overview";
+import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 
 export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "records" }) {
   const { token } = theme.useToken();
@@ -69,6 +70,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
       {financeError && <Alert type="error" title="Could not load your finance data. Reload to try again." style={{ marginBottom: 24 }} />}
       {!financeReady ? <Spin /> : <>
         {view !== "records" && <>
+        {view === "dashboard" && <EmergencyFundBanner />}
         {view === "dashboard" && <Typography.Title level={2} style={{ fontSize: 18, marginBottom: 16 }}>Accounts</Typography.Title>}
         {view === "accounts" ? <div style={twoColumns}>
           <Card title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
