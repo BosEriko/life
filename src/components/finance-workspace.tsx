@@ -67,11 +67,10 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const accountCardStyle = (account: FinanceAccount) => ({ minWidth: 0, position: "relative" as const, overflow: "hidden", background: account.color, borderColor: account.color, color: accountTextColor(account.color) });
   const accountCardBody = (account: FinanceAccount) => (
     <>
-              <AccountTypeIcon type={account.type} style={{ position: "absolute", right: -14, bottom: -18, fontSize: 104, opacity: 0.14, pointerEvents: "none" }} />
+              <AccountTypeIcon type={account.type} style={{ position: "absolute", right: -10, bottom: -13, fontSize: 78, opacity: 0.14, pointerEvents: "none" }} />
               <div style={{ position: "relative" }}>
               <Flex gap={8} align="start" justify="space-between"><div style={{ minWidth: 0 }}><Typography.Text strong style={{ display: "block", color: "inherit", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>{account.provider && <Typography.Text style={{ display: "block", color: "inherit", opacity: 0.85, fontSize: 12, overflowWrap: "anywhere" }}>{account.provider}</Typography.Text>}</div>{handle}</Flex>
-              <Typography.Text style={{ color: "inherit" }}>{account.type} · {account.currency}</Typography.Text>
-              <div style={{ fontSize: 26, fontWeight: 700, margin: "16px 0 0", overflowWrap: "anywhere", fontVariantNumeric: "tabular-nums" }}>{money(account.balanceMinor, account.currency)}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.2, margin: 0, overflowWrap: "anywhere", fontVariantNumeric: "tabular-nums" }}>{money(account.balanceMinor, account.currency)}</div>
               </div>
     </>
   );
@@ -156,8 +155,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           <div className="account-cards">
             {filteredAccounts.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." />}
             <SortableList ids={filteredAccounts.map((account) => account.id)} layout="grid" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
-              renderOverlay={(id) => { const account = accountsById.get(id); return account ? <Card style={{ ...accountCardStyle(account), height: "100%" }}>{accountCardBody(account)}</Card> : null; }}
-              renderItem={(id, { ref, style, handlers, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <Card key={id} ref={ref} {...handlers} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...accountCardStyle(account), ...style, cursor: "pointer" }}>
+              renderOverlay={(id) => { const account = accountsById.get(id); return account ? <Card styles={{ body: { padding: 16 } }} style={{ ...accountCardStyle(account), height: "100%" }}>{accountCardBody(account)}</Card> : null; }}
+              renderItem={(id, { ref, style, handlers, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <Card key={id} ref={ref} {...handlers} styles={{ body: { padding: 16 } }} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...accountCardStyle(account), ...style, cursor: "pointer" }}>
                 {accountCardBody(account)}
               </Card>; }} />
           </div>}
