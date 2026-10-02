@@ -11,6 +11,7 @@ import { useIsDark } from "@/components/theme-provider";
 import { currencyDigits, money } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import type { MonthPoint } from "@/components/finance-month-chart";
+import { CategoryIcon } from "@/components/finance-category-icon";
 
 const FinanceMonthChart = dynamic(() => import("@/components/finance-month-chart").then((mod) => mod.FinanceMonthChart), {
   ssr: false,
@@ -128,7 +129,7 @@ export function FinanceAnalytics() {
                   {categories.map(([category, amount]) => (
                     <div key={category}>
                       <Flex justify="space-between" gap={12} style={{ marginBottom: 6 }}>
-                        <Typography.Text style={{ minWidth: 0, overflowWrap: "anywhere" }}>{category}</Typography.Text>
+                        <Typography.Text style={{ minWidth: 0, overflowWrap: "anywhere" }}><CategoryIcon category={category} style={{ marginRight: 6 }} />{category}</Typography.Text>
                         <Typography.Text style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                           {money(amount, currency)} <Typography.Text type="secondary">· {Math.round((amount / expense) * 100)}%</Typography.Text>
                         </Typography.Text>

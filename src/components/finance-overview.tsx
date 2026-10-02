@@ -11,6 +11,7 @@ import { useIsDark } from "@/components/theme-provider";
 import { currencyDigits, money } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import { todayKey } from "@/models/users/dailies";
+import { CategoryIcon } from "@/components/finance-category-icon";
 
 const chartLoading = () => <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex>;
 const FinanceMonthChart = dynamic(() => import("@/components/finance-month-chart").then((mod) => mod.FinanceMonthChart), { ssr: false, loading: chartLoading });
@@ -146,7 +147,7 @@ export function FinanceOverview() {
               {donutData.map((row) => (
                 <Flex key={row.category} align="center" gap={8} style={{ fontSize: 12 }}>
                   <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: donutRange[donutDomain.indexOf(row.category)] }} />
-                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.category}</span>
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><CategoryIcon category={row.category} style={{ marginRight: 6 }} />{row.category}</span>
                   <Typography.Text type="secondary" style={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>{pct(row.minor, expense)}</Typography.Text>
                 </Flex>
               ))}
@@ -179,7 +180,7 @@ export function FinanceOverview() {
               <Flex key={record.id} justify="space-between" align="center" gap={12} style={{ padding: "10px 0", borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
                 <div style={{ minWidth: 0 }}>
                   <Typography.Text style={{ display: "block", overflowWrap: "anywhere" }}>{record.description || record.category}</Typography.Text>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>{record.category} · {dayjs(record.occurredAt).format("MMM D")}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}><CategoryIcon category={record.category} style={{ marginRight: 4 }} />{record.category} · {dayjs(record.occurredAt).format("MMM D")}</Typography.Text>
                 </div>
                 <Typography.Text strong style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{money(record.amountMinor, currency)}</Typography.Text>
               </Flex>

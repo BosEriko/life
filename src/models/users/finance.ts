@@ -7,14 +7,14 @@ const settingsRef = (uid: string) => doc(getFirebaseDb(), "users", uid, "finance
 export function saveFinanceAccount(uid: string, account: FinanceAccount) {
   const error = accountValidation(account);
   if (error) return Promise.reject(new Error(error));
-  return setDoc(settingsRef(uid), { accounts: { [account.id]: { ...account, name: account.name.trim() } } }, { mergeFields: [new FieldPath("accounts", account.id)] });
+  return setDoc(settingsRef(uid), { accounts: { [account.id]: { ...account, name: account.name.trim(), provider: (account.provider ?? "").trim() } } }, { mergeFields: [new FieldPath("accounts", account.id)] });
 }
 
 export function editFinanceAccount(uid: string, account: FinanceAccount, original: FinanceAccount) {
   const error = accountValidation({ ...account, balanceMinor: account.initialMinor });
   if (error) return Promise.reject(new Error(error));
   if (account.currency !== original.currency) return Promise.reject(new Error("The currency of an existing account cannot be changed."));
-  const fields = { name: account.name.trim(), color: account.color, type: account.type, excludeFromStatistics: account.excludeFromStatistics };
+  const fields = { name: account.name.trim(), color: account.color, type: account.type, excludeFromStatistics: account.excludeFromStatistics, provider: (account.provider ?? "").trim() };
   if (account.initialMinor !== original.initialMinor) {
     return runTransaction(getFirebaseDb(), async (transaction) => {
       const snapshot = await transaction.get(settingsRef(uid));
@@ -29,7 +29,14 @@ export function editFinanceAccount(uid: string, account: FinanceAccount, origina
     new FieldPath("accounts", account.id, "name"), fields.name,
     new FieldPath("accounts", account.id, "color"), fields.color,
     new FieldPath("accounts", account.id, "type"), fields.type,
-    new FieldPath("accounts", account.id, "excludeFromStatistics"), fields.excludeFromStatistics);
+    new FieldPath("accounts", account.id, "excludeFromStatistics"), fields.excludeFromStatistics,
+    new FieldPath("accounts", account.id, "provider"), fields.provider);
+}
+
+export function reorderFinanceAccounts(uid: string, ids: string[]) {
+  if (ids.length === 0) return Promise.resolve();
+  const [first, ...rest] = ids.flatMap((id, index) => [new FieldPath("accounts", id, "order"), index] as const);
+  return updateDoc(settingsRef(uid), first as FieldPath, rest[0], ...rest.slice(1));
 }
 
 export function deleteFinanceAccount(uid: string, id: string) {

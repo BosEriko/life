@@ -10,6 +10,7 @@ import { useFinanceDay } from "@/components/use-day-records";
 import { CATEGORIES, currencyDigits, recordValidation, toMinor, type FinanceRecord } from "@/lib/finance";
 import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { CategoryIcon } from "@/components/finance-category-icon";
 
 export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: FinanceRecord; onClose: () => void; onSaved: () => void }) {
   const { user } = useAuth();
@@ -72,7 +73,7 @@ export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: Fi
       <Form.Item label={type === "transfer" ? "From account" : "Account"} required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: `${item.name} · ${item.currency}` }))} /></Form.Item>
       {type === "transfer" && <Form.Item label="To account" required help="Only other accounts using the same currency can receive this transfer."><Select aria-label="Transfer destination" value={destinationId} disabled={!!pending} onChange={setDestinationId} options={accounts.filter((item) => item.id !== accountId && item.currency === account?.currency).map((item) => ({ value: item.id, label: item.name }))} /></Form.Item>}
       <Form.Item label="Amount" required><InputNumber aria-label="Record amount" value={amount} disabled={!!pending} onChange={setAmount} min={0} precision={currencyDigits(account?.currency ?? "PHP")} style={{ width: "100%" }} suffix={account?.currency} /></Form.Item>
-      {type !== "transfer" && <Form.Item label="Category" required><Select aria-label="Record category" mode="tags" maxCount={1} value={category} disabled={!!pending} onChange={setCategory} options={categories.map((value) => ({ value, label: value }))} placeholder="Select or create a category" /></Form.Item>}
+      {type !== "transfer" && <Form.Item label="Category" required><Select aria-label="Record category" mode="tags" maxCount={1} value={category} disabled={!!pending} onChange={setCategory} options={categories.map((value) => ({ value, label: <span><CategoryIcon category={value} style={{ marginRight: 8 }} />{value}</span> }))} placeholder="Select or create a category" /></Form.Item>}
       <Form.Item label="Labels"><Select aria-label="Record labels" mode="tags" value={labels} disabled={!!pending} onChange={setLabels} options={knownLabels.map((value) => ({ value, label: value }))} placeholder="Select or create labels" /></Form.Item>
       <Form.Item label="Date and time"><DatePicker aria-label="Record date and time" showTime value={date} disabled={!!pending} onChange={setDate} style={{ width: "100%" }} placeholder="Current date and time" /><Typography.Text type="secondary">Leave blank to use the date and time when you save.</Typography.Text></Form.Item>
       <Form.Item label="Description"><Input.TextArea aria-label="Record description" value={description} disabled={!!pending} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} /></Form.Item>

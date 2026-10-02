@@ -455,3 +455,60 @@ body.todo-board-grabbing * {
   outline: 2px solid currentColor;
   outline-offset: -2px;
 }
+
+.reorder-item:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.reorder-drag-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+  transform: rotate(4deg);
+  cursor: grabbing;
+}
+
+.reorder-drag-preview > * {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reorder-drag-preview {
+    transform: none;
+  }
+}
+
+.account-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 576px) {
+  .account-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .account-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  .account-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .account-cards {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
