@@ -7,16 +7,26 @@ import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceDay } from "@/components/use-day-records";
-import { CATEGORIES, currencyDigits, recordValidation, toMinor, type FinanceRecord } from "@/lib/finance";
+import { CATEGORIES, currencyDigits, recordValidation, toMinor, type FinanceRecord, sortAccounts, type FinanceAccount } from "@/lib/finance";
 import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
-import { CategoryIcon } from "@/components/finance-category-icon";
+import { AccountBadge, CategoryIcon } from "@/components/finance-category-icon";
+import { ArrowRightOutlined } from "@ant-design/icons";
+
+function accountOption(account: FinanceAccount) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <AccountBadge account={account} />
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{account.name}{account.provider ? ` · ${account.provider}` : ""}</span>
+    </span>
+  );
+}
 
 export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: FinanceRecord; onClose: () => void; onSaved: () => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { financeAccounts, financeRecords: records } = useHealthData();
-  const accounts = financeAccounts.filter((account) => !account.deletedAt);
+  const accounts = sortAccounts(financeAccounts.filter((account) => !account.deletedAt));
   const [type, setType] = useState<FinanceRecord["type"]>(initial?.type ?? "expense");
   const [amount, setAmount] = useState<number | null>(initial ? initial.amountMinor / 10 ** currencyDigits(initial.currency) : null);
   const [accountId, setAccountId] = useState(initial?.accountId ?? accounts[0]?.id ?? "");
@@ -70,8 +80,14 @@ export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: Fi
   </Flex>}>
     <Form layout="vertical" onFinish={save}>
       <Form.Item label="Record type"><Segmented block value={type} disabled={!!pending} onChange={setType} options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }, { value: "transfer", label: "Transfer" }]} /></Form.Item>
-      <Form.Item label={type === "transfer" ? "From account" : "Account"} required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: `${item.name} · ${item.currency}` }))} /></Form.Item>
-      {type === "transfer" && <Form.Item label="To account" required help="Only other accounts using the same currency can receive this transfer."><Select aria-label="Transfer destination" value={destinationId} disabled={!!pending} onChange={setDestinationId} options={accounts.filter((item) => item.id !== accountId && item.currency === account?.currency).map((item) => ({ value: item.id, label: item.name }))} /></Form.Item>}
+      {type === "transfer" ? <>
+        <Flex align="flex-end" gap={8}>
+          <Form.Item label="From account" required style={{ flex: 1, minWidth: 0, marginBottom: 8 }}><Select style={{ width: "100%" }} aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
+          <ArrowRightOutlined aria-hidden style={{ fontSize: 16, opacity: 0.6, paddingBottom: 20 }} />
+          <Form.Item label="To account" required style={{ flex: 1, minWidth: 0, marginBottom: 8 }}><Select style={{ width: "100%" }} aria-label="Transfer destination" value={destinationId} disabled={!!pending} onChange={setDestinationId} options={accounts.filter((item) => item.id !== accountId && item.currency === account?.currency).map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
+        </Flex>
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 24 }}>Only other accounts using the same currency can receive this transfer.</Typography.Paragraph>
+      </> : <Form.Item label="Account" required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>}
       <Form.Item label="Amount" required><InputNumber aria-label="Record amount" value={amount} disabled={!!pending} onChange={setAmount} min={0} precision={currencyDigits(account?.currency ?? "PHP")} style={{ width: "100%" }} suffix={account?.currency} /></Form.Item>
       {type !== "transfer" && <Form.Item label="Category" required><Select aria-label="Record category" mode="tags" maxCount={1} value={category} disabled={!!pending} onChange={setCategory} options={categories.map((value) => ({ value, label: <span><CategoryIcon category={value} style={{ marginRight: 8 }} />{value}</span> }))} placeholder="Select or create a category" /></Form.Item>}
       <Form.Item label="Labels"><Select aria-label="Record labels" mode="tags" value={labels} disabled={!!pending} onChange={setLabels} options={knownLabels.map((value) => ({ value, label: value }))} placeholder="Select or create labels" /></Form.Item>

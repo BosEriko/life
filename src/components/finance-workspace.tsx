@@ -15,7 +15,7 @@ import { mergeById } from "@/lib/merge-records";
 import { reorderFinanceAccounts, setFinanceAccountsLocked } from "@/models/users/finance";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
-import { AccountTypeIcon, CategoryIcon } from "@/components/finance-category-icon";
+import { AccountBadge, AccountTypeIcon, CategoryIcon } from "@/components/finance-category-icon";
 import { mergeSubsetOrder } from "@/lib/reorder";
 import { SortableList } from "@/components/sortable-list";
 import { Tip } from "@/components/tip";
@@ -55,7 +55,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const accountRow = (account: FinanceAccount) => (
   <Flex align="center" gap={12}>
     {handle}
-    <span aria-hidden style={{ width: 36, height: 36, flexShrink: 0, borderRadius: token.borderRadius, background: account.color, color: accountTextColor(account.color), display: "inline-flex", alignItems: "center", justifyContent: "center" }}><WalletOutlined /></span>
+    <AccountBadge account={account} size={36} />
     <div style={{ flex: 1, minWidth: 0 }}>
       <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>{account.type} · {account.currency}{account.provider ? ` · ${account.provider}` : ""}{account.excludeFromStatistics ? " · Excluded from statistics" : ""}</Typography.Text>
