@@ -399,3 +399,18 @@ body.todo-board-grabbing * {
   opacity: 0.4;
   pointer-events: none;
 }
+
+.board-more {
+  display: block;
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 600;
+  background: var(--board-more-bg);
+  transition: background-color 150ms ease;
+}
+
+.board-more:hover,
+.board-more:focus-visible {
+  background: var(--board-more-hover);
+}

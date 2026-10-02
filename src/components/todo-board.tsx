@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Alert, App, Button, Card, Empty, Flex, Grid, Select, Spin, Typography, theme } from "antd";
-import { CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ClockCircleOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ClockCircleOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -58,15 +58,24 @@ type BoardDrag = { id: string; target: TodoColumn | null; x: number; y: number; 
 function CardContent({ todo, upcoming }: { todo: Todo; upcoming: boolean }) {
   const subtasks = Object.values(todo.subtasks ?? {});
   const done = subtasks.filter((subtask) => subtask.done).length;
+  const showDate = upcoming && !!todo.dueDate;
+  const showSubtasks = !upcoming && subtasks.length > 0;
+  const hasDescription = !!todo.description?.trim();
   return <>
     <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere", pointerEvents: "none" }}>{todo.title}</Typography.Text>
-    {upcoming ? todo.dueDate && <Typography.Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12, pointerEvents: "none" }}>
-      <CalendarOutlined style={{ marginRight: 6 }} />
-      {dayjs(todo.dueDate).format("MMM D, YYYY")}
-    </Typography.Text> : subtasks.length > 0 && <Typography.Text type={done === subtasks.length ? "success" : "secondary"} style={{ display: "block", marginTop: 12, fontSize: 12, pointerEvents: "none" }}>
-      <CheckSquareOutlined style={{ marginRight: 6 }} />
-      {done}/{subtasks.length} subtasks
-    </Typography.Text>}
+    {(showDate || showSubtasks || hasDescription) && <Flex align="center" gap={12} wrap style={{ marginTop: 12, fontSize: 12, pointerEvents: "none" }}>
+      {showDate && <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <CalendarOutlined style={{ marginRight: 6 }} />
+        {dayjs(todo.dueDate).format("MMM D, YYYY")}
+      </Typography.Text>}
+      {showSubtasks && <Typography.Text type={done === subtasks.length ? "success" : "secondary"} style={{ fontSize: 12 }}>
+        <CheckSquareOutlined style={{ marginRight: 6 }} />
+        {done}/{subtasks.length} subtasks
+      </Typography.Text>}
+      {hasDescription && <Typography.Text type="secondary" style={{ fontSize: 12 }} aria-label="Has description">
+        <AlignLeftOutlined />
+      </Typography.Text>}
+    </Flex>}
   </>;
 }
 
@@ -181,7 +190,7 @@ export function TodoBoard() {
                     if (COLUMNS[index]) move(todo, COLUMNS[index].value);
                   } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditor(todo); }
                 }}><CardContent todo={todo} upcoming={value === "upcoming"} /></Card>)}
-              {items.length > visible.length && <Link href={viewHref(value === "done" ? "completed" : "upcoming")} style={{ display: "block", textAlign: "center", padding: "12px 16px", borderRadius: token.borderRadiusLG, background: token.colorPrimaryBg, color: token.colorPrimary, fontWeight: 600 }}>And {items.length - visible.length} more…</Link>}
+              {items.length > visible.length && <Link href={viewHref(value === "done" ? "completed" : "upcoming")} className="board-more" style={{ "--board-more-bg": token.colorPrimaryBg, "--board-more-hover": token.colorPrimaryBgHover, color: token.colorPrimary } as CSSProperties}>And {items.length - visible.length} more…</Link>}
             </Flex>
           </section>;
         })}
