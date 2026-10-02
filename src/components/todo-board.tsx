@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Alert, App, Button, Card, Empty, Flex, Grid, Select, Spin, Typography, theme } from "antd";
-import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ClockCircleOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -146,12 +146,10 @@ export function TodoBoard() {
   if (!user) return <Empty description="Sign in to organize your board."><Link href="/login"><Button type="primary">Sign in</Button></Link></Empty>;
 
   return <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
-    <PageHeading title="Board" subtitle="The same to-dos, organized by what comes next." extra={<Button type="primary" icon={<PlusOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>} />
-    <Typography.Paragraph type="secondary">Click a card to edit, or drag it into another column.</Typography.Paragraph>
-    <Flex align="center" gap={8} wrap style={{ marginBottom: 16 }}>
-      <Typography.Text>List</Typography.Text>
-      <Select aria-label="Filter list" value={selectedList} onChange={setListId} style={{ width: 200, maxWidth: "100%" }} options={[{ value: "all", label: "All lists" }, { value: "inbox", label: "Inbox" }, ...todoLists.map((list) => ({ value: list.id, label: list.name }))]} />
-    </Flex>
+    <PageHeading title="Board" subtitle="The same to-dos, organized by what comes next." extra={<>
+      <Select aria-label="Filter list" value={selectedList} onChange={setListId} style={{ width: 180, maxWidth: "100%" }} options={[{ value: "all", label: "All lists" }, { value: "inbox", label: "Inbox" }, ...todoLists.map((list) => ({ value: list.id, label: list.name }))]} />
+      <Button type="primary" icon={<CheckSquareOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>
+    </>} />
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}
     {!todosReady ? <Spin /> : <div ref={rail} tabIndex={0} role="region" aria-label="To-do board" style={{ overflowX: "auto", paddingBottom: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(260px, 1fr))", gap: 16, minWidth: 1088, alignItems: "stretch" }}>

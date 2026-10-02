@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, Flex, Grid, Typography, theme } from "antd";
-import { CalendarOutlined, ClockCircleOutlined, PlusOutlined, ScheduleOutlined, SyncOutlined } from "@ant-design/icons";
+import { CalendarOutlined, ClockCircleOutlined, ScheduleOutlined, SyncOutlined } from "@ant-design/icons";
 import { PageHeading } from "@/components/page-heading";
 import { AddTaskModal, TasksList, type TaskView } from "@/components/tasks-card";
 import { journalViewUrl, taskViewFromQuery } from "@/lib/journal-views";
@@ -38,7 +38,7 @@ function TasksContent() {
         title="Tasks"
         subtitle="Build your routine, then check it off each day."
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
+          <Button type="primary" icon={<ScheduleOutlined />} onClick={() => setAddOpen(true)}>
             Add task
           </Button>
         }
