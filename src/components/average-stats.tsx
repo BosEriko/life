@@ -56,14 +56,6 @@ const RANGE_OPTIONS = [
   { label: "All", value: "all" },
 ];
 
-const RANGE_CAPTION: Record<Range, string> = {
-  "7": "Last 7 days",
-  "30": "Last 30 days",
-  "90": "Last 90 days",
-  "365": "Last 12 months",
-  all: "All time",
-};
-
 function loadRange(): Range {
   try {
     const saved = window.localStorage.getItem(RANGE_STORAGE_KEY);
@@ -152,7 +144,7 @@ function meanStats(
   };
 }
 
-export function AverageStats({ controls }: { controls?: ReactNode }) {
+export function AverageStats() {
   const units = useUnits();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
@@ -457,15 +449,12 @@ export function AverageStats({ controls }: { controls?: ReactNode }) {
     <div>
       <Flex
         align="center"
-        justify="space-between"
+        justify="center"
         gap={12}
         wrap
         style={{ marginBottom: 18 }}
       >
         <Flex align="center" gap={10} wrap>
-          <Typography.Text type="secondary" strong style={{ fontSize: 12 }}>
-            Averages · {RANGE_CAPTION[range]}
-          </Typography.Text>
           <Segmented
             options={RANGE_OPTIONS}
             value={range}
@@ -476,7 +465,6 @@ export function AverageStats({ controls }: { controls?: ReactNode }) {
             }}
           />
         </Flex>
-        {controls}
       </Flex>
 
       {!loaded ? (

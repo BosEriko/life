@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Button, Card, DatePicker, Flex, Spin, theme, Typography } from "antd";
+import { Button, Card, DatePicker, Flex, Segmented, Spin, theme } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { AverageStats } from "@/components/average-stats";
 import { useAuth } from "@/components/auth-provider";
@@ -58,7 +58,12 @@ function HealthDashboard() {
       : PRESET_DAYS.find((n) => today.diff(start, "day") + 1 === Number(n))
     : undefined;
 
+  const [custom, setCustom] = useState(false);
+  const trendValue = custom || !presetValue ? "custom" : presetValue;
+
   function applyPreset(value: string) {
+    setCustom(value === "custom");
+    if (value === "custom") return;
     if (value === "all") setRange([null, today]);
     else setRange([today.subtract(Number(value) - 1, "day"), today]);
   }
@@ -78,45 +83,41 @@ function HealthDashboard() {
         marginBottom={18}
       />
 
-      <div style={{ marginBottom: 16 }}>
-        <AverageStats
-          controls={
-            <Flex align="center" gap={8} wrap>
-              <Typography.Text type="secondary" strong style={{ fontSize: 12 }}>
-                Trends
-              </Typography.Text>
-              <DatePicker.RangePicker
-                aria-label="Trend date range"
-                value={[start, end]}
-                onChange={(values) => {
-                  if (!values) return;
-                  setRange([values[0], values[1] ?? today]);
-                }}
-                format="MMM D, YYYY"
-                allowClear={false}
-                allowEmpty={[true, false]}
-                inputReadOnly
-                maxDate={today}
-                style={{ width: 270 }}
-              />
-              {TREND_RANGE_OPTIONS.map((option) => (
-                <Button
-                  key={option.value}
-                  type={presetValue === option.value ? "primary" : "default"}
-                  aria-pressed={presetValue === option.value}
-                  onClick={() => applyPreset(option.value)}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </Flex>
-          }
-        />
+      <div style={{ marginBottom: 24 }}>
+        <AverageStats />
       </div>
+
+      <Flex align="center" justify="center" gap={10} wrap style={{ marginBottom: 18 }}>
+        <Flex gap={8}>
+          <Segmented
+            options={TREND_RANGE_OPTIONS}
+            value={trendValue === "custom" ? "" : trendValue}
+            onChange={(value) => applyPreset(value as string)}
+          />
+          <Segmented
+            options={[{ label: "Custom", value: "custom" }]}
+            value={trendValue === "custom" ? "custom" : ""}
+            onChange={(value) => applyPreset(value as string)}
+          />
+        </Flex>
+        {trendValue === "custom" && <DatePicker.RangePicker
+          aria-label="Trend date range"
+          value={[start, end]}
+          onChange={(values) => {
+            if (!values) return;
+            setRange([values[0], values[1] ?? today]);
+          }}
+          format="MMM D, YYYY"
+          allowClear={false}
+          allowEmpty={[true, false]}
+          inputReadOnly
+          maxDate={today}
+          style={{ width: 270 }}
+        />}
+      </Flex>
 
       <div className="home-grid">
         <Flex vertical gap={24} style={{ minWidth: 0 }}>
-          <TaskReminders />
           <Card
             styles={{ body: { padding: 20 } }}
             style={{
@@ -127,6 +128,10 @@ function HealthDashboard() {
           >
             <MetricsChart start={start} end={end} />
           </Card>
+          <HabitCalendar throughDate={end} />
+        </Flex>
+        <Flex vertical gap={24} style={{ minWidth: 0 }}>
+          <TaskReminders />
           <Card
             styles={{ body: { padding: 20 } }}
             style={{
@@ -138,7 +143,6 @@ function HealthDashboard() {
             <RecentEntries />
           </Card>
         </Flex>
-        <HabitCalendar throughDate={end} />
       </div>
 
       <IdealsModal

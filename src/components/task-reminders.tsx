@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { App, Card, Checkbox, Flex, Typography, theme } from "antd";
-import { AlignLeftOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, ClockCircleOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -10,6 +10,9 @@ import { RichText, plainText } from "@/components/rich-text";
 import { allTaskSubtasksDone, formatTaskTime, overdueTasks, taskSubtaskChecks } from "@/lib/task-schedule";
 import { setTaskChecked } from "@/models/tasks";
 import { TaskSubtasks } from "@/components/task-subtasks";
+import { Tip } from "@/components/tip";
+
+const HINT = "Today’s tasks whose time has arrived, plus any monthly or yearly tasks you haven’t finished yet.";
 
 export function TaskReminders() {
   const { user } = useAuth();
@@ -41,20 +44,37 @@ export function TaskReminders() {
   return (
     <Card
       styles={{ body: { padding: 20 } }}
-      style={{ borderColor: token.colorBorderSecondary, borderRadius: token.borderRadiusLG, boxShadow: token.boxShadowTertiary }}
+      style={{
+        background: `color-mix(in srgb, ${token.colorWarning} 10%, ${token.colorBgContainer})`,
+        borderColor: `color-mix(in srgb, ${token.colorWarning} 45%, ${token.colorBorderSecondary})`,
+        borderRadius: token.borderRadiusLG,
+        boxShadow: token.boxShadowTertiary,
+      }}
     >
-      <Typography.Text style={{ display: "block", fontSize: 17 }}>
-        <ClockCircleOutlined style={{ marginRight: 8 }} />
-        Tasks waiting for you
-      </Typography.Text>
-      <Typography.Paragraph type="secondary" style={{ fontSize: 12, margin: "4px 0 16px" }}>
-        Unfinished tasks carried over from earlier days, and today’s tasks whose scheduled time has arrived.
-      </Typography.Paragraph>
-      <Flex vertical gap={20}>
+      <Flex align="center" justify="space-between" gap={8} style={{ marginBottom: 16 }}>
+        <Typography.Text style={{ fontSize: 17 }}>
+          <ClockCircleOutlined style={{ marginRight: 8, color: token.colorWarningText }} />
+          Tasks
+        </Typography.Text>
+        <Tip title={HINT} placement="left">
+          <InfoCircleOutlined aria-label={HINT} style={{ color: token.colorTextSecondary, cursor: "help" }} />
+        </Tip>
+      </Flex>
+      <Flex vertical gap={10}>
         {overdue.map((task) => {
           const subtasks = taskSubtaskChecks(task, date, taskChecks);
           return (
-            <Flex key={`${date}:${task.id}`} align="flex-start" gap={12}>
+            <Flex
+              key={`${date}:${task.id}`}
+              align="flex-start"
+              gap={12}
+              style={{
+                padding: "12px 14px",
+                borderRadius: token.borderRadius,
+                background: `color-mix(in srgb, ${token.colorBgContainer} 75%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${token.colorWarning} 25%, ${token.colorBorderSecondary})`,
+              }}
+            >
               <Checkbox
                 aria-label={`Mark ${plainText(task.title)} as done`}
                 checked={false}
