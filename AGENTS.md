@@ -16,7 +16,7 @@ report/PDF code, the MCP route, or shared UI, verify all four still hold. Say pl
 you actually exercised and which you could only reason through (most need a browser).
 
 Always run `pnpm run lint`, `pnpm exec tsc --noEmit`, and `rm -rf .next && pnpm run build` —
-and confirm the build still lists `/` and `/summary` as static (`○`), nothing regressed to
+and confirm the build still lists `/` and `/records/summary` as static (`○`), nothing regressed to
 `ƒ`. This project is pnpm-only (see `packageManager` in `package.json`) — never run `npm
 install`/`npm run …` here, it regenerates a stray `package-lock.json` and can desync
 `node_modules` from `pnpm-lock.yaml`.

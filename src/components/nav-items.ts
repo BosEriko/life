@@ -2,7 +2,7 @@ import {
   DatabaseOutlined,
   FileTextOutlined,
   HeartOutlined,
-  UnorderedListOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
 import type { CSSProperties, ComponentType } from "react";
 
@@ -15,6 +15,6 @@ export type NavItem = {
 export const NAV: NavItem[] = [
   { key: "/", label: "Health", Icon: HeartOutlined },
   { key: "/journal/notes", label: "Journal", Icon: FileTextOutlined },
-  { key: "/summary", label: "Summary", Icon: UnorderedListOutlined },
-  { key: "/database", label: "Database", Icon: DatabaseOutlined },
+  { key: "/finance", label: "Finance", Icon: WalletOutlined },
+  { key: "/records/database", label: "Records", Icon: DatabaseOutlined },
 ];

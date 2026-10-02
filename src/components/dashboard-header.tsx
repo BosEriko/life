@@ -7,6 +7,8 @@ import type { MenuProps } from "antd";
 import {
   DownOutlined,
   CheckSquareOutlined,
+  DatabaseOutlined,
+  UnorderedListOutlined,
   ProjectOutlined,
   FileTextOutlined,
   IdcardOutlined,
@@ -19,12 +21,24 @@ import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { NAV } from "@/components/nav-items";
 
-const JOURNAL_TABS = [
-  { href: "/journal/notes", label: "Notes", Icon: FileTextOutlined },
-  { href: "/journal/tasks", label: "Tasks", Icon: ScheduleOutlined },
-  { href: "/journal/todo", label: "To-do", Icon: CheckSquareOutlined },
-  { href: "/journal/board", label: "Board", Icon: ProjectOutlined },
-];
+const SUBMENUS = {
+  journal: {
+    label: "Journal",
+    tabs: [
+      { href: "/journal/notes", label: "Notes", Icon: FileTextOutlined },
+      { href: "/journal/tasks", label: "Tasks", Icon: ScheduleOutlined },
+      { href: "/journal/todo", label: "To-do", Icon: CheckSquareOutlined },
+      { href: "/journal/board", label: "Board", Icon: ProjectOutlined },
+    ],
+  },
+  records: {
+    label: "Records",
+    tabs: [
+      { href: "/records/database", label: "Database", Icon: DatabaseOutlined },
+      { href: "/records/summary", label: "Summary", Icon: UnorderedListOutlined },
+    ],
+  },
+};
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
@@ -33,6 +47,7 @@ export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const compact = screens.md === false;
+  const submenu = SUBMENUS[pathname.split("/")[1] as keyof typeof SUBMENUS];
 
   const emailItems: MenuProps["items"] = user?.email
     ? [
@@ -215,16 +230,16 @@ export function DashboardHeader() {
           </Flex>
         )}
       </Flex>
-      {user && pathname.startsWith("/journal/") ? (
+      {user && submenu ? (
         <nav
-          aria-label="Journal"
+          aria-label={submenu.label}
           style={{
             background: `color-mix(in srgb, ${token.colorBgContainer} 55%, ${token.colorBgLayout})`,
             borderTop: `1px solid ${token.colorSplit}`,
           }}
         >
           <Flex gap={screens.md === true ? 24 : 12} style={{ maxWidth: 1200, margin: "0 auto", paddingInline: screens.md === true ? 20 : 12 }}>
-            {JOURNAL_TABS.map(({ href, label, Icon: TabIcon }) => {
+            {submenu.tabs.map(({ href, label, Icon: TabIcon }) => {
               const active = pathname === href;
               return (
                 <Link
