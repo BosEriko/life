@@ -60,12 +60,12 @@ test("reminders respect local time, day boundaries and recurrence", () => {
   assert.equal(overdueTasks([task], {}, new Date(2026, 9, 1, 12, 59)).length, 0);
   assert.equal(overdueTasks([task], {}, new Date(2026, 9, 1, 13, 0)).length, 1);
   assert.equal(overdueTasks([task], {}, new Date(2026, 9, 2, 0, 0)).length, 0);
-  assert.equal(overdueTasks([{ ...task, repeat: "weekly", weekdays: [1] }], {}, new Date(2026, 9, 1, 15, 0)).length, 1);
+  assert.equal(overdueTasks([{ ...task, repeat: "weekly", weekdays: [1] }], {}, new Date(2026, 9, 1, 15, 0)).length, 0);
   assert.equal(overdueTasks([{ ...task, startDate: "2026-10-02" }], {}, new Date(2026, 9, 1, 15, 0)).length, 0);
 });
 
-test("weekly, monthly and yearly routines carry until completed, then return next cycle", () => {
-  for (const [repeat, next] of [["weekly", "2026-01-12"], ["monthly", "2026-02-05"], ["yearly", "2027-01-05"]]) {
+test("monthly and yearly routines carry until completed, then return next cycle", () => {
+  for (const [repeat, next] of [["monthly", "2026-02-05"], ["yearly", "2027-01-05"]]) {
     const task = { ...base, repeat, weekdays: [1], monthDay: 5 };
     assert.equal(pendingTaskDate(task, "2026-01-06"), "2026-01-05", repeat);
     const completed = { ...task, completedThrough: "2026-01-06" };
@@ -81,6 +81,13 @@ test("daily tasks never carry, including interval schedules", () => {
   assert.equal(pendingTaskDate({ ...task, completedThrough: "2026-01-05" }, "2026-01-08"), "2026-01-08");
 });
 
+test("weekly tasks never carry, even with earlier carry-over completion markers", () => {
+  const task = { ...base, repeat: "weekly", weekdays: [1], completedThrough: "2026-01-05" };
+  assert.equal(pendingTaskDate(task, "2026-01-06"), null);
+  assert.equal(pendingTaskDate(task, "2026-01-12"), "2026-01-12");
+  assert.equal(overdueTasks([task], {}, new Date(2026, 0, 6, 15)).length, 0);
+});
+
 test("carry-over respects future starts, completion history and long intervals", () => {
   const task = { ...base, repeat: "yearly", interval: 3, monthDay: 5 };
   assert.equal(pendingTaskDate(task, "2026-01-04"), null);
@@ -91,11 +98,12 @@ test("carry-over respects future starts, completion history and long intervals",
   assert.equal(pendingTaskDate({ ...task, completedThrough: "2027-01-01", previousCompletedThrough: "2026-01-06" }, "2026-01-07"), null);
 });
 
-test("reminders include carried routines before today's scheduled time but not missed dailies", () => {
+test("reminders include carried routines before today's scheduled time but not missed dailies or weeklies", () => {
   const now = new Date(2026, 0, 6, 0, 1);
-  const weekly = { ...base, repeat: "weekly", weekdays: [1], time: "23:00" };
-  assert.equal(overdueTasks([weekly], {}, now).length, 1);
-  assert.equal(overdueTasks([{ ...weekly, completedThrough: "2026-01-05" }], {}, now).length, 0);
-  assert.equal(overdueTasks([weekly], {}, now, [{ date: "2026-01-05", completed: { test: true } }]).length, 0);
+  const monthly = { ...base, repeat: "monthly", monthDay: 5, time: "23:00" };
+  assert.equal(overdueTasks([monthly], {}, now).length, 1);
+  assert.equal(overdueTasks([{ ...monthly, completedThrough: "2026-01-05" }], {}, now).length, 0);
+  assert.equal(overdueTasks([monthly], {}, now, [{ date: "2026-01-05", completed: { test: true } }]).length, 0);
   assert.equal(overdueTasks([{ ...base, interval: 3 }], {}, now).length, 0);
+  assert.equal(overdueTasks([{ ...base, repeat: "weekly", weekdays: [1] }], {}, now).length, 0);
 });

@@ -20,7 +20,7 @@ export function watchTaskSettings(uid: string, next: (tasks: Task[]) => void, fa
 export function setTaskChecked(uid: string, date: string, id: string, checked: boolean, task?: Task) {
   const batch = writeBatch(getFirebaseDb());
   batch.set(doc(getFirebaseDb(), "users", uid, "taskChecks", date), { date, completed: { [id]: checked } }, { merge: true });
-  if (task && task.repeat !== "daily") {
+  if (task && (task.repeat === "monthly" || task.repeat === "yearly")) {
     if (checked && (!task.completedThrough || date > task.completedThrough)) {
       batch.set(settingsRef(uid), { tasks: { [id]: { completedThrough: date, previousCompletedThrough: task.completedThrough ?? "" } } }, { merge: true });
     } else if (!checked && task.completedThrough === date) {

@@ -40,7 +40,7 @@ export function taskOccursOn(task: Task, date: string): boolean {
 }
 
 export function pendingTaskDate(task: Task, date: string, checks: { date: string; completed: Record<string, boolean> }[] = []): string | null {
-  if (task.repeat === "daily") return taskOccursOn(task, date) ? date : null;
+  if (task.repeat === "daily" || task.repeat === "weekly") return taskOccursOn(task, date) ? date : null;
   const completion = [task.completedThrough, task.previousCompletedThrough, ...checks.filter((row) => row.completed[task.id]).map((row) => row.date)]
     .filter((value): value is string => !!value && value <= date).sort().at(-1);
   let day = dayjs(date).startOf("day");

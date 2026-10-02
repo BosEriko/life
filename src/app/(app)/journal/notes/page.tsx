@@ -2,7 +2,8 @@
 
 import { AppModal } from "@/components/app-modal";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   App,
   Button,
@@ -42,15 +43,22 @@ import {
   type Note,
 } from "@/models/notes";
 import { PageHeading } from "@/components/page-heading";
+import { journalViewUrl, noteDateFromQuery } from "@/lib/journal-views";
 
 export default function NotesPage() {
+  return <Suspense fallback={<p>Loading notes…</p>}><NotesContent /></Suspense>;
+}
+
+function NotesContent() {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [date, setDate] = useState<Dayjs>(() => dayjs(todayKey()));
+  const params = useSearchParams();
+  const selectedDateKey = noteDateFromQuery(params.get("view"), todayKey());
+  const date = dayjs(selectedDateKey);
   const [noteToShare, setNoteToShare] = useState<Note | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
   const [copying, setCopying] = useState(false);
@@ -111,16 +119,18 @@ export default function NotesPage() {
     }
     return Array.from(counts, ([key, count]) => ({ key, count }));
   }, [sortedNotes]);
-  const selectedDateKey = date.format("YYYY-MM-DD");
-  const shown = useMemo(
-    () => sortedNotes.filter((note) => note.date === selectedDateKey),
-    [sortedNotes, selectedDateKey],
-  );
+  const shown = sortedNotes.filter((note) => note.date === selectedDateKey);
 
   const isToday = date.isSame(dayjs(todayKey()), "day");
 
+  function setDate(next: Dayjs) {
+    const key = next.format("YYYY-MM-DD");
+    if (params.get("view") === key) return;
+    window.history.pushState(null, "", journalViewUrl(window.location.pathname, params.toString(), key, window.location.hash));
+  }
+
   function changeDay(amount: number) {
-    setDate((current) => current.add(amount, "day"));
+    setDate(date.add(amount, "day"));
   }
 
   return (
@@ -142,7 +152,7 @@ export default function NotesPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: screens.md
+          gridTemplateColumns: screens.md === true
             ? "minmax(220px, 280px) minmax(0, 1fr)"
             : "minmax(0, 1fr)",
           gap: 32,

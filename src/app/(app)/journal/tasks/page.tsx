@@ -1,24 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button, Card, Flex, Grid, Typography, theme } from "antd";
 import { CalendarOutlined, ClockCircleOutlined, PlusOutlined, ScheduleOutlined, SyncOutlined } from "@ant-design/icons";
 import { PageHeading } from "@/components/page-heading";
 import { AddTaskModal, TasksList, type TaskView } from "@/components/tasks-card";
+import { journalViewUrl, taskViewFromQuery } from "@/lib/journal-views";
 
 const VIEWS = [
   { value: "today" as const, label: "Today", Icon: CalendarOutlined },
   { value: "daily" as const, label: "Daily", Icon: ClockCircleOutlined },
-  { value: "monthly" as const, label: "Monthly", Icon: ScheduleOutlined },
   { value: "weekly" as const, label: "Weekly", Icon: SyncOutlined },
+  { value: "monthly" as const, label: "Monthly", Icon: ScheduleOutlined },
   { value: "yearly" as const, label: "Yearly", Icon: CalendarOutlined },
 ];
 
 export default function TasksPage() {
+  return <Suspense fallback={<p>Loading tasks…</p>}><TasksContent /></Suspense>;
+}
+
+function TasksContent() {
   const { token } = theme.useToken();
   const [addOpen, setAddOpen] = useState(false);
-  const [view, setView] = useState<TaskView>("today");
+  const params = useSearchParams();
+  const view = taskViewFromQuery(params.get("view"));
   const screens = Grid.useBreakpoint();
+
+  function setView(next: TaskView) {
+    if (params.get("view") === next) return;
+    window.history.pushState(null, "", journalViewUrl(window.location.pathname, params.toString(), next, window.location.hash));
+  }
 
   return (
     <div style={{ paddingRight: screens.md === true ? 56 : 0 }}>

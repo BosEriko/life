@@ -54,14 +54,14 @@ test("offline task creation, edits, per-day completion, undo and deletion self-e
     pending(exports.setTaskChecked(uid, "2026-10-01", "routine", false));
     await waitFor(() => recent.at(-1)?.[0]?.completed.routine === false);
     assert.equal(overdueTasks([routine], recent.at(-1)[0].completed, new Date(2026, 9, 1, 15)).length, 1);
-    const weekly = { ...routine, repeat: "weekly", weekdays: [4], interval: 1 };
-    pending(exports.saveTask(uid, weekly));
-    await waitFor(() => updates.at(-1)?.[0]?.repeat === "weekly");
+    const monthly = { ...routine, repeat: "monthly", monthlyMode: "date", monthDay: 1, interval: 1 };
+    pending(exports.saveTask(uid, monthly));
+    await waitFor(() => updates.at(-1)?.[0]?.repeat === "monthly");
     assert.equal(pendingTaskDate(updates.at(-1)[0], "2026-10-02"), "2026-10-01");
     pending(exports.setTaskChecked(uid, "2026-10-02", "routine", true, updates.at(-1)[0]));
     await waitFor(() => updates.at(-1)?.[0]?.completedThrough === "2026-10-02" && recent.at(-1)?.find((row) => row.date === "2026-10-02")?.completed.routine);
     assert.equal(pendingTaskDate(updates.at(-1)[0], "2026-10-03"), null);
-    assert.equal(pendingTaskDate(updates.at(-1)[0], "2026-10-08"), "2026-10-08");
+    assert.equal(pendingTaskDate(updates.at(-1)[0], "2026-11-01"), "2026-11-01");
     pending(exports.setTaskChecked(uid, "2026-10-02", "routine", false, updates.at(-1)[0]));
     await waitFor(() => updates.at(-1)?.[0]?.completedThrough === "" && recent.at(-1)?.find((row) => row.date === "2026-10-02")?.completed.routine === false);
     assert.equal(pendingTaskDate(updates.at(-1)[0], "2026-10-03"), "2026-10-01");
