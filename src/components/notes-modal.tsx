@@ -2,21 +2,24 @@
 
 import { AppModal } from "@/components/app-modal";
 
-import { useRef, useState, type ComponentRef } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   App,
   Button,
   DatePicker,
   Flex,
   Grid,
-  Input,
   Typography,
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { todayKey } from "@/models/dailies";
 import { addNote } from "@/models/notes";
+
+const noSubscribe = () => () => {};
+const detectMac = () => /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 export function NotesModal({
   open,
@@ -32,14 +35,18 @@ export function NotesModal({
   const screens = Grid.useBreakpoint();
   const enterToSave = screens.md === true;
   const [date, setDate] = useState<Dayjs>(() => initialDate ?? dayjs());
+  const isMac = useSyncExternalStore(noSubscribe, detectMac, () => false);
   const [text, setText] = useState("");
-  const textRef = useRef<ComponentRef<typeof Input.TextArea>>(null);
+  const [html, setHtml] = useState("");
+  const [editorKey, setEditorKey] = useState(0);
 
   const canAdd = text.trim().length > 0;
 
   function handleClose() {
     setDate(dayjs());
     setText("");
+    setHtml("");
+    setEditorKey((key) => key + 1);
     onClose();
   }
 
@@ -47,6 +54,7 @@ export function NotesModal({
     if (!user || !canAdd) return;
     addNote(user.uid, {
       text: text.trim(),
+      html,
       date: date.format("YYYY-MM-DD"),
       time: dayjs().format("HH:mm"),
     }).catch(() => message.error("Could not save note."));
@@ -68,9 +76,6 @@ export function NotesModal({
       }
       footer={null}
       onCancel={handleClose}
-      afterOpenChange={(opened) => {
-        if (opened) textRef.current?.focus();
-      }}
     >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         Jot down anything. Everything lands in your Journal.
@@ -86,26 +91,23 @@ export function NotesModal({
           maxDate={dayjs(todayKey())}
           style={{ width: "100%" }}
         />
-        <Input.TextArea
-          ref={textRef}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder="What's on your mind?"
-          autoSize={{ minRows: 3 }}
-          onKeyDown={
-            enterToSave
-              ? (event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    handleAdd();
-                  }
-                }
-              : undefined
-          }
-        />
+        {open && (
+          <RichTextEditor
+            key={editorKey}
+            initialHtml=""
+            ariaLabel="Note"
+            placeholder="What's on your mind?"
+            autoFocus
+            onChange={(nextHtml, nextText) => {
+              setHtml(nextHtml);
+              setText(nextText);
+            }}
+            onSubmit={enterToSave ? handleAdd : undefined}
+          />
+        )}
         {enterToSave ? (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Enter to save · Shift + Enter for a new line
+            {isMac ? "⌘ + Enter to save" : "Ctrl + Enter to save"}
           </Typography.Text>
         ) : null}
         <Button type="primary" disabled={!canAdd} onClick={handleAdd}>

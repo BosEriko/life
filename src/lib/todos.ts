@@ -11,6 +11,7 @@ export type Todo = {
   date: string;
   title: string;
   description: string;
+  descriptionHtml?: string;
   listId: string | null;
   priority: TodoPriority;
   status: TodoStatus;

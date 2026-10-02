@@ -44,6 +44,7 @@ import {
 } from "@/models/notes";
 import { PageHeading } from "@/components/page-heading";
 import { journalViewUrl, noteDateFromQuery } from "@/lib/journal-views";
+import { RichTextView } from "@/components/rich-text-view";
 
 export default function NotesPage() {
   return <Suspense fallback={<p>Loading notes…</p>}><NotesContent /></Suspense>;
@@ -277,9 +278,7 @@ function NotesContent() {
                     gap={12}
                   >
                     <Flex vertical gap={4}>
-                      <Typography.Text style={{ whiteSpace: "pre-wrap" }}>
-                        {note.text}
-                      </Typography.Text>
+                      <RichTextView html={note.html} text={note.text} />
                       <Typography.Text
                         type="secondary"
                         style={{ fontSize: 12 }}

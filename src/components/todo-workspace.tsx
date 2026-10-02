@@ -19,6 +19,7 @@ import { mergeById } from "@/lib/merge-records";
 import { filterTodos, isTodoOverdue, todoListId, todoViewFromQuery, type Todo, type TodoList, type TodoPriority, type TodoSort, type TodoView } from "@/lib/todos";
 import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/todos";
 import { Tip } from "@/components/tip";
+import { RichTextView } from "@/components/rich-text-view";
 
 const VIEWS = [
   { value: "all" as const, label: "All to-dos", Icon: UnorderedListOutlined },
@@ -58,7 +59,7 @@ function CompletedDetails({ initial, onClose }: { initial: Todo; onClose: () => 
   return <AppModal open centered title="Completed to-do" onCancel={onClose} footer={null}>
     {error ? <Alert type="error" title="Could not load this to-do." /> : !ready ? <Spin /> : !current ? <Typography.Text type="secondary">This to-do has been restored or removed.</Typography.Text> : <Flex vertical gap={16}>
       <Typography.Title level={4} style={{ margin: 0, overflowWrap: "anywhere" }}>{current.title}</Typography.Title>
-      {current.description && <Typography.Paragraph style={{ margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{current.description}</Typography.Paragraph>}
+      {current.description && <RichTextView html={current.descriptionHtml} text={current.description} />}
       <Typography.Text type="secondary">Completed {dayjs(current.completedAt ?? current.date).format("MMM D, YYYY · HH:mm")}</Typography.Text>
       {Object.values(current.subtasks).map((subtask) => <Checkbox key={subtask.id} checked={subtask.done} disabled>{subtask.title}</Checkbox>)}
       <Flex gap={8} wrap>
@@ -75,6 +76,16 @@ function CompletedDetails({ initial, onClose }: { initial: Todo; onClose: () => 
       </Flex>
     </Flex>}
   </AppModal>;
+}
+
+function DescriptionPreview({ todo }: { todo: Todo }) {
+  const { token } = theme.useToken();
+  const [expanded, setExpanded] = useState(false);
+  const long = todo.description.length > 160 || todo.description.split("\n").length > 3;
+  return <div style={{ margin: "4px 0", color: token.colorTextSecondary }}>
+    <RichTextView html={todo.descriptionHtml} text={todo.description} style={long && !expanded ? { maxHeight: "4.6em", overflow: "hidden" } : undefined} />
+    {long && <Button type="link" size="small" style={{ padding: 0, height: "auto" }} onClick={() => setExpanded((value) => !value)}>{expanded ? "Less" : "More"}</Button>}
+  </div>;
 }
 
 export function TodoWorkspace() {
@@ -175,7 +186,7 @@ export function TodoWorkspace() {
                 <Checkbox aria-label={`Complete ${todo.title}`} checked={completed} disabled={completed || todoError} onChange={() => write(completeTodo(user.uid, todo), "Could not complete to-do.")} />
                 <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
                   <Typography.Text strong delete={completed}>{todo.title}</Typography.Text>
-                  {todo.description && <Typography.Paragraph type="secondary" ellipsis={{ rows: 2, expandable: true, symbol: "More" }} style={{ margin: "4px 0" }}>{todo.description}</Typography.Paragraph>}
+                  {todo.description && <DescriptionPreview todo={todo} />}
                   <Flex gap={8} wrap align="center" style={{ marginTop: 8 }}>
                     {todo.priority !== "none" && <Tag color={todo.priority === "high" ? "red" : todo.priority === "medium" ? "gold" : "blue"}><FlagOutlined /> {todo.priority}</Tag>}
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}><FolderOutlined /> {listName}</Typography.Text>

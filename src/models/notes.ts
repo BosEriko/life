@@ -18,6 +18,7 @@ import { getFirebaseDb } from "@/lib/firebase";
 export type Note = {
   id: string;
   text: string;
+  html: string | null;
   date: string;
   time: string;
   createdAt: Timestamp | null;
@@ -25,6 +26,7 @@ export type Note = {
 
 export type NoteInput = {
   text: string;
+  html?: string;
   date: string;
   time: string;
 };
@@ -61,6 +63,7 @@ export function watchNotes(
           return {
             id: entry.id,
             text: (data.text as string | undefined) ?? "",
+            html: (data.html as string | undefined) ?? null,
             date: (data.date as string | undefined) ?? "",
             time: (data.time as string | undefined) ?? "",
             createdAt: (data.createdAt as Timestamp | undefined) ?? null,

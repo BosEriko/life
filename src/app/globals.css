@@ -340,3 +340,62 @@ body.todo-board-grabbing * {
 .no-last-row-border .ant-table-tbody > tr:last-child > td {
   border-bottom: none !important;
 }
+
+.rich-content p {
+  margin: 0 0 0.4em;
+}
+
+.rich-content > :last-child,
+.rich-content li > p {
+  margin-bottom: 0;
+}
+
+.rich-content ul,
+.rich-content ol {
+  margin: 0 0 0.4em;
+  padding-left: 1.4em;
+}
+
+.rich-content a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.rich-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+
+.rich-content ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rich-content ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+}
+
+.rich-content ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.rich-content ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.rich-editor {
+  outline: none;
+  min-height: inherit;
+}
+
+.rich-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  opacity: 0.4;
+  pointer-events: none;
+}

@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { ACTIVE_TODO_DATE, TODO_PRIORITIES, todoValidation, type Todo, type TodoList } from "@/lib/todos";
 import { saveTodo } from "@/models/todos";
+import { RichTextEditor, plainTextToHtml } from "@/components/rich-text-editor";
 
 export function TodoEditor({ initial, lists, listId, onClose }: {
   initial: Todo | null;
@@ -56,7 +57,7 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
           <Input aria-label="To-do title" autoFocus maxLength={120} showCount placeholder="What needs to get done?" value={draft.title} onChange={(event) => patch({ title: event.target.value })} />
         </Form.Item>
         <Form.Item label="Description">
-          <Input.TextArea aria-label="To-do description" maxLength={2000} autoSize={{ minRows: 2 }} placeholder="Details, context, or a helpful link" value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
+          <RichTextEditor ariaLabel="To-do description" initialHtml={initial ? initial.descriptionHtml || plainTextToHtml(initial.description) : ""} placeholder="Details, context, or a helpful link" onChange={(html, text) => patch({ descriptionHtml: html, description: text })} />
         </Form.Item>
         <Flex gap={12} wrap>
           <Form.Item label="List" style={{ flex: 1, minWidth: 140 }}>

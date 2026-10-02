@@ -88,7 +88,7 @@ export function TodoBoard() {
   const all = mergeById(todos, history.todos);
   const selectedList = listId === "all" || listId === "inbox" || todoLists.some((list) => list.id === listId) ? listId : "inbox";
   const filtered = all.filter((todo) => selectedList === "all" || todoListId(todo, todoLists) === selectedList);
-  const completedHref = `/journal/todo?view=completed${selectedList === "all" ? "" : `&list=${encodeURIComponent(selectedList)}`}`;
+  const viewHref = (view: string) => `/journal/todo?view=${view}${selectedList === "all" ? "" : `&list=${encodeURIComponent(selectedList)}`}`;
   const draggedTodo = all.find((todo) => todo.id === drag?.id);
   const isDragging = drag !== null;
 
@@ -163,7 +163,7 @@ export function TodoBoard() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(260px, 1fr))", gap: 16, minWidth: 1088, alignItems: "stretch" }}>
         {COLUMNS.map(({ value, label, Icon }) => {
           const items = filtered.filter((todo) => todoColumn(todo, now) === value).sort((a, b) => value === "done" ? (b.completedAt ?? "").localeCompare(a.completedAt ?? "") : (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31") || a.createdAt.localeCompare(b.createdAt));
-          const visible = value === "done" ? items.slice(0, 10) : items;
+          const visible = value === "done" || value === "upcoming" ? items.slice(0, 10) : items;
           return <section key={value} data-board-column={value} aria-label={label} style={{ minHeight: 300, padding: 12, borderRadius: token.borderRadiusLG, background: drag?.target === value ? token.colorPrimaryBg : token.colorFillQuaternary, border: `1px solid ${drag?.target === value ? token.colorPrimary : token.colorBorderSecondary}` }}>
             <Flex justify="space-between" align="center" style={{ padding: "4px 4px 16px" }}><Typography.Text strong><Icon style={{ marginRight: 8 }} />{label}</Typography.Text><Typography.Text type="secondary">{items.length}</Typography.Text></Flex>
             <Flex vertical gap={12}>
@@ -181,7 +181,7 @@ export function TodoBoard() {
                     if (COLUMNS[index]) move(todo, COLUMNS[index].value);
                   } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditor(todo); }
                 }}><CardContent todo={todo} upcoming={value === "upcoming"} /></Card>)}
-              {value === "done" && items.length > visible.length && <Link href={completedHref} style={{ textAlign: "center", padding: "12px 4px", color: token.colorPrimary }}>And {items.length - visible.length} more…</Link>}
+              {items.length > visible.length && <Link href={viewHref(value === "done" ? "completed" : "upcoming")} style={{ display: "block", textAlign: "center", padding: "12px 16px", borderRadius: token.borderRadiusLG, background: token.colorPrimaryBg, color: token.colorPrimary, fontWeight: 600 }}>And {items.length - visible.length} more…</Link>}
             </Flex>
           </section>;
         })}
