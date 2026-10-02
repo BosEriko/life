@@ -10,9 +10,10 @@ import { FinanceRecordModal } from "@/components/finance-record-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
-import { ACCOUNT_TYPES, accountTextColor, financeStatistics, money, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
+import { ACCOUNT_TYPES, accountTextColor, money, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import { recalculateFinanceAccounts } from "@/models/finance";
+import { FinanceOverview } from "@/components/finance-overview";
 
 export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "records" }) {
   const { token } = theme.useToken();
@@ -46,9 +47,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     && (!query || [record.description, record.category, ...record.labels, accountNames.get(record.accountId), accountNames.get(record.destinationId ?? "")].join(" ").toLowerCase().includes(query)),
   ).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id));
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / 20)));
-  const month = dayjs().format("YYYY-MM");
   const twoColumns = { display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" } as const;
-  const statistics = financeStatistics(records.filter((record) => record.date.startsWith(month)), accounts);
 
   function recalculate() {
     if (!user || recalculating) return;
@@ -123,22 +122,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
         </>}
         </>}
 
-        {view === "dashboard" && <>
-        <Flex justify="space-between" align="baseline" wrap gap={8} style={{ marginTop: 32, marginBottom: 16 }}>
-          <Typography.Title level={2} style={{ fontSize: 18, margin: 0 }}>This month</Typography.Title>
-          <Typography.Text type="secondary">{dayjs().format("MMMM YYYY")} · Transfers excluded</Typography.Text>
-        </Flex>
-        {Object.keys(statistics).length === 0 ? <Typography.Paragraph type="secondary">No income or expenses for included accounts this month.</Typography.Paragraph> :
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 16 }}>
-            {Object.entries(statistics).map(([currency, totals]) => <Card key={currency} size="small">
-              <Typography.Text strong>{currency}</Typography.Text>
-              <Flex gap={24} wrap style={{ marginTop: 12 }}>
-                <div><Typography.Text type="secondary"><ArrowDownOutlined /> Income</Typography.Text><div style={{ fontWeight: 700, fontSize: 20, color: token.colorSuccess }}>{money(totals.income, currency)}</div></div>
-                <div><Typography.Text type="secondary"><ArrowUpOutlined /> Expenses</Typography.Text><div style={{ fontWeight: 700, fontSize: 20, color: token.colorError }}>{money(totals.expense, currency)}</div></div>
-              </Flex>
-            </Card>)}
-          </div>}
-        </>}
+        {view === "dashboard" && accounts.length > 0 && <FinanceOverview />}
 
         {view === "records" && <div style={twoColumns}>
           <Card title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
