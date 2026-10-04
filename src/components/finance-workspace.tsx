@@ -204,13 +204,17 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           <div style={{ minWidth: 0 }}>
         {!history.ready && !history.error && <Typography.Paragraph type="secondary">Loading older records…</Typography.Paragraph>}
         {history.error && <Alert type="warning" title="Older records could not be loaded." action={<Button size="small" onClick={history.refresh}>Retry</Button>} style={{ marginBottom: 16 }} />}
-        <Card styles={{ body: { padding: filtered.length ? 20 : 24 } }}>
-          {filtered.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={allRecords.length ? "No records match these filters." : "Your records will appear here."} /> :
-            <Flex vertical gap={10}>{filtered.slice((currentPage - 1) * 20, currentPage * 20).map((record) => <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
+        {filtered.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={allRecords.length ? "No records match these filters." : "Your records will appear here."} /></Card> :
+          <Flex vertical gap={16}>{recordDays(filtered.slice((currentPage - 1) * 20, currentPage * 20)).map(([date, dayRecords]) => <Card key={date} styles={{ body: { padding: 20 } }} style={{ boxShadow: token.boxShadowTertiary }}>
+            <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 14 }}>
+              <Typography.Text style={{ fontSize: 16 }}>{dayjs(date).format("dddd, MMMM D, YYYY")}</Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>{dayRecords.length} {dayRecords.length === 1 ? "record" : "records"}</Typography.Text>
+            </Flex>
+            <Flex vertical gap={10}>{dayRecords.map((record) => <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
               <Flex justify="space-between" align="start" gap={12} wrap>
                 <div style={{ minWidth: 0, flex: "1 1 180px", overflowWrap: "anywhere" }}>
                   <Typography.Text strong><CategoryIcon category={record.type === "transfer" ? "Transfer" : record.category} style={{ marginRight: 6 }} />{record.category}</Typography.Text>
-                  <div><Typography.Text type="secondary">{accountNames.get(record.accountId) ?? "Unknown account"}{record.destinationId ? ` → ${accountNames.get(record.destinationId) ?? "Unknown account"}` : ""} · {dayjs(record.occurredAt).format("MMM D, YYYY · h:mm A")}</Typography.Text></div>
+                  <div><Typography.Text type="secondary">{accountNames.get(record.accountId) ?? "Unknown account"}{record.destinationId ? ` → ${accountNames.get(record.destinationId) ?? "Unknown account"}` : ""} · {dayjs(record.occurredAt).format("h:mm A")}</Typography.Text></div>
                   {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
                   {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
                 </div>
@@ -222,8 +226,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
                   </Flex>
                 </Flex>
               </Flex>
-            </div>)}</Flex>}
-        </Card>
+            </div>)}</Flex>
+          </Card>)}</Flex>}
         {filtered.length > 0 && <Flex justify="center" style={{ marginTop: 20 }}><Pagination current={currentPage} onChange={setPage} pageSize={20} total={filtered.length} size="small" simple={screens.md !== true} showSizeChanger={false} /></Flex>}
           </div>
         </div>}
@@ -234,4 +238,10 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
       {editingRecord && <FinanceRecordModal key={editingRecord.id} initial={editingRecord} onClose={() => setEditingRecord(null)} onSaved={history.refresh} />}
     </div>
   );
+}
+
+function recordDays(records: FinanceRecord[]) {
+  const days = new Map<string, FinanceRecord[]>();
+  for (const record of records) days.set(record.date, [...(days.get(record.date) ?? []), record]);
+  return [...days.entries()];
 }
