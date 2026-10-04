@@ -1,11 +1,14 @@
 "use client";
 
-import { Flex, Typography, theme } from "antd";
-import { CheckCircleOutlined, ExclamationCircleOutlined, WarningOutlined } from "@ant-design/icons";
+import { Card, Flex, Typography, theme } from "antd";
+import { CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, SafetyOutlined, WarningOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useHealthData } from "@/components/health-data-provider";
-import { money } from "@/lib/finance";
+import { accountTextColor, money } from "@/lib/finance";
+import { Tip } from "@/components/tip";
 import { todayKey } from "@/models/users/dailies";
+
+const STATUS_COLORS = { good: "#2f6b45", fair: "#7a5212", low: "#8c442c", neutral: "#3e5a4a" };
 
 export function EmergencyFundBanner() {
   const { token } = theme.useToken();
@@ -31,38 +34,37 @@ export function EmergencyFundBanner() {
   const shown = months === null ? null : months >= 10 ? Math.floor(months) : Math.floor(months * 10) / 10;
 
   const status = months === null ? "neutral" : months >= 6 ? "good" : months >= 3 ? "fair" : "low";
-  const color = status === "good" ? token.colorSuccess : status === "fair" ? token.colorWarning : status === "low" ? token.colorError : token.colorPrimary;
+  const color = STATUS_COLORS[status];
   const Icon = status === "good" ? CheckCircleOutlined : status === "fair" ? ExclamationCircleOutlined : status === "low" ? WarningOutlined : CheckCircleOutlined;
   const label = status === "good" ? "Healthy · 6+ months" : status === "fair" ? "Building · 3–6 months" : status === "low" ? "Low · under 3 months" : null;
 
+  const textColor = accountTextColor(color);
+  const formula = `Total balance of your ${currency} accounts that count toward statistics ÷ your average monthly spending from those accounts over the last ${monthsCovered === 1 ? "month" : `${monthsCovered} months`} (up to 12). 6+ months is healthy, 3–6 is building, under 3 is low.`;
+
   return (
-    <div
+    <Card
       role="status"
-      style={{
-        marginBottom: 24,
-        padding: "18px 20px",
-        borderRadius: token.borderRadiusLG,
-        background: `color-mix(in srgb, ${color} 10%, ${token.colorBgContainer})`,
-        border: `1px solid color-mix(in srgb, ${color} 35%, ${token.colorBorderSecondary})`,
-        boxShadow: token.boxShadowTertiary,
-      }}
+      styles={{ body: { padding: 16 } }}
+      style={{ marginBottom: 24, position: "relative", overflow: "hidden", background: color, borderColor: color, color: textColor, boxShadow: token.boxShadowTertiary }}
     >
-      <Flex align="flex-start" gap={14}>
-        <Icon style={{ fontSize: 22, color, marginTop: 2 }} />
-        <div style={{ minWidth: 0 }}>
-          {shown === null ? (
-            <Typography.Text style={{ fontSize: 16 }}>Log your expenses to see how many months your money would last.</Typography.Text>
-          ) : (
-            <Typography.Text style={{ fontSize: 16 }}>
-              You have <strong>{shown} {shown === 1 ? "month" : "months"}</strong> of emergency fund based on your spending.
-            </Typography.Text>
-          )}
-          <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginTop: 4 }}>
-            {label ? `${label} · ` : ""}{money(balance, currency)} across {inCurrency.length} {inCurrency.length === 1 ? "account" : "accounts"}
-            {average > 0 ? ` ÷ ${money(average, currency)} average monthly spending (last ${monthsCovered === 1 ? "month" : `${monthsCovered} months`})` : ""}
-          </Typography.Text>
-        </div>
-      </Flex>
-    </div>
+      <SafetyOutlined aria-hidden style={{ position: "absolute", right: -10, bottom: -13, fontSize: 96, opacity: 0.14, pointerEvents: "none" }} />
+      <div style={{ position: "relative" }}>
+        <Flex align="center" justify="space-between" gap={8}>
+          <Typography.Text strong style={{ color: "inherit" }}><Icon style={{ marginRight: 8 }} />Emergency fund</Typography.Text>
+          <Tip title={formula} placement="left">
+            <InfoCircleOutlined aria-label={formula} style={{ opacity: 0.85, cursor: "help" }} />
+          </Tip>
+        </Flex>
+        {shown === null ? (
+          <Typography.Text style={{ display: "block", color: "inherit", fontSize: 16, marginTop: 6 }}>Log your expenses to see how many months your money would last.</Typography.Text>
+        ) : (
+          <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.2, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>{shown} {shown === 1 ? "month" : "months"}</div>
+        )}
+        <Typography.Text style={{ display: "block", color: "inherit", opacity: 0.9, fontSize: 12, marginTop: 4, overflowWrap: "anywhere" }}>
+          {label ? `${label} · ` : ""}{money(balance, currency)} across {inCurrency.length} {inCurrency.length === 1 ? "account" : "accounts"}
+          {average > 0 ? ` · ${money(average, currency)} average monthly spending` : ""}
+        </Typography.Text>
+      </div>
+    </Card>
   );
 }
