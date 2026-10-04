@@ -202,6 +202,10 @@ body {
   }
 }
 
+.ant-card {
+  overflow: hidden;
+}
+
 .app-modal .ant-modal-wrap {
   overflow-y: auto;
   overflow-x: hidden;
