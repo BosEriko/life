@@ -80,7 +80,18 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   </Flex>
   );
   const accountCardStyle = (account: FinanceAccount) => ({ minWidth: 0, position: "relative" as const, overflow: "hidden", background: account.color, borderColor: account.color, color: accountTextColor(account.color) });
-  const accountCardBody = (account: FinanceAccount) => (
+  const compactCards = screens.sm === false;
+  const accountCardBody = (account: FinanceAccount) => compactCards ? (
+    <Flex align="center" gap={10}>
+      <AccountTypeIcon type={account.type} style={{ fontSize: 16, opacity: 0.85, flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <Typography.Text strong style={{ color: "inherit" }}>{account.name}</Typography.Text>
+        {account.provider && <Typography.Text style={{ color: "inherit", opacity: 0.85, fontSize: 12 }}> · {account.provider}</Typography.Text>}
+      </div>
+      <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{money(account.balanceMinor, account.currency)}</span>
+      {handle}
+    </Flex>
+  ) : (
     <>
               <AccountTypeIcon type={account.type} style={{ position: "absolute", right: -10, bottom: -13, fontSize: 78, opacity: 0.14, pointerEvents: "none" }} />
               <div style={{ position: "relative" }}>
@@ -160,8 +171,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           <div className="account-cards">
             {filteredAccounts.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." />}
             <SortableList ids={filteredAccounts.map((account) => account.id)} layout="grid" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
-              renderOverlay={(id) => { const account = accountsById.get(id); return account ? <Card styles={{ body: { padding: 16 } }} style={{ ...accountCardStyle(account), height: "100%" }}>{accountCardBody(account)}</Card> : null; }}
-              renderItem={(id, { ref, style, handlers, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <Card key={id} ref={ref} {...handlers} styles={{ body: { padding: 16 } }} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...accountCardStyle(account), ...style, cursor: "pointer" }}>
+              renderOverlay={(id) => { const account = accountsById.get(id); return account ? <Card styles={{ body: { padding: compactCards ? "10px 14px" : 16 } }} style={{ ...accountCardStyle(account), height: "100%" }}>{accountCardBody(account)}</Card> : null; }}
+              renderItem={(id, { ref, style, handlers, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <Card key={id} ref={ref} {...handlers} styles={{ body: { padding: compactCards ? "10px 14px" : 16 } }} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...accountCardStyle(account), ...style, cursor: "pointer" }}>
                 {accountCardBody(account)}
               </Card>; }} />
             {view === "dashboard" && <button type="button" className="add-account-tile" disabled={!financeReady || financeError} onClick={() => setModal("account")} style={{ "--tile-border": token.colorBorder, "--tile-text": token.colorTextSecondary, "--tile-accent": token.colorPrimary, borderRadius: token.borderRadiusLG } as React.CSSProperties}>
