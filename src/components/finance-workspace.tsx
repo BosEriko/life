@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Alert, App, Button, Card, Empty, Flex, Grid, Input, Pagination, Select, Spin, Tag, Typography, theme } from "antd";
-import { HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, WalletOutlined, UnlockOutlined } from "@ant-design/icons";
+import { EditOutlined, HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, WalletOutlined, UnlockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { PageHeading } from "@/components/page-heading";
 import { FinanceAccountModal } from "@/components/finance-account-modal";
@@ -12,7 +12,8 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
 import { ACCOUNT_TYPES, accountTextColor, money, sortAccounts, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
-import { reorderFinanceAccounts, setFinanceAccountsLocked } from "@/models/users/finance";
+import { deleteFinanceAccount, deleteFinanceRecord, reorderFinanceAccounts, setFinanceAccountsLocked } from "@/models/users/finance";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 import { AccountBadge, AccountTypeIcon, CategoryIcon } from "@/components/finance-category-icon";
@@ -52,6 +53,17 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const saveSubsetOrder = (order: string[]) => saveOrder(mergeSubsetOrder(accounts.map((account) => account.id), order));
   const handle = locked ? null : <span aria-hidden style={{ display: "inline-flex", opacity: 0.7 }}><HolderOutlined /></span>;
   const reorderHint = locked ? "" : " Press Space to pick up and reorder.";
+  const removeAccount = (account: FinanceAccount) => {
+    if (!user) return;
+    void deleteFinanceAccount(user.uid, account.id).catch(() => message.error("Could not delete the account."));
+    message.success("Account deleted. Existing records have been kept.");
+  };
+  const removeRecord = (record: FinanceRecord) => {
+    if (!user) return;
+    void deleteFinanceRecord(user.uid, record).catch(() => message.error("Could not delete the record."));
+    message.success(navigator.onLine ? "Record deleted." : "Deleted offline. It will sync when you reconnect.");
+    history.refresh();
+  };
   const accountRow = (account: FinanceAccount) => (
   <Flex align="center" gap={12}>
     {handle}
@@ -60,7 +72,11 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
       <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>{account.type} · {account.currency}{account.provider ? ` · ${account.provider}` : ""}{account.excludeFromStatistics ? " · Excluded from statistics" : ""}</Typography.Text>
     </div>
-    <Typography.Text strong style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{money(account.balanceMinor, account.currency)}</Typography.Text>
+    <Typography.Text strong style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", minWidth: 0, overflowWrap: "anywhere", textAlign: "right" }}>{money(account.balanceMinor, account.currency)}</Typography.Text>
+    <Flex gap={2} onKeyDown={(event) => event.stopPropagation()}>
+      <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${account.name}`} onClick={() => setEditingAccount(account)} />
+      <ConfirmDeleteButton ariaLabel={`Delete ${account.name}`} tooltip="Delete account" hint="Tap again to delete this account. Existing records will be kept." onConfirm={() => removeAccount(account)} />
+    </Flex>
   </Flex>
   );
   const accountCardStyle = (account: FinanceAccount) => ({ minWidth: 0, position: "relative" as const, overflow: "hidden", background: account.color, borderColor: account.color, color: accountTextColor(account.color) });
@@ -130,13 +146,13 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           </Card>
           <div style={{ minWidth: 0 }}>
         {accounts.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Add your first account to start tracking your money."><Button type="primary" icon={<PlusOutlined />} onClick={() => setModal("account")}>Create account</Button></Empty></Card> :
-          <Card styles={{ body: { padding: filteredAccounts.length ? "0 20px" : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
+          <Card styles={{ body: { padding: filteredAccounts.length ? 20 : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
             {filteredAccounts.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." /> :
-              <SortableList ids={filteredAccounts.map((account) => account.id)} layout="list" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
-                renderOverlay={(id) => { const account = accountsById.get(id); return account ? <div style={{ padding: "16px 20px", background: token.colorBgContainer, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG }}>{accountRow(account)}</div> : null; }}
-                renderItem={(id, { ref, style, handlers, index, wasDragged }) => { const account = accountsById.get(id); if (!account) return null; return <div key={id} ref={ref} {...handlers} className="reorder-item" role="button" tabIndex={0} aria-label={`Edit ${account.name}.${reorderHint}`} onClick={() => { if (!wasDragged()) setEditingAccount(account); }} onKeyDown={(event) => { handlers.onKeyDown?.(event); if (event.key === "Enter") { event.preventDefault(); setEditingAccount(account); } }} style={{ ...style, padding: "16px 0", cursor: "pointer", background: token.colorBgContainer, borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
+              <Flex vertical gap={10}><SortableList ids={filteredAccounts.map((account) => account.id)} layout="list" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
+                renderOverlay={(id) => { const account = accountsById.get(id); return account ? <div style={{ padding: "14px 16px", background: `linear-gradient(${token.colorFillSecondary}, ${token.colorFillSecondary}), ${token.colorBgContainer}`, borderRadius: token.borderRadius }}>{accountRow(account)}</div> : null; }}
+                renderItem={(id, { ref, style, handlers }) => { const account = accountsById.get(id); if (!account) return null; return <div key={id} ref={ref} {...handlers} className="reorder-item" aria-label={`${account.name}.${reorderHint}`} style={{ ...style, padding: "14px 16px", cursor: locked ? undefined : "grab", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
                   {accountRow(account)}
-                </div>; }} />}
+                </div>; }} /></Flex>}
           </Card>}
           </div>
         </div> : <>
@@ -177,9 +193,9 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           <div style={{ minWidth: 0 }}>
         {!history.ready && !history.error && <Typography.Paragraph type="secondary">Loading older records…</Typography.Paragraph>}
         {history.error && <Alert type="warning" title="Older records could not be loaded." action={<Button size="small" onClick={history.refresh}>Retry</Button>} style={{ marginBottom: 16 }} />}
-        <Card styles={{ body: { padding: filtered.length ? "0 20px" : 24 } }}>
+        <Card styles={{ body: { padding: filtered.length ? 20 : 24 } }}>
           {filtered.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={allRecords.length ? "No records match these filters." : "Your records will appear here."} /> :
-            filtered.slice((currentPage - 1) * 20, currentPage * 20).map((record, index) => <div key={record.id} role="button" tabIndex={0} aria-label={`Edit ${record.category} record`} onClick={() => setEditingRecord(record)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setEditingRecord(record); } }} style={{ padding: "18px 0", cursor: "pointer", borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
+            <Flex vertical gap={10}>{filtered.slice((currentPage - 1) * 20, currentPage * 20).map((record) => <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
               <Flex justify="space-between" align="start" gap={12} wrap>
                 <div style={{ minWidth: 0, flex: "1 1 180px", overflowWrap: "anywhere" }}>
                   <Typography.Text strong><CategoryIcon category={record.type === "transfer" ? "Transfer" : record.category} style={{ marginRight: 6 }} />{record.category}</Typography.Text>
@@ -187,9 +203,15 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
                   {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
                   {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
                 </div>
-                <Typography.Text strong style={{ fontSize: 16, overflowWrap: "anywhere", color: record.type === "income" ? token.colorSuccess : record.type === "expense" ? token.colorError : token.colorText }}>{record.type === "income" ? "+" : record.type === "expense" ? "−" : ""}{money(record.amountMinor, record.currency)}</Typography.Text>
+                <Flex align="center" gap={8}>
+                  <Typography.Text strong style={{ fontSize: 16, overflowWrap: "anywhere", color: record.type === "income" ? token.colorSuccess : record.type === "expense" ? token.colorError : token.colorText }}>{record.type === "income" ? "+" : record.type === "expense" ? "−" : ""}{money(record.amountMinor, record.currency)}</Typography.Text>
+                  <Flex gap={2}>
+                    <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${record.category} record`} onClick={() => setEditingRecord(record)} />
+                    <ConfirmDeleteButton ariaLabel={`Delete ${record.category} record`} tooltip="Delete record" hint="Tap again to delete this record" onConfirm={() => removeRecord(record)} />
+                  </Flex>
+                </Flex>
               </Flex>
-            </div>)}
+            </div>)}</Flex>}
         </Card>
         {filtered.length > 0 && <Flex justify="center" style={{ marginTop: 20 }}><Pagination current={currentPage} onChange={setPage} pageSize={20} total={filtered.length} size="small" simple={screens.md !== true} showSizeChanger={false} /></Flex>}
           </div>
