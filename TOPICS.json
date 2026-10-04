@@ -3,5 +3,6 @@
   "typescript",
   "react",
   "nextjs",
-  "nodejs"
+  "nodejs",
+  "firebase"
 ]
