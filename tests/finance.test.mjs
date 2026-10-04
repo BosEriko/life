@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -45,4 +45,15 @@ test("recalculation rebuilds from the initial amount and all incoming and outgoi
 test("statistics omit transfers and excluded accounts, and separate currencies", () => {
   const records = [expense, income, transfer, { ...income, accountId: "bank" }, { ...income, accountId: "usd", currency: "USD" }];
   assert.deepEqual(financeStatistics(records, [cash, { ...bank, excludeFromStatistics: true }, dollar]), { PHP: { income: 50000, expense: 1234 }, USD: { income: 50000, expense: 0 } });
+});
+
+test("emergency fund goal falls back to six months for missing or unsupported values", () => {
+  assert.equal(DEFAULT_EMERGENCY_FUND_MONTHS, 6);
+  assert.equal(emergencyFundMonthsOrDefault(undefined), 6);
+  assert.equal(emergencyFundMonthsOrDefault(12), 12);
+  assert.equal(emergencyFundMonthsOrDefault(24), 24);
+  assert.equal(emergencyFundMonthsOrDefault(0), 6);
+  assert.equal(emergencyFundMonthsOrDefault(13), 6);
+  assert.equal(emergencyFundMonthsOrDefault(6.5), 6);
+  assert.equal(emergencyFundMonthsOrDefault("12"), 6);
 });

@@ -33,6 +33,13 @@ function apcaContrast(text: string, background: string) {
   return Math.abs(contrast) < 0.1 ? 0 : Math.abs(contrast) - 0.027;
 }
 
+export const EMERGENCY_FUND_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24];
+export const DEFAULT_EMERGENCY_FUND_MONTHS = 6;
+
+export function emergencyFundMonthsOrDefault(value: unknown) {
+  return typeof value === "number" && EMERGENCY_FUND_MONTHS.includes(value) ? value : DEFAULT_EMERGENCY_FUND_MONTHS;
+}
+
 export function accountTextColor(color: string) {
   const dark = "#172019";
   return apcaContrast("#ffffff", color) >= apcaContrast(dark, color) ? "#ffffff" : dark;
