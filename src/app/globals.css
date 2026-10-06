@@ -23,7 +23,7 @@ body {
 .bottom-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(76px + env(safe-area-inset-bottom));
+  bottom: calc(76px + var(--mobile-subnav-height, 0px) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 3100;
   max-width: calc(100vw - 32px);

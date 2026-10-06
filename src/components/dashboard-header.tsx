@@ -5,52 +5,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button, Dropdown, Flex, Grid, theme } from "antd";
 import type { MenuProps } from "antd";
 import {
-  BarChartOutlined,
   DownOutlined,
-  CheckSquareOutlined,
-  DatabaseOutlined,
-  UnorderedListOutlined,
-  ProjectOutlined,
-  FileTextOutlined,
   IdcardOutlined,
   LogoutOutlined,
   MenuOutlined,
-  ScheduleOutlined,
   UserOutlined,
-  DashboardOutlined,
-  WalletOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
-import { NAV } from "@/components/nav-items";
-
-const SUBMENUS = {
-  finance: {
-    label: "Finance",
-    tabs: [
-      { href: "/finance/dashboard", label: "Dashboard", Icon: DashboardOutlined },
-      { href: "/finance/accounts", label: "Accounts", Icon: WalletOutlined },
-      { href: "/finance/records", label: "Records", Icon: UnorderedListOutlined },
-      { href: "/finance/analytics", label: "Analytics", Icon: BarChartOutlined },
-    ],
-  },
-  journal: {
-    label: "Journal",
-    tabs: [
-      { href: "/journal/notes", label: "Notes", Icon: FileTextOutlined },
-      { href: "/journal/tasks", label: "Tasks", Icon: ScheduleOutlined },
-      { href: "/journal/todo", label: "To-do", Icon: CheckSquareOutlined },
-      { href: "/journal/board", label: "Board", Icon: ProjectOutlined },
-    ],
-  },
-  records: {
-    label: "Records",
-    tabs: [
-      { href: "/records/database", label: "Database", Icon: DatabaseOutlined },
-      { href: "/records/summary", label: "Summary", Icon: UnorderedListOutlined },
-    ],
-  },
-};
+import { NAV, submenuFor } from "@/components/nav-items";
+import { SubmenuTabs } from "@/components/submenu-tabs";
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
@@ -59,7 +23,7 @@ export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const compact = screens.md === false;
-  const submenu = SUBMENUS[pathname.split("/")[1] as keyof typeof SUBMENUS];
+  const submenu = submenuFor(pathname);
 
   const emailItems: MenuProps["items"] = user?.email
     ? [
@@ -242,7 +206,7 @@ export function DashboardHeader() {
           </Flex>
         )}
       </Flex>
-      {user && submenu ? (
+      {user && submenu && screens.md !== false ? (
         <nav
           aria-label={submenu.label}
           style={{
@@ -250,35 +214,9 @@ export function DashboardHeader() {
             borderTop: `1px solid ${token.colorSplit}`,
           }}
         >
-          <Flex gap={screens.md === true ? 24 : 12} style={{ maxWidth: 1200, margin: "0 auto", paddingInline: screens.md === true ? 20 : 12 }}>
-            {submenu.tabs.map(({ href, label, Icon: TabIcon }) => {
-              const active = pathname === href;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  style={{
-                    display: "inline-flex",
-                    flexShrink: 0,
-                    alignItems: "center",
-                    gap: screens.md === true ? 8 : 6,
-                    minHeight: 44,
-                    padding: "0 2px",
-                    marginBottom: -1,
-                    fontSize: screens.md === true ? 13 : 12,
-                    fontWeight: active ? 800 : 600,
-                    color: active ? token.colorPrimary : token.colorTextSecondary,
-                    borderBottom: `2px solid ${active ? token.colorPrimary : "transparent"}`,
-                    textDecoration: "none",
-                  }}
-                >
-                  <TabIcon />
-                  {label}
-                </Link>
-              );
-            })}
-          </Flex>
+          <div style={{ maxWidth: 1200, margin: "0 auto", paddingInline: screens.md === true ? 20 : 12 }}>
+            <SubmenuTabs tabs={submenu.tabs} pathname={pathname} variant="header" />
+          </div>
         </nav>
       ) : null}
     </header>

@@ -126,7 +126,7 @@ export function ReportDownload() {
         style={{
           insetInlineStart: 24,
           insetInlineEnd: "auto",
-          ...(screens.md === false ? { insetBlockEnd: 88 } : {}),
+          ...(screens.md === false ? { insetBlockEnd: "calc(88px + var(--mobile-subnav-height, 0px))" } : {}),
           transform:
             menuSide === "right"
               ? "translateX(calc(100vw - 100% - 48px))"

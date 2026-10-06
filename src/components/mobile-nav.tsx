@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Grid, theme } from "antd";
 import { Icon } from "@/components/icon";
-import { NAV, type NavItem } from "@/components/nav-items";
+import { NAV, submenuFor, type NavItem } from "@/components/nav-items";
+import { SubmenuTabs } from "@/components/submenu-tabs";
 import { NotesModal } from "@/components/notes-modal";
 
 const SPLIT = Math.ceil(NAV.length / 2);
@@ -17,6 +18,24 @@ export function MobileNav() {
   const pathname = usePathname();
   const { token } = theme.useToken();
   const [addOpen, setAddOpen] = useState(false);
+  const subnavRef = useRef<HTMLElement>(null);
+  const submenu = submenuFor(pathname);
+  const showSubnav = screens.md === false && !!submenu;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const node = subnavRef.current;
+    if (!showSubnav || !node) {
+      root.style.removeProperty("--mobile-subnav-height");
+      return;
+    }
+    const observer = new ResizeObserver(() => root.style.setProperty("--mobile-subnav-height", `${node.offsetHeight}px`));
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--mobile-subnav-height");
+    };
+  }, [showSubnav]);
 
   if (screens.md !== false) return null;
 
@@ -68,12 +87,22 @@ export function MobileNav() {
 
   return (
     <>
+      <div style={{ position: "fixed", insetInline: 0, bottom: 0, zIndex: 1000 }}>
+      {showSubnav && (
+        <nav
+          ref={subnavRef}
+          aria-label={submenu.label}
+          style={{
+            padding: "6px 8px",
+            background: `color-mix(in srgb, ${token.colorBgContainer} 55%, ${token.colorBgLayout})`,
+            borderTop: `1px solid ${token.colorBorderSecondary}`,
+          }}
+        >
+          <SubmenuTabs tabs={submenu.tabs} pathname={pathname} variant="bottom" />
+        </nav>
+      )}
       <nav
         style={{
-          position: "fixed",
-          insetInline: 0,
-          bottom: 0,
-          zIndex: 1000,
           display: "flex",
           alignItems: "stretch",
           background: token.colorBgContainer,
@@ -118,6 +147,7 @@ export function MobileNav() {
 
         {RIGHT.map(flatButton)}
       </nav>
+      </div>
 
       <NotesModal open={addOpen} onClose={() => setAddOpen(false)} />
     </>

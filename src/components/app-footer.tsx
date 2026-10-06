@@ -45,7 +45,7 @@ export function AppFooter() {
           paddingInline: compact ? 16 : 32,
           paddingTop: 10,
           paddingBottom:
-            compact && user ? "calc(10px + 72px + env(safe-area-inset-bottom))" : 10,
+            compact && user ? "calc(10px + 72px + var(--mobile-subnav-height, 0px) + env(safe-area-inset-bottom))" : 10,
         }}
       >
         <Link
