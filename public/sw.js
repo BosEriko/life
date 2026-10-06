@@ -2,25 +2,7 @@ const CACHE_NAME = "life-tracker-shell-v2";
 const OFFLINE_URL = "/offline.html";
 const PRECACHED_AT_KEY = "/__sw/precached-at";
 const PRECACHE_INTERVAL = 6 * 60 * 60 * 1000;
-const APP_PAGES = [
-  "/",
-  "/login",
-  "/register",
-  "/finance/dashboard",
-  "/finance/accounts",
-  "/finance/records",
-  "/finance/analytics",
-  "/journal/notes",
-  "/journal/tasks",
-  "/journal/todo",
-  "/journal/board",
-  "/records/summary",
-  "/records/database",
-  "/profile",
-  "/mcp",
-  "/share",
-  "/admin",
-];
+const APP_PAGES_URL = "/offline-pages.json";
 const RSC_VARIANT_HEADERS = ["next-router-prefetch", "next-router-segment-prefetch"];
 
 self.addEventListener("install", (event) => {
@@ -77,6 +59,16 @@ function assetPaths(html) {
   );
 }
 
+async function loadAppPages() {
+  try {
+    const response = await fetch(APP_PAGES_URL, { cache: "no-cache" });
+    const pages = response.ok ? await response.json() : [];
+    return Array.isArray(pages) ? pages.filter((page) => typeof page === "string" && page.startsWith("/")) : [];
+  } catch {
+    return [];
+  }
+}
+
 async function precache(force) {
   const cache = await caches.open(CACHE_NAME);
   if (!force) {
@@ -85,8 +77,9 @@ async function precache(force) {
   }
 
   const assets = new Set();
+  const appPages = await loadAppPages();
   const pages = await Promise.allSettled(
-    [OFFLINE_URL, ...APP_PAGES].map(async (path) => {
+    [OFFLINE_URL, ...appPages].map(async (path) => {
       const response = await fetch(path, { cache: "no-cache" });
       if (!response.ok || response.redirected) throw new Error(`Could not precache ${path}`);
       if (path !== OFFLINE_URL) for (const asset of assetPaths(await response.clone().text())) assets.add(asset);
@@ -102,7 +95,7 @@ async function precache(force) {
     }),
   );
 
-  if (pages.some((result) => result.status === "fulfilled")) {
+  if (appPages.length > 0 && pages.some((result) => result.status === "fulfilled")) {
     await cache.put(PRECACHED_AT_KEY, new Response(String(Date.now())));
   }
 }
