@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#316342" />
+    <title>You're offline · Life Tracker</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f2fcf5;
+        --card: #ffffff;
+        --text: #172019;
+        --muted: #607066;
+        --border: #cfded3;
+        --primary: #316342;
+        --on-primary: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #10140f;
+          --card: #1a211c;
+          --text: #e2e8e0;
+          --muted: #a3b0a6;
+          --border: #2a352d;
+          --primary: #9dd3aa;
+          --on-primary: #10140f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.5;
+      }
+      main {
+        width: 100%;
+        max-width: 420px;
+        padding: 32px 24px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--card);
+        text-align: center;
+      }
+      svg {
+        display: block;
+        margin: 0 auto 16px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+      button,
+      a {
+        min-height: 40px;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      button {
+        border: 0;
+        background: var(--primary);
+        color: var(--on-primary);
+      }
+      a {
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg width="52" height="52" viewBox="0 0 512 512" aria-hidden="true">
+        <rect width="512" height="512" rx="112" fill="#316342" />
+        <path transform="translate(128 128) scale(0.5)" fill="#ffffff" d="M512 32C512 140.1 435.4 230.3 333.6 251.4 325.7 193.3 299.6 141 261.1 100.5 301.2 40 369.9 0 448 0l32 0c17.7 0 32 14.3 32 32zM0 96C0 78.3 14.3 64 32 64l32 0c123.7 0 224 100.3 224 224l0 192c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-160C100.3 320 0 219.7 0 96z" />
+      </svg>
+      <h1>You're offline</h1>
+      <p>This page hasn't been saved for offline use yet. Reconnect and try again, or go back to a page you've opened before.</p>
+      <div class="actions">
+        <button type="button" onclick="location.reload()">Try again</button>
+        <a href="/">Go to home</a>
+      </div>
+    </main>
+  </body>
+</html>
