@@ -106,7 +106,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
   const newcomer = useMemo(() => isNewcomer(onboardingSteps(data, profile)), [data, profile]);
 
   useEffect(() => {
-    if (!user || pathname !== "/" || !profileReady || !dataReady || !hasUnits(profile) || active) return;
+    if (!user || pathname !== "/health" || !profileReady || !dataReady || !hasUnits(profile) || active) return;
     const requested = new URLSearchParams(window.location.search).get("tour") === "welcome";
     if (!requested && (autoStarted.current || profile.onboarding.welcomeTourDone || !newcomer)) return;
     autoStarted.current = true;

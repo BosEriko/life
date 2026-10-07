@@ -14,14 +14,9 @@ import {
   Select,
   Typography,
 } from "antd";
-import { DownloadOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { DeleteAccountCard } from "@/components/delete-account-card";
-import { RestartOnboardingCard } from "@/components/restart-onboarding-card";
 import { Icon } from "@/components/icon";
-import { MedicalTagsCard } from "@/components/medical-tags-card";
-import { ReportModal } from "@/components/report-modal";
 import {
   EMPTY_PROFILE,
   saveProfile,
@@ -98,7 +93,6 @@ export function ProfileForm() {
   const [form] = Form.useForm<FormShape>();
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [saving, setSaving] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
   const tzOptions = useMemo(() => timezoneOptions(), []);
   const heightUnit = Form.useWatch("heightUnit", form) ?? DEFAULT_UNITS.height;
 
@@ -192,8 +186,8 @@ export function ProfileForm() {
   return (
     <div>
       <PageHeading
-        title="Profile"
-        subtitle="Personal details used in reports and by anything reading your data through MCP."
+        title="Personal details"
+        subtitle="Used in your reports and by anything reading your data through MCP."
       />
 
       <Form
@@ -286,84 +280,48 @@ export function ProfileForm() {
               )}
             </Form.Item>
 
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={saving}
-              style={{ marginTop: 20 }}
-            >
-              Save changes
-            </Button>
           </Card>
 
-          <Flex vertical gap={20} style={{ minWidth: 0 }}>
-            <Card
-              size="small"
-              title={
-                <>
-                  <Icon name="presets" />
-                  Units
-                </>
-              }
+
+          <Card
+            size="small"
+            title={
+              <>
+                <Icon name="presets" />
+                Units
+              </>
+            }
+          >
+            <Typography.Paragraph
+              type="secondary"
+              style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
             >
-              <Typography.Paragraph
-                type="secondary"
-                style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
-              >
-                Applied everywhere weight, water, and height are shown.
-              </Typography.Paragraph>
+              Applied everywhere weight, water, and height are shown.
+            </Typography.Paragraph>
 
-              <Form.Item name="weightUnit" label="Weight" style={ITEM_STYLE}>
-                <Segmented options={WEIGHT_UNIT_OPTIONS} />
-              </Form.Item>
+            <Form.Item name="weightUnit" label="Weight" style={ITEM_STYLE}>
+              <Segmented options={WEIGHT_UNIT_OPTIONS} />
+            </Form.Item>
 
-              <Form.Item name="volumeUnit" label="Water" style={ITEM_STYLE}>
-                <Segmented options={VOLUME_UNIT_OPTIONS} />
-              </Form.Item>
+            <Form.Item name="volumeUnit" label="Water" style={ITEM_STYLE}>
+              <Segmented options={VOLUME_UNIT_OPTIONS} />
+            </Form.Item>
 
-              <Form.Item
-                name="heightUnit"
-                label="Height"
-                style={{ marginBottom: 0 }}
-              >
-                <Segmented options={HEIGHT_UNIT_OPTIONS} />
-              </Form.Item>
-            </Card>
-
-            <MedicalTagsCard />
-
-            <Card
-              size="small"
-              title={
-                <>
-                  <DownloadOutlined style={{ marginRight: 8 }} />
-                  Report
-                </>
-              }
+            <Form.Item
+              name="heightUnit"
+              label="Height"
+              style={{ marginBottom: 0 }}
             >
-              <Typography.Paragraph
-                type="secondary"
-                style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}
-              >
-                A PDF of your history — choose a date range and which fields to
-                include.
-              </Typography.Paragraph>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={() => setReportOpen(true)}
-              >
-                Download report
-              </Button>
-            </Card>
-
-            <RestartOnboardingCard />
-
-            <DeleteAccountCard />
-          </Flex>
+              <Segmented options={HEIGHT_UNIT_OPTIONS} />
+            </Form.Item>
+          </Card>
         </div>
+
+        <Button type="primary" htmlType="submit" loading={saving} style={{ marginTop: 20 }}>
+          Save changes
+        </Button>
       </Form>
 
-      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   );
 }

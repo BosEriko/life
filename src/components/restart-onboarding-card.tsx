@@ -18,7 +18,7 @@ export function RestartOnboardingCard() {
       welcomeTourDone: false,
       introsDismissed: { journal: false, finance: false, records: false },
     }).catch(() => message.error("Could not restart the getting-started guide."));
-    router.push("/?tour=welcome");
+    router.push("/health?tour=welcome");
   }
 
   return (

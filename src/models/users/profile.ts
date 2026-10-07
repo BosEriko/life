@@ -1,6 +1,7 @@
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
 import { EMPTY_ONBOARDING, readOnboarding, type Onboarding, type OnboardingSection } from "@/lib/onboarding";
+import { NAV_IDS, readNavOrder, readOrder, readSubmenuOrder, SUBMENU_IDS, type NavId, type SubmenuOrder, type SubmenuSection } from "@/lib/nav-order";
 import {
   isHeightUnit,
   isVolumeUnit,
@@ -23,9 +24,11 @@ export type Profile = {
   volumeUnit: VolumeUnit | null;
   heightUnit: HeightUnit | null;
   onboarding: Onboarding;
+  navOrder: NavId[];
+  submenuOrder: SubmenuOrder;
 };
 
-export type ProfileInput = Partial<Omit<Profile, "onboarding">>;
+export type ProfileInput = Partial<Omit<Profile, "onboarding" | "navOrder" | "submenuOrder">>;
 
 export const EMPTY_PROFILE: Profile = {
   name: null,
@@ -38,6 +41,8 @@ export const EMPTY_PROFILE: Profile = {
   volumeUnit: null,
   heightUnit: null,
   onboarding: EMPTY_ONBOARDING,
+  navOrder: [...NAV_IDS],
+  submenuOrder: readSubmenuOrder(undefined),
 };
 
 export function hasUnits(profile: Profile): boolean {
@@ -86,6 +91,8 @@ export function watchProfile(
         volumeUnit: isVolumeUnit(data.volumeUnit) ? data.volumeUnit : null,
         heightUnit: isHeightUnit(data.heightUnit) ? data.heightUnit : null,
         onboarding: readOnboarding(data.onboarding),
+        navOrder: readNavOrder(data.navOrder),
+        submenuOrder: readSubmenuOrder(data.submenuOrder),
       });
     },
     onError,
@@ -107,6 +114,22 @@ export function saveOnboarding(
   return setDoc(
     profileDoc(uid),
     { onboarding: patch, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+export function saveNavOrder(uid: string, order: NavId[]) {
+  return setDoc(
+    profileDoc(uid),
+    { navOrder: readNavOrder(order), updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+export function saveSubmenuOrder(uid: string, section: SubmenuSection, order: string[]) {
+  return setDoc(
+    profileDoc(uid),
+    { submenuOrder: { [section]: readOrder(order, SUBMENU_IDS[section]) }, updatedAt: serverTimestamp() },
     { merge: true },
   );
 }

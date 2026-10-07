@@ -16,7 +16,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { useIsDark } from "@/components/theme-provider";
 import { accentColor } from "@/lib/accents";
-import { NAV, submenuFor } from "@/components/nav-items";
+import { useNav } from "@/components/use-nav";
 import { SubmenuTabs } from "@/components/submenu-tabs";
 import { useAppTour } from "@/components/app-tour";
 
@@ -28,6 +28,7 @@ export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { startTour } = useAppTour();
+  const { items: navItems, home, submenuFor } = useNav();
   const compact = screens.md === false;
   const submenu = submenuFor(pathname);
 
@@ -44,7 +45,7 @@ export function DashboardHeader() {
       key: "profile",
       icon: <IdcardOutlined />,
       label: "Profile",
-      onClick: () => router.push("/profile"),
+      onClick: () => router.push("/personal/details"),
     },
     {
       key: "tour",
@@ -67,7 +68,7 @@ export function DashboardHeader() {
       key: "profile",
       icon: <IdcardOutlined />,
       label: "Profile",
-      onClick: () => router.push("/profile"),
+      onClick: () => router.push("/personal/details"),
     },
     {
       key: "tour",
@@ -85,7 +86,7 @@ export function DashboardHeader() {
 
   const brand = (
     <Link
-      href="/"
+      href={user ? home : "/"}
       aria-label="Life Tracker home"
       style={{
         display: "inline-flex",
@@ -163,7 +164,7 @@ export function DashboardHeader() {
           <Flex align="center" gap={28}>
             <nav aria-label="Primary" data-tour="main-nav">
               <Flex align="center" gap={28}>
-                {NAV.map((item) => {
+                {navItems.map((item) => {
                   const active = pathname.split("/")[1] === item.key.split("/")[1];
                   return (
                     <Link

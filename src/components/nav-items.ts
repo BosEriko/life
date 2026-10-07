@@ -1,19 +1,25 @@
 import {
+  AppstoreOutlined,
   BarChartOutlined,
   CheckSquareOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   FileTextOutlined,
   HeartOutlined,
+  IdcardOutlined,
+  MedicineBoxOutlined,
   ProjectOutlined,
+  SafetyCertificateOutlined,
   ScheduleOutlined,
   UnorderedListOutlined,
   WalletOutlined,
 } from "@ant-design/icons";
 import type { CSSProperties, ComponentType } from "react";
 import type { Accent } from "@/lib/accents";
+import type { NavId } from "@/lib/nav-order";
 
 export type NavItem = {
+  id: NavId;
   key: string;
   label: string;
   accent: Accent;
@@ -21,10 +27,10 @@ export type NavItem = {
 };
 
 export const NAV: NavItem[] = [
-  { key: "/", label: "Health", accent: "habits", Icon: HeartOutlined },
-  { key: "/journal/notes", label: "Journal", accent: "notes", Icon: FileTextOutlined },
-  { key: "/finance/dashboard", label: "Finance", accent: "water", Icon: WalletOutlined },
-  { key: "/records/database", label: "Records", accent: "sodium", Icon: DatabaseOutlined },
+  { id: "health", key: "/health", label: "Health", accent: "habits", Icon: HeartOutlined },
+  { id: "journal", key: "/journal/notes", label: "Journal", accent: "notes", Icon: FileTextOutlined },
+  { id: "finance", key: "/finance/dashboard", label: "Finance", accent: "water", Icon: WalletOutlined },
+  { id: "records", key: "/records/database", label: "Records", accent: "sodium", Icon: DatabaseOutlined },
 ];
 
 export type SubmenuTab = {
@@ -59,6 +65,16 @@ export const SUBMENUS: Record<string, { label: string; tabs: SubmenuTab[] }> = {
       { href: "/records/summary", label: "Summary", Icon: UnorderedListOutlined },
     ],
   },
+};
+
+export const PROFILE_SUBMENU: { label: string; tabs: SubmenuTab[] } = {
+  label: "Profile",
+  tabs: [
+    { href: "/personal/details", label: "Personal", Icon: IdcardOutlined },
+    { href: "/personal/medical", label: "Medical", Icon: MedicineBoxOutlined },
+    { href: "/personal/app", label: "App", Icon: AppstoreOutlined },
+    { href: "/personal/data", label: "Data & account", Icon: SafetyCertificateOutlined },
+  ],
 };
 
 export function submenuFor(pathname: string) {

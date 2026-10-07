@@ -6,13 +6,11 @@ import { Grid, theme } from "antd";
 import { Icon } from "@/components/icon";
 import { useIsDark } from "@/components/theme-provider";
 import { accentColor } from "@/lib/accents";
-import { NAV, submenuFor, type NavItem } from "@/components/nav-items";
+import type { NavItem } from "@/components/nav-items";
+import { useNav } from "@/components/use-nav";
 import { SubmenuTabs } from "@/components/submenu-tabs";
 import { NotesModal } from "@/components/notes-modal";
 
-const SPLIT = Math.ceil(NAV.length / 2);
-const LEFT = NAV.slice(0, SPLIT);
-const RIGHT = NAV.slice(SPLIT);
 
 export function MobileNav() {
   const screens = Grid.useBreakpoint();
@@ -21,6 +19,10 @@ export function MobileNav() {
   const { token } = theme.useToken();
   const dark = useIsDark();
   const [addOpen, setAddOpen] = useState(false);
+  const { items: navItems, submenuFor } = useNav();
+  const split = Math.ceil(navItems.length / 2);
+  const leftItems = navItems.slice(0, split);
+  const rightItems = navItems.slice(split);
   const subnavRef = useRef<HTMLElement>(null);
   const submenu = submenuFor(pathname);
   const showSubnav = screens.md === false && !!submenu;
@@ -114,7 +116,7 @@ export function MobileNav() {
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-        {LEFT.map(flatButton)}
+        {leftItems.map(flatButton)}
 
         <div
           style={{
@@ -149,7 +151,7 @@ export function MobileNav() {
           </button>
         </div>
 
-        {RIGHT.map(flatButton)}
+        {rightItems.map(flatButton)}
       </nav>
       </div>
 

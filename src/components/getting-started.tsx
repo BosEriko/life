@@ -40,7 +40,7 @@ const ACTIONS: Record<OnboardingStepId, string> = {
   profile: "Add your details",
 };
 
-const LINKS: Partial<Record<OnboardingStepId, string>> = { profile: "/profile" };
+const LINKS: Partial<Record<OnboardingStepId, string>> = { profile: "/personal/details" };
 
 export function GettingStarted() {
   const { user } = useAuth();
