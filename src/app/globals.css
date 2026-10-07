@@ -669,3 +669,202 @@ button.getting-started-action:focus-visible {
   outline-offset: 3px;
   border-radius: 3px;
 }
+
+.landing-hero-in {
+  animation: landing-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal-ready .reveal {
+  transition:
+    opacity 600ms ease,
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal-ready .reveal:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-in {
+    animation: none;
+  }
+
+  .reveal-ready .reveal {
+    transition: none;
+  }
+
+  .reveal-ready .reveal:not(.is-visible) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.landing-shot,
+.landing-card,
+.landing-tile,
+.landing-chip {
+  transition:
+    translate 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease;
+}
+
+.landing-card-icon {
+  transition: scale 220ms ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-shot:hover {
+    translate: 0 -4px;
+    box-shadow: 0 32px 70px -26px rgba(23, 50, 29, 0.45) !important;
+  }
+
+  .landing-card:hover,
+  .landing-tile:hover {
+    translate: 0 -3px;
+    box-shadow: 0 14px 34px -18px rgba(23, 50, 29, 0.35);
+  }
+
+  .landing-tile:hover {
+    border-color: color-mix(in srgb, var(--landing-accent, #316342) 45%, transparent) !important;
+  }
+
+  .landing-card:hover .landing-card-icon {
+    scale: 1.08;
+  }
+
+  .landing-chip:hover {
+    translate: 0 -3px;
+    background-color: rgba(255, 255, 255, 0.18) !important;
+  }
+}
+
+.landing-faq .ant-collapse-header {
+  padding: 20px 4px !important;
+  align-items: center !important;
+}
+
+.landing-faq .ant-collapse-content-box {
+  padding: 0 56px 22px 4px !important;
+}
+
+.landing-faq-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 12px;
+  transition:
+    rotate 220ms ease,
+    scale 220ms ease,
+    background-color 220ms ease,
+    color 220ms ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-faq .ant-collapse-header:hover .landing-faq-icon {
+    scale: 1.08;
+  }
+}
+
+.landing-steps {
+  position: relative;
+}
+
+.landing-steps::before {
+  content: "";
+  position: absolute;
+  top: 24px;
+  left: calc(100% / 6);
+  right: calc(100% / 6);
+  border-top: 2px dashed var(--steps-line);
+}
+
+.landing-steps-vertical::before {
+  top: 24px;
+  bottom: 24px;
+  left: 23px;
+  right: auto;
+  border-top: 0;
+  border-left: 2px dashed var(--steps-line);
+}
+
+.landing-fade {
+  animation: landing-fade 320ms ease both;
+}
+
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.landing-tab {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-tab[aria-selected="false"]:hover {
+    background-color: var(--landing-tab-hover, rgba(127, 127, 127, 0.06));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-fade {
+    animation: none;
+  }
+}
+
+.landing-tab-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.landing-arrow {
+  display: inline-block;
+  transition: translate 200ms ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-pillar-link:hover .landing-arrow {
+    translate: 4px 0;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-card-flat:hover {
+    box-shadow: none;
+    border-color: color-mix(in srgb, var(--card-accent) 45%, transparent) !important;
+  }
+}
+
