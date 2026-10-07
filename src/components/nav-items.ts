@@ -11,18 +11,20 @@ import {
   WalletOutlined,
 } from "@ant-design/icons";
 import type { CSSProperties, ComponentType } from "react";
+import type { Accent } from "@/lib/accents";
 
 export type NavItem = {
   key: string;
   label: string;
+  accent: Accent;
   Icon: ComponentType<{ style?: CSSProperties }>;
 };
 
 export const NAV: NavItem[] = [
-  { key: "/", label: "Health", Icon: HeartOutlined },
-  { key: "/journal/notes", label: "Journal", Icon: FileTextOutlined },
-  { key: "/finance/dashboard", label: "Finance", Icon: WalletOutlined },
-  { key: "/records/database", label: "Records", Icon: DatabaseOutlined },
+  { key: "/", label: "Health", accent: "habits", Icon: HeartOutlined },
+  { key: "/journal/notes", label: "Journal", accent: "notes", Icon: FileTextOutlined },
+  { key: "/finance/dashboard", label: "Finance", accent: "water", Icon: WalletOutlined },
+  { key: "/records/database", label: "Records", accent: "sodium", Icon: DatabaseOutlined },
 ];
 
 export type SubmenuTab = {

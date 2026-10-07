@@ -14,6 +14,8 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
+import { useIsDark } from "@/components/theme-provider";
+import { accentColor } from "@/lib/accents";
 import { NAV, submenuFor } from "@/components/nav-items";
 import { SubmenuTabs } from "@/components/submenu-tabs";
 import { useAppTour } from "@/components/app-tour";
@@ -21,6 +23,7 @@ import { useAppTour } from "@/components/app-tour";
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
   const { token } = theme.useToken();
+  const dark = useIsDark();
   const screens = Grid.useBreakpoint();
   const router = useRouter();
   const pathname = usePathname();
@@ -110,7 +113,7 @@ export function DashboardHeader() {
           style={{
             margin: 0,
             opacity: 1,
-            color: token.colorTextLightSolid,
+            color: token.colorBgContainer,
             fontSize: 17,
           }}
         />
@@ -175,6 +178,7 @@ export function DashboardHeader() {
                         padding: "12px 0",
                       }}
                     >
+                      <item.Icon aria-hidden style={{ color: accentColor(item.accent, dark), marginRight: 7 }} />
                       {item.label}
                     </Link>
                   );

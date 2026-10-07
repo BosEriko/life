@@ -69,7 +69,7 @@ const LIGHT_COMPONENTS = {
 };
 
 const DARK_COMPONENTS = {
-  Button: { fontWeight: 700 },
+  Button: { fontWeight: 700, primaryColor: "#10140f" },
   Tooltip: { controlHeight: 0 },
   Segmented: { trackPadding: 4 },
 };

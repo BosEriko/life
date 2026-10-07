@@ -17,6 +17,8 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useHealthHistory } from "@/components/use-health-history";
 import { mergeById, mergeByDate } from "@/lib/merge-records";
 import { isOutsideEatingWindow } from "@/lib/eating-window";
+import { useIsDark } from "@/components/theme-provider";
+import { accentColor, type Accent } from "@/lib/accents";
 import { Icon, type IconName } from "@/components/icon";
 import { IdealTip } from "@/components/ideal-tip";
 import { Tip } from "@/components/tip";
@@ -41,6 +43,15 @@ import {
   worstStatus,
   type IdealStatus,
 } from "@/models/users/ideals";
+
+const STAT_ACCENTS: Partial<Record<IconName, Accent>> = {
+  weight: "weight",
+  bp: "bp",
+  water: "water",
+  calories: "calories",
+  sodium: "sodium",
+  clock: "notes",
+};
 
 const RANGE_STORAGE_KEY = "averages-range";
 const RAIL_GAP = 12;
@@ -146,6 +157,7 @@ function meanStats(
 
 export function AverageStats() {
   const units = useUnits();
+  const dark = useIsDark();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const compact = screens.md === false;
@@ -482,6 +494,7 @@ export function AverageStats() {
           }}
         >
           {items.map((item, index) => {
+            const accent = accentColor(STAT_ACCENTS[item.icon] ?? "habits", dark);
             const off = item.status === "low" || item.status === "high";
             const desktopSpan =
               items.length === 6 ? "span 2" : index < 2 ? "span 3" : "span 2";
@@ -493,8 +506,8 @@ export function AverageStats() {
               minHeight: compact ? 104 : 132,
               padding: compact ? 14 : 18,
               borderRadius: token.borderRadiusLG,
-              background: token.colorBgContainer,
-              border: `1px solid ${off ? token.colorError : token.colorBorderSecondary}`,
+              background: `color-mix(in srgb, ${accent} ${dark ? 10 : 7}%, ${token.colorBgContainer})`,
+              border: `1px solid ${off ? token.colorError : `color-mix(in srgb, ${accent} 25%, ${token.colorBorderSecondary})`}`,
               boxShadow: token.boxShadowTertiary,
               ...(compact ? {} : { gridColumn: desktopSpan }),
             };

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Grid, theme } from "antd";
 import { Icon } from "@/components/icon";
+import { useIsDark } from "@/components/theme-provider";
+import { accentColor } from "@/lib/accents";
 import { NAV, submenuFor, type NavItem } from "@/components/nav-items";
 import { SubmenuTabs } from "@/components/submenu-tabs";
 import { NotesModal } from "@/components/notes-modal";
@@ -17,6 +19,7 @@ export function MobileNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { token } = theme.useToken();
+  const dark = useIsDark();
   const [addOpen, setAddOpen] = useState(false);
   const subnavRef = useRef<HTMLElement>(null);
   const submenu = submenuFor(pathname);
@@ -79,7 +82,7 @@ export function MobileNav() {
             }}
           />
         ) : null}
-        <item.Icon style={{ fontSize: 18 }} />
+        <item.Icon style={{ fontSize: 18, color: accentColor(item.accent, dark) }} />
         {item.label}
       </button>
     );
@@ -135,7 +138,7 @@ export function MobileNav() {
               padding: 0,
               border: "none",
               background: token.colorPrimary,
-              color: token.colorTextLightSolid,
+              color: token.colorBgContainer,
               cursor: "pointer",
             }}
           >

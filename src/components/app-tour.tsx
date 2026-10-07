@@ -129,7 +129,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
   return (
     <TourContext.Provider value={{ startTour }}>
       {children}
-      <Tour open={!!active} steps={active?.steps ?? []} current={current} onChange={setCurrent} onClose={close} onFinish={close} />
+      <Tour open={!!active} steps={active?.steps ?? []} gap={{ radius: 16 }} current={current} onChange={setCurrent} onClose={close} onFinish={close} />
     </TourContext.Provider>
   );
 }
