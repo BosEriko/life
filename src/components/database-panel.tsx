@@ -299,7 +299,7 @@ export function DatabasePanel() {
                       borderTop:
                         index === 0
                           ? undefined
-                          : `1px solid ${token.colorBorderSecondary}`,
+                          : `1px solid color-mix(in srgb, ${token.colorBorderSecondary} 45%, transparent)`,
                     }}
                   >
                     <Flex vertical gap={2} style={{ minWidth: 0 }}>

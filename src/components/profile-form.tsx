@@ -18,6 +18,7 @@ import { DownloadOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { DeleteAccountCard } from "@/components/delete-account-card";
+import { RestartOnboardingCard } from "@/components/restart-onboarding-card";
 import { Icon } from "@/components/icon";
 import { MedicalTagsCard } from "@/components/medical-tags-card";
 import { ReportModal } from "@/components/report-modal";
@@ -354,6 +355,8 @@ export function ProfileForm() {
                 Download report
               </Button>
             </Card>
+
+            <RestartOnboardingCard />
 
             <DeleteAccountCard />
           </Flex>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Alert, Card, Empty, Flex, Grid, Select, Spin, Typography, theme } from "antd";
+import { Alert, Button, Card, Empty, Flex, Grid, Select, Spin, Typography, theme } from "antd";
+import Link from "next/link";
 import dayjs from "dayjs";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
@@ -12,6 +13,7 @@ import { currencyDigits, money } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import type { MonthPoint } from "@/components/finance-month-chart";
 import { CategoryIcon } from "@/components/finance-category-icon";
+import { EmptyState } from "@/components/empty-state";
 
 const FinanceMonthChart = dynamic(() => import("@/components/finance-month-chart").then((mod) => mod.FinanceMonthChart), {
   ssr: false,
@@ -108,6 +110,7 @@ export function FinanceAnalytics() {
           </Card>
 
           <Flex vertical gap={16} style={{ minWidth: 0 }}>
+            {history.ready && financeRecords.length === 0 && history.rows.length === 0 && <Card styles={{ body: { padding: 24 } }} style={card}><EmptyState title="Your money, in perspective" description="Add records to reveal your spending and savings." action={<Link href="/finance/records"><Button type="primary">Go to Records</Button></Link>} /></Card>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: 12 }}>
               {tile("Income", money(income, currency), incomeColor)}
               {tile("Expenses", money(expense, currency), expenseColor)}

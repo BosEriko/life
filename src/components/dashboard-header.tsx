@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button, Dropdown, Flex, Grid, theme } from "antd";
 import type { MenuProps } from "antd";
 import {
+  CompassOutlined,
   DownOutlined,
   IdcardOutlined,
   LogoutOutlined,
@@ -15,6 +16,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Icon } from "@/components/icon";
 import { NAV, submenuFor } from "@/components/nav-items";
 import { SubmenuTabs } from "@/components/submenu-tabs";
+import { useAppTour } from "@/components/app-tour";
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
@@ -22,6 +24,7 @@ export function DashboardHeader() {
   const screens = Grid.useBreakpoint();
   const router = useRouter();
   const pathname = usePathname();
+  const { startTour } = useAppTour();
   const compact = screens.md === false;
   const submenu = submenuFor(pathname);
 
@@ -40,6 +43,12 @@ export function DashboardHeader() {
       label: "Profile",
       onClick: () => router.push("/profile"),
     },
+    {
+      key: "tour",
+      icon: <CompassOutlined />,
+      label: "Show tour",
+      onClick: () => startTour("welcome"),
+    },
     { type: "divider" },
     {
       key: "signout",
@@ -56,6 +65,12 @@ export function DashboardHeader() {
       icon: <IdcardOutlined />,
       label: "Profile",
       onClick: () => router.push("/profile"),
+    },
+    {
+      key: "tour",
+      icon: <CompassOutlined />,
+      label: "Show tour",
+      onClick: () => startTour("welcome"),
     },
     {
       key: "signout",
@@ -139,11 +154,11 @@ export function DashboardHeader() {
             placement="bottomRight"
             menu={{ items: mobileItems }}
           >
-            <Button icon={<MenuOutlined />} aria-label="Menu" />
+            <Button icon={<MenuOutlined />} aria-label="Menu" data-tour="account" />
           </Dropdown>
         ) : (
           <Flex align="center" gap={28}>
-            <nav aria-label="Primary">
+            <nav aria-label="Primary" data-tour="main-nav">
               <Flex align="center" gap={28}>
                 {NAV.map((item) => {
                   const active = pathname.split("/")[1] === item.key.split("/")[1];
@@ -174,6 +189,7 @@ export function DashboardHeader() {
               <button
                 type="button"
                 aria-label="Account"
+                data-tour="account"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

@@ -6,6 +6,7 @@ import { Button, Card, Flex, Spin, theme } from "antd";
 import { AverageStats } from "@/components/average-stats";
 import { useAuth } from "@/components/auth-provider";
 import { CreditAlert } from "@/components/credit-alert";
+import { GettingStarted } from "@/components/getting-started";
 import { useHealthData } from "@/components/health-data-provider";
 import { IdealsModal } from "@/components/ideals-modal";
 import { PageHeading } from "@/components/page-heading";
@@ -50,6 +51,8 @@ function HealthDashboard() {
         }
         marginBottom={18}
       />
+
+      <GettingStarted />
 
       <div style={{ marginBottom: 24 }}>
         <AverageStats />

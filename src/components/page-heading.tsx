@@ -44,7 +44,7 @@ export function PageHeading({
         ) : null}
       </div>
       {extra ? (
-        <Flex gap={8} wrap>
+        <Flex gap={8} wrap data-tour="page-actions">
           {extra}
         </Flex>
       ) : null}

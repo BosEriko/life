@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { App, Card, Checkbox, Flex, Typography, theme } from "antd";
-import { AlignLeftOutlined, ClockCircleOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import Link from "next/link";
+import { App, Checkbox, Flex, Typography, theme } from "antd";
+import { ArrowRightOutlined, BellOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -43,26 +44,30 @@ export function TaskReminders() {
   if (overdue.length === 0) return null;
 
   return (
-    <Card
-      styles={{ body: { padding: 20 } }}
+    <aside
+      aria-label="Upcoming task reminders"
       style={{
-        background: `color-mix(in srgb, ${token.colorWarning} 10%, ${token.colorBgContainer})`,
-        borderColor: `color-mix(in srgb, ${token.colorWarning} 45%, ${token.colorBorderSecondary})`,
+        overflow: "hidden",
+        background: token.colorPrimaryBg,
+        border: `1px solid ${token.colorPrimary}`,
         borderRadius: token.borderRadiusLG,
-        boxShadow: token.boxShadowTertiary,
       }}
     >
-      <Flex align="center" justify="space-between" gap={8} style={{ marginBottom: 16 }}>
-        <Typography.Text style={{ fontSize: 17 }}>
-          <ClockCircleOutlined style={{ marginRight: 8, color: token.colorWarningText }} />
-          Tasks
-        </Typography.Text>
-        <Tip title={HINT} placement="left">
-          <InfoCircleOutlined aria-label={HINT} style={{ color: token.colorTextSecondary, cursor: "help" }} />
-        </Tip>
+      <Flex align="center" justify="space-between" gap={12} wrap style={{ padding: "16px 20px", background: token.colorPrimary, color: token.colorBgContainer }}>
+        <Flex align="center" gap={10}>
+          <BellOutlined aria-hidden style={{ fontSize: 24 }} />
+          <div>
+            <Typography.Text strong style={{ display: "block", fontSize: 16, color: "inherit" }}>Up next</Typography.Text>
+            <Typography.Text style={{ fontSize: 12, color: "inherit" }}>{overdue.length} {overdue.length === 1 ? "task" : "tasks"} waiting</Typography.Text>
+          </div>
+          <Tip title={HINT} placement="left">
+            <button type="button" className="task-reminders-help" aria-label={HINT} style={{ color: "inherit" }}><InfoCircleOutlined /></button>
+          </Tip>
+        </Flex>
+        <Link href="/journal/tasks" style={{ fontSize: 13, color: "inherit" }}>All tasks <ArrowRightOutlined style={{ marginLeft: 4, fontSize: 11 }} /></Link>
       </Flex>
-      <Flex vertical gap={10}>
-        {overdue.map((task) => {
+      <Flex vertical style={{ padding: "0 20px" }}>
+        {overdue.map((task, index) => {
           const subtasks = taskSubtaskChecks(task, date, taskChecks);
           return (
             <Flex
@@ -70,9 +75,8 @@ export function TaskReminders() {
               align="flex-start"
               gap={12}
               style={{
-                padding: "14px 16px",
-                borderRadius: token.borderRadius,
-                background: `color-mix(in srgb, ${token.colorWarning} 28%, ${token.colorBgContainer})`,
+                padding: "16px 0",
+                borderTop: index > 0 ? `1px solid color-mix(in srgb, ${token.colorPrimary} 14%, transparent)` : undefined,
               }}
             >
               <Checkbox
@@ -83,16 +87,23 @@ export function TaskReminders() {
                   if (user) setTaskChecked(user.uid, date, task.id, true, task, subtasks).catch(() => message.error("Could not update task."));
                 }}
               />
-              <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-                <Typography.Text strong><RichText text={task.title} /></Typography.Text>
-                <Flex gap={8} align="center"><Typography.Text type="secondary"><ClockCircleOutlined /></Typography.Text><Typography.Text type="secondary">{formatTaskTime(task.time)}</Typography.Text></Flex>
-                {task.description && <Flex gap={8} align="baseline"><Typography.Text type="secondary"><AlignLeftOutlined /></Typography.Text><div style={{ minWidth: 0, flex: 1 }}><TaskDescription task={task} /></div></Flex>}
-                <TaskSubtasks task={task} date={date} completed={subtasks} />
+              <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
+                <Flex align="baseline" justify="space-between" gap={8} wrap>
+                  <Typography.Text strong style={{ flex: "1 1 140px", minWidth: 0 }}><RichText text={task.title} /></Typography.Text>
+                  <Typography.Text style={{ fontSize: 12, whiteSpace: "nowrap", color: token.colorPrimaryText }}>{formatTaskTime(task.time)}</Typography.Text>
+                </Flex>
+                {task.description && (
+                  <details className="task-reminders-details" style={{ color: token.colorTextSecondary }}>
+                    <summary>Details</summary>
+                    <div style={{ marginTop: 8 }}><TaskDescription task={task} /></div>
+                  </details>
+                )}
+                <TaskSubtasks task={task} date={date} completed={subtasks} compact />
               </div>
             </Flex>
           );
         })}
       </Flex>
-    </Card>
+    </aside>
   );
 }

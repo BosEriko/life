@@ -15,6 +15,7 @@ import { PageHeading } from "@/components/page-heading";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
 import { isKnownList, fixedListOptions, ARCHIVE_LIST_ID, isTodoPastDate, todoColumn, todoListId, type Todo, type TodoColumn } from "@/lib/todos";
+import { EmptyState } from "@/components/empty-state";
 import { moveTodo } from "@/models/users/todos";
 
 const COLUMNS = [
@@ -168,6 +169,7 @@ export function TodoBoard() {
       <Button type="primary" icon={<CheckSquareOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>
     </>} />
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}
+    {todosReady && !todoError && all.length === 0 && <Card styles={{ body: { padding: 24 } }} style={{ marginBottom: 16 }}><EmptyState title="See your plans take shape" description="Add a to-do, then drag it from planned to done." action={<Button type="primary" icon={<CheckSquareOutlined />} onClick={() => setEditor(null)}>Add a to-do</Button>} /></Card>}
     {!todosReady ? <Spin /> : <div ref={rail} tabIndex={0} role="region" aria-label="To-do board" style={{ overflowX: "auto", paddingBottom: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(260px, 1fr))", gap: 16, minWidth: 1088, alignItems: "stretch" }}>
         {COLUMNS.map(({ value, label, Icon }) => {

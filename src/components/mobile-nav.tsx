@@ -102,6 +102,7 @@ export function MobileNav() {
         </nav>
       )}
       <nav
+        data-tour="main-nav"
         style={{
           display: "flex",
           alignItems: "stretch",

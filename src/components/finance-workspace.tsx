@@ -20,6 +20,7 @@ import { AccountBadge, AccountTypeIcon, CategoryIcon } from "@/components/financ
 import { mergeSubsetOrder } from "@/lib/reorder";
 import { SortableList } from "@/components/sortable-list";
 import { Tip } from "@/components/tip";
+import { EmptyState } from "@/components/empty-state";
 
 export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "records" }) {
   const { token } = theme.useToken();
@@ -204,7 +205,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           <div style={{ minWidth: 0 }}>
         {!history.ready && !history.error && <Typography.Paragraph type="secondary">Loading older records…</Typography.Paragraph>}
         {history.error && <Alert type="warning" title="Older records could not be loaded." action={<Button size="small" onClick={history.refresh}>Retry</Button>} style={{ marginBottom: 16 }} />}
-        {filtered.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={allRecords.length ? "No records match these filters." : "Your records will appear here."} /></Card> :
+        {filtered.length === 0 ? <Card>{allRecords.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No records match these filters." /> : accounts.length === 0 ? <EmptyState title="Add an account first" description="Start with your cash, bank, or e-wallet." action={<Button type="primary" icon={<WalletOutlined />} disabled={financeError} onClick={() => setModal("account")}>Add account</Button>} /> : <EmptyState title="No records yet" description="Track an expense or income to update your balance." action={<Button type="primary" icon={<PlusOutlined />} disabled={financeError} onClick={() => setModal("record")}>Add your first record</Button>} />}</Card> :
           <Flex vertical gap={16}>{recordDays(filtered.slice((currentPage - 1) * 20, currentPage * 20)).map(([date, dayRecords]) => <Card key={date} styles={{ body: { padding: 20 } }} style={{ boxShadow: token.boxShadowTertiary }}>
             <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 14 }}>
               <Typography.Text style={{ fontSize: 16 }}>{dayjs(date).format("dddd, MMMM D, YYYY")}</Typography.Text>

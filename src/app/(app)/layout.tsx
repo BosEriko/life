@@ -1,11 +1,13 @@
 "use client";
 
 import { AppFooter } from "@/components/app-footer";
+import { AppTourProvider } from "@/components/app-tour";
 import { useAuth } from "@/components/auth-provider";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { HealthDataProvider } from "@/components/health-data-provider";
 import { MobileNav } from "@/components/mobile-nav";
 import { ReportDownload } from "@/components/report-download";
+import { SectionIntro } from "@/components/section-intro";
 import { UnitsProvider } from "@/components/units-provider";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
@@ -16,6 +18,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <UnitsProvider>
       <HealthDataProvider>
+        <AppTourProvider>
         <div
           style={{
             display: "flex",
@@ -34,12 +37,14 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
               padding: "32px 20px 56px",
             }}
           >
-            {children}
+            <SectionIntro />
+            <>{children}</>
           </main>
           <ReportDownload />
           <AppFooter />
           <MobileNav />
         </div>
+        </AppTourProvider>
       </HealthDataProvider>
     </UnitsProvider>
   );

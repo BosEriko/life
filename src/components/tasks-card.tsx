@@ -20,6 +20,7 @@ import { removeTask, saveTask, setTaskChecked } from "@/models/users/tasks";
 import { todayKey } from "@/models/users/dailies";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { TaskDescription } from "@/components/task-description";
+import { EmptyState } from "@/components/empty-state";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REPEATS = ["daily", "weekly", "monthly", "yearly"] as const;
@@ -130,6 +131,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
   const [date, setDate] = useState(todayKey);
   const [editing, setEditing] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const manage = view !== "today";
   const { row, error } = useTaskDay(date, !manage);
   const checks = row ? [...taskChecks.filter((entry) => entry.date !== date), row] : taskChecks;
@@ -153,7 +155,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
         {(view === "monthly" || view === "yearly") && " · Carries over until checked off"}
       </Typography.Paragraph>
       {!manage && error && <Alert type="error" title="Could not load this checklist." />}
-      {!tasksReady || (!manage && !row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? `No ${view} tasks yet.` : "No tasks scheduled for this day."} /> : shown.map((task) => {
+      {!tasksReady || (!manage && !row && !error) ? <Flex justify="center" style={{ padding: 24 }}><Spin /></Flex> : shown.length === 0 ? tasks.length === 0 ? <><EmptyState title="No routines yet" description="Make everyday tasks a routine. Check them off as you go." action={<Button type="primary" icon={<ScheduleOutlined />} onClick={() => setAddOpen(true)}>Add a routine</Button>} /><AddTaskModal open={addOpen} onClose={() => setAddOpen(false)} /></> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={manage ? `No ${view} tasks yet.` : "No tasks scheduled for this day."} /> : shown.map((task) => {
         const checked = !!row?.completed[task.id];
         const subtasks = taskSubtaskChecks(task, date, checks);
         return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "14px 16px", marginBottom: 10, borderRadius: token.borderRadius, background: token.colorFillSecondary }}>

@@ -7,7 +7,13 @@ import { DownOutlined, EllipsisOutlined } from "@ant-design/icons";
 import type { SubmenuTab } from "@/components/nav-items";
 import { splitTabs } from "@/lib/submenu-layout";
 
-export function SubmenuTabs({ tabs, pathname, variant }: { tabs: SubmenuTab[]; pathname: string; variant: "header" | "bottom" }) {
+type SubmenuTabsProps = { tabs: SubmenuTab[]; pathname: string; variant: "header" | "bottom" };
+
+export function SubmenuTabs(props: SubmenuTabsProps) {
+  return <MeasuredSubmenuTabs key={JSON.stringify([props.variant, props.tabs.map((tab) => tab.href)])} {...props} />;
+}
+
+function MeasuredSubmenuTabs({ tabs, pathname, variant }: SubmenuTabsProps) {
   const { token } = theme.useToken();
   const rowRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
@@ -73,7 +79,7 @@ export function SubmenuTabs({ tabs, pathname, variant }: { tabs: SubmenuTab[]; p
   const overflow = split ? split.overflow : [];
 
   return (
-    <div style={{ position: "relative", minWidth: 0 }}>
+    <div data-tour="submenu" style={{ position: "relative", minWidth: 0 }}>
       <div ref={rowRef} style={{ display: "flex", gap, overflow: "hidden", minWidth: 0 }}>
         {visible.map((index) => {
           const { href, label, Icon } = tabs[index];

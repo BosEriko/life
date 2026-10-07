@@ -551,7 +551,121 @@ body.todo-board-grabbing * {
   }
 }
 
+.getting-started-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
 .add-account-tile:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.getting-started-group {
+  min-width: 0;
+}
+
+.getting-started-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+button.getting-started-action {
+  cursor: pointer;
+}
+
+button.getting-started-action:hover,
+button.getting-started-action:focus-visible {
+  background: var(--onboarding-hover);
+}
+
+button.getting-started-action:focus-visible {
+  outline: 2px solid var(--onboarding-accent);
+  outline-offset: 1px;
+}
+
+.getting-started-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 2px solid var(--onboarding-line);
+  border-radius: 4px;
+  background: var(--onboarding-check-bg);
+  color: var(--onboarding-accent);
+  font-size: 10px;
+}
+
+.getting-started-check > span {
+  visibility: hidden;
+}
+
+.getting-started-action:hover .getting-started-check > span,
+.getting-started-action:focus-visible .getting-started-check > span {
+  visibility: visible;
+}
+
+.getting-started-arrow {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--onboarding-accent);
+}
+
+@media (max-width: 991px) {
+  .getting-started-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 399px) {
+  .getting-started-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+.task-reminders-details {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.task-reminders-details summary {
+  width: fit-content;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.task-reminders-help {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: help;
+}
+
+.task-reminders-details summary:focus-visible,
+.task-reminders-help:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 3px;
 }

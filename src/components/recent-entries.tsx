@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Empty, Flex, Spin, theme, Typography } from "antd";
+import { Flex, Spin, theme, Typography } from "antd";
 import dayjs from "dayjs";
 import { useHealthData } from "@/components/health-data-provider";
 import { relativeDate, todayKey } from "@/models/users/dailies";
@@ -9,6 +9,7 @@ import { dailyBpAverages } from "@/models/users/bp-readings";
 import { dailyWaterTotals } from "@/models/users/water-logs";
 import { dailyIntake } from "@/models/users/intake";
 import { Icon } from "@/components/icon";
+import { EmptyState } from "@/components/empty-state";
 import { IdealTip, idealTipProps } from "@/components/ideal-tip";
 import { useUnits } from "@/components/units-provider";
 import {
@@ -61,7 +62,7 @@ export function RecentEntries() {
           <Spin />
         </Flex>
       ) : recent.length === 0 ? (
-        <Empty description="Nothing logged in the last 7 days." />
+        <EmptyState title="Nothing logged in the last 7 days" description="Use quick-log in the corner to add an entry." />
       ) : (
         <Flex vertical>
           {recent.map((entry) => {

@@ -1,5 +1,6 @@
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
+import { EMPTY_ONBOARDING, readOnboarding, type Onboarding, type OnboardingSection } from "@/lib/onboarding";
 import {
   isHeightUnit,
   isVolumeUnit,
@@ -21,9 +22,10 @@ export type Profile = {
   weightUnit: WeightUnit | null;
   volumeUnit: VolumeUnit | null;
   heightUnit: HeightUnit | null;
+  onboarding: Onboarding;
 };
 
-export type ProfileInput = Partial<Profile>;
+export type ProfileInput = Partial<Omit<Profile, "onboarding">>;
 
 export const EMPTY_PROFILE: Profile = {
   name: null,
@@ -35,6 +37,7 @@ export const EMPTY_PROFILE: Profile = {
   weightUnit: null,
   volumeUnit: null,
   heightUnit: null,
+  onboarding: EMPTY_ONBOARDING,
 };
 
 export function hasUnits(profile: Profile): boolean {
@@ -82,6 +85,7 @@ export function watchProfile(
         weightUnit: isWeightUnit(data.weightUnit) ? data.weightUnit : null,
         volumeUnit: isVolumeUnit(data.volumeUnit) ? data.volumeUnit : null,
         heightUnit: isHeightUnit(data.heightUnit) ? data.heightUnit : null,
+        onboarding: readOnboarding(data.onboarding),
       });
     },
     onError,
@@ -92,6 +96,17 @@ export async function saveProfile(uid: string, input: ProfileInput) {
   await setDoc(
     profileDoc(uid),
     { ...input, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+export function saveOnboarding(
+  uid: string,
+  patch: Partial<Omit<Onboarding, "introsDismissed">> & { introsDismissed?: Partial<Record<OnboardingSection, boolean>> },
+) {
+  return setDoc(
+    profileDoc(uid),
+    { onboarding: patch, updatedAt: serverTimestamp() },
     { merge: true },
   );
 }

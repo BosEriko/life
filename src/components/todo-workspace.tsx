@@ -20,6 +20,7 @@ import { todoListName, isKnownList, fixedListOptions, ARCHIVE_LIST_ID, filterTod
 import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, setTodoStatus, setTodoSubtask } from "@/models/users/todos";
 import { Tip } from "@/components/tip";
 import { RichTextView } from "@/components/rich-text-view";
+import { EmptyState } from "@/components/empty-state";
 import { SideMenu } from "@/components/side-menu";
 
 const VIEWS = [
@@ -204,7 +205,7 @@ export function TodoWorkspace() {
           {view !== "completed" && <Select aria-label="Sort to-dos" value={sort} onChange={setSort} style={{ width: 150 }} options={[{ value: "due", label: "Due date first" }, { value: "priority", label: "Priority first" }, { value: "newest", label: "Newest first" }]} />}
           {(search || priority !== "all" || status !== "all") && <Button type="text" onClick={() => { setSearch(""); setPriority("all"); setStatus("all"); }}>Clear filters</Button>}
         </Flex>
-        {!todosReady || (view === "completed" && !history.ready) ? <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> : shown.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={active.length === 0 && view !== "completed" ? "A fresh start. Add your first to-do." : "No to-dos match this view."} /> : <Flex vertical gap={10}>
+        {!todosReady || (view === "completed" && !history.ready) ? <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> : shown.length === 0 ? active.length === 0 && view !== "completed" ? <EmptyState title="A fresh start" description="One thing at a time. What’s on your list?" action={<Button type="primary" icon={<CheckSquareOutlined />} disabled={todoError} onClick={() => setEditor(null)}>Add a to-do</Button>} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No to-dos match this view." /> : <Flex vertical gap={10}>
           {shown.map((todo) => {
             const subtasks = Object.values(todo.subtasks);
             const completed = todo.status === "done";

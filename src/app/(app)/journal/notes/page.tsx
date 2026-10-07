@@ -8,7 +8,6 @@ import {
   Button,
   Calendar,
   Card,
-  Empty,
   Flex,
   Grid,
   Segmented,
@@ -50,6 +49,7 @@ import { ACTIVE_TODO_DATE, todoValidation, type Todo } from "@/lib/todos";
 import { convertNoteToTodo } from "@/models/users/todos";
 import { JournalSkeleton } from "@/components/journal-skeleton";
 import { SideMenu } from "@/components/side-menu";
+import { EmptyState } from "@/components/empty-state";
 
 export default function NotesPage() {
   return <Suspense fallback={<JournalSkeleton />}><NotesContent /></Suspense>;
@@ -283,7 +283,11 @@ function NotesContent() {
               <Spin />
             </Flex>
           ) : shown.length === 0 ? (
-            <Empty description="No notes on this day." />
+            <EmptyState
+              title={sortedNotes.length === 0 ? "Your journal starts here" : undefined}
+              description={sortedNotes.length === 0 ? "A thought, a feeling, a moment worth keeping." : "No notes on this day yet."}
+              action={<Button type="primary" icon={<EditOutlined />} onClick={() => setNotesOpen(true)}>Write a note</Button>}
+            />
           ) : (
             <Flex vertical gap={12}>
               {shown.map((note) => (
