@@ -18,6 +18,7 @@ export type Todo = {
   dueDate: string | null;
   dueTime: string | null;
   subtasks: Record<string, TodoSubtask>;
+  link?: string | null;
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
@@ -87,7 +88,34 @@ export function todoValidation(todo: Todo): string | null {
   const subtasks = Object.values(todo.subtasks);
   if (subtasks.length > 50) return "Use up to 50 subtasks per to-do.";
   if (subtasks.some((subtask) => !subtask.title.trim() || subtask.title.trim().length > 120)) return "Each subtask needs a title of up to 120 characters.";
+  if (todo.link && normalizeLinkUrl(todo.link) !== todo.link) return "Enter a valid web address for the link.";
   return null;
+}
+
+export function normalizeLinkUrl(input: string): string | null {
+  const value = input.trim();
+  if (!value || /\s/.test(value)) return null;
+  try {
+    const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(value) ? value : `https://${value}`);
+    if ((url.protocol !== "https:" && url.protocol !== "http:") || !url.hostname.includes(".")) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+export function todoLink(todo: { link?: unknown; links?: unknown }): string | null {
+  if (typeof todo.link === "string" && normalizeLinkUrl(todo.link) === todo.link) return todo.link;
+  const legacy = Array.isArray(todo.links) ? (todo.links[0] as { url?: unknown } | undefined) : undefined;
+  return typeof legacy?.url === "string" && normalizeLinkUrl(legacy.url) === legacy.url ? legacy.url : null;
+}
+
+export function linkLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
 }
 
 export function filterTodos(todos: Todo[], lists: TodoList[], options: {

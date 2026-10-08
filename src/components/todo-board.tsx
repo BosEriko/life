@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } fr
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Alert, App, Button, Card, Empty, Flex, Grid, Select, Spin, Typography, theme } from "antd";
-import { AlignLeftOutlined, CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ClockCircleOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { AlignLeftOutlined, CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ClockCircleOutlined, LinkOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -14,7 +14,7 @@ import { useTodoDay } from "@/components/use-day-records";
 import { PageHeading } from "@/components/page-heading";
 import { TodoEditor } from "@/components/todo-editor";
 import { mergeById } from "@/lib/merge-records";
-import { isKnownList, fixedListOptions, ARCHIVE_LIST_ID, isTodoPastDate, todoColumn, todoListId, type Todo, type TodoColumn } from "@/lib/todos";
+import { isKnownList, fixedListOptions, ARCHIVE_LIST_ID, isTodoPastDate, todoColumn, todoListId, todoLink, type Todo, type TodoColumn } from "@/lib/todos";
 import { EmptyState } from "@/components/empty-state";
 import { moveTodo } from "@/models/users/todos";
 
@@ -62,9 +62,10 @@ function CardContent({ todo, upcoming }: { todo: Todo; upcoming: boolean }) {
   const showDate = upcoming && !!todo.dueDate;
   const showSubtasks = !upcoming && subtasks.length > 0;
   const hasDescription = !!todo.description?.trim();
+  const hasLinks = !!todoLink(todo);
   return <>
     <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere", pointerEvents: "none" }}>{todo.title}</Typography.Text>
-    {(showDate || showSubtasks || hasDescription) && <Flex align="center" gap={12} wrap style={{ marginTop: 12, fontSize: 12, pointerEvents: "none" }}>
+    {(showDate || showSubtasks || hasDescription || hasLinks) && <Flex align="center" gap={12} wrap style={{ marginTop: 12, fontSize: 12, pointerEvents: "none" }}>
       {showDate && <Typography.Text type="secondary" style={{ fontSize: 12 }}>
         <CalendarOutlined style={{ marginRight: 6 }} />
         {dayjs(todo.dueDate).format("MMM D, YYYY")}
@@ -75,6 +76,9 @@ function CardContent({ todo, upcoming }: { todo: Todo; upcoming: boolean }) {
       </Typography.Text>}
       {hasDescription && <Typography.Text type="secondary" style={{ fontSize: 12 }} aria-label="Has description">
         <AlignLeftOutlined />
+      </Typography.Text>}
+      {hasLinks && <Typography.Text type="secondary" style={{ fontSize: 12 }} aria-label="Has a link">
+        <LinkOutlined />
       </Typography.Text>}
     </Flex>}
   </>;

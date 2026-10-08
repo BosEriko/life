@@ -19,6 +19,7 @@ import { accentColor } from "@/lib/accents";
 import { useNav } from "@/components/use-nav";
 import { SubmenuTabs } from "@/components/submenu-tabs";
 import { useAppTour } from "@/components/app-tour";
+import { NotificationBell } from "@/components/notification-bell";
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
@@ -153,13 +154,16 @@ export function DashboardHeader() {
             </Button>
           </Flex>
         ) : compact ? (
-          <Dropdown
-            trigger={["click"]}
-            placement="bottomRight"
-            menu={{ items: mobileItems }}
-          >
-            <Button icon={<MenuOutlined />} aria-label="Menu" data-tour="account" />
-          </Dropdown>
+          <Flex align="center" gap={8}>
+            <NotificationBell />
+            <Dropdown
+              trigger={["click"]}
+              placement="bottomRight"
+              menu={{ items: mobileItems }}
+            >
+              <Button icon={<MenuOutlined />} aria-label="Menu" data-tour="account" />
+            </Dropdown>
+          </Flex>
         ) : (
           <Flex align="center" gap={28}>
             <nav aria-label="Primary" data-tour="main-nav">
@@ -172,11 +176,17 @@ export function DashboardHeader() {
                       href={item.key}
                       aria-current={active ? "page" : undefined}
                       style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        boxSizing: "border-box",
+                        height: 72,
+                        marginBlock: -12,
                         fontSize: 13,
                         fontWeight: active ? 800 : 600,
                         color: active ? token.colorPrimary : token.colorTextSecondary,
                         textDecoration: "none",
-                        padding: "12px 0",
+                        borderTop: "2px solid transparent",
+                        borderBottom: `2px solid ${active ? token.colorPrimary : "transparent"}`,
                       }}
                     >
                       <item.Icon aria-hidden style={{ color: accentColor(item.accent, dark), marginRight: 7 }} />
@@ -186,6 +196,7 @@ export function DashboardHeader() {
                 })}
               </Flex>
             </nav>
+            <NotificationBell />
             <Dropdown
               trigger={["click"]}
               placement="bottomRight"

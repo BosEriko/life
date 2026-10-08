@@ -87,3 +87,56 @@ test("to-do and list lifecycle self-echo offline, including old unfinished and a
     await deleteApp(app);
   }
 });
+
+test("a to-do's link is saved, kept through edits and completion, and the old list format is replaced", async () => {
+  const app = initializeApp({ projectId: "demo-todo-link" }, "todo-link-test");
+  const db = firestore.initializeFirestore(app, { localCache: firestore.memoryLocalCache() });
+  await firestore.disableNetwork(db);
+  const output = ts.transpileModule(fs.readFileSync("src/models/users/todos.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
+  const models = {};
+  vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(models, (name) => {
+    if (name === "@/lib/firebase") return { getFirebaseDb: () => db };
+    if (name === "@/lib/todos") return todos;
+    if (name === "firebase/firestore") return firestore;
+    if (name === "dayjs") return dayjs;
+    throw new Error(`Unexpected import: ${name}`);
+  });
+  const live = [];
+  const failures = [];
+  const off = models.watchTodos("user", "2026-01-01", (rows) => live.push(rows), (error) => failures.push(error));
+  const raw = async () => (await firestore.getDocFromCache(firestore.doc(db, "users", "user", "todos", "linked"))).data();
+  const waitFor = async (predicate) => {
+    for (let i = 0; i < 200; i++) {
+      if (failures.length) throw failures[0];
+      if (await predicate()) return;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    assert.fail("Expected offline snapshot did not arrive");
+  };
+  const pending = (promise) => promise.catch(() => {});
+  const item = { id: "linked", date: todos.ACTIVE_TODO_DATE, title: "Read the doc", description: "", listId: null, priority: "none", status: "todo", dueDate: null, dueTime: null, subtasks: {}, createdAt: "2026-10-01T00:00:00Z", updatedAt: "", completedAt: null, link: "https://docs.google.com/document/d/abc" };
+  const current = () => live.at(-1)?.find((row) => row.id === "linked");
+  try {
+    await waitFor(() => live.length);
+    pending(models.saveTodo("user", item));
+    await waitFor(() => current()?.link === "https://docs.google.com/document/d/abc");
+    pending(models.saveTodo("user", { ...current(), title: "Read the doc today" }));
+    await waitFor(() => current()?.title === "Read the doc today");
+    assert.equal(current().link, "https://docs.google.com/document/d/abc");
+    pending(models.completeTodo("user", current()));
+    await waitFor(async () => (await raw())?.status === "done");
+    assert.equal((await raw()).link, "https://docs.google.com/document/d/abc");
+    const legacy = { ...item };
+    delete legacy.link;
+    pending(firestore.setDoc(firestore.doc(db, "users", "user", "todos", "linked"), { ...legacy, links: [{ id: "x", url: "https://old.example.com/", title: "Old" }] }));
+    await waitFor(async () => Array.isArray((await raw())?.links));
+    assert.equal(todos.todoLink(await raw()), "https://old.example.com/");
+    const withoutLegacy = await raw();
+    delete withoutLegacy.links;
+    pending(models.saveTodo("user", { ...withoutLegacy, link: "https://old.example.com/" }));
+    await waitFor(async () => (await raw())?.link === "https://old.example.com/" && !("links" in (await raw())));
+  } finally {
+    off();
+    await deleteApp(app);
+  }
+});

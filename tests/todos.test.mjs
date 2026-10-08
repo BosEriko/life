@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ACTIVE_TODO_DATE, ARCHIVE_LIST_ID, filterTodos, isKnownList, todoListName, isTodoOverdue, isTodoPastDate, todoColumn, todoMovePatch, todoListId, todoValidation, todoViewFromQuery } from "../src/lib/todos.ts";
+import { ACTIVE_TODO_DATE, ARCHIVE_LIST_ID, filterTodos, isKnownList, todoListName, isTodoOverdue, isTodoPastDate, todoColumn, todoMovePatch, todoListId, todoValidation, todoViewFromQuery, normalizeLinkUrl, linkLabel, todoLink } from "../src/lib/todos.ts";
 
 test("To-do URL views accept all supported views and fall back safely", () => {
   for (const view of ["all", "today", "upcoming", "overdue", "completed"]) assert.equal(todoViewFromQuery(view), view);
@@ -100,4 +100,35 @@ test("sorting is stable and puts undated to-dos last", () => {
 test("validation rejects empty titles, invalid dates, times without dates and empty subtasks", () => {
   assert.equal(todoValidation(base), null);
   for (const patch of [{ title: " " }, { dueDate: "2026-02-30" }, { dueDate: null, dueTime: "13:00" }, { dueTime: "25:00" }, { subtasks: { step: { id: "step", title: "", done: false } } }]) assert.notEqual(todoValidation({ ...base, ...patch }), null);
+});
+
+test("pasted link addresses are normalized and only web links are accepted", () => {
+  assert.equal(normalizeLinkUrl("docs.google.com/document/d/abc"), "https://docs.google.com/document/d/abc");
+  assert.equal(normalizeLinkUrl("  https://example.com/path?q=1  "), "https://example.com/path?q=1");
+  assert.equal(normalizeLinkUrl("http://example.com"), "http://example.com/");
+  assert.equal(normalizeLinkUrl("javascript:alert(1)"), null);
+  assert.equal(normalizeLinkUrl("mailto:me@example.com"), null);
+  assert.equal(normalizeLinkUrl("not a link"), null);
+  assert.equal(normalizeLinkUrl("localhost"), null);
+  assert.equal(normalizeLinkUrl(""), null);
+});
+
+test("link labels use the site name", () => {
+  assert.equal(linkLabel("https://www.example.com/x"), "example.com");
+  assert.equal(linkLabel("https://docs.google.com/document/d/abc"), "docs.google.com");
+});
+
+test("the to-do link is read defensively, including the older list format", () => {
+  assert.equal(todoLink({ link: "https://example.com/" }), "https://example.com/");
+  assert.equal(todoLink({ link: "javascript:x" }), null);
+  assert.equal(todoLink({}), null);
+  assert.equal(todoLink({ links: [{ id: "a", url: "https://old.example.com/", title: "" }] }), "https://old.example.com/");
+  assert.equal(todoLink({ links: [null] }), null);
+});
+
+test("a saved link must be a normalized web address", () => {
+  const todo = { id: "t", date: "9999-12-31", title: "Read", description: "", listId: null, priority: "none", status: "todo", dueDate: null, dueTime: null, subtasks: {}, createdAt: "", updatedAt: "", completedAt: null };
+  assert.equal(todoValidation({ ...todo, link: "https://example.com/" }), null);
+  assert.equal(todoValidation({ ...todo, link: null }), null);
+  assert.equal(todoValidation({ ...todo, link: "example.com" }), "Enter a valid web address for the link.");
 });

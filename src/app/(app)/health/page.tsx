@@ -11,7 +11,6 @@ import { IdealsModal } from "@/components/ideals-modal";
 import { PageHeading } from "@/components/page-heading";
 import { HabitCalendar } from "@/components/habit-calendar";
 import { RecentEntries } from "@/components/recent-entries";
-import { TaskReminders } from "@/components/task-reminders";
 import { Icon } from "@/components/icon";
 import { RangeFilter, useDateRange } from "@/components/range-filter";
 
@@ -73,7 +72,6 @@ export default function HealthPage() {
           <HabitCalendar throughDate={end} />
         </Flex>
         <Flex vertical gap={24} style={{ minWidth: 0 }}>
-          <TaskReminders />
           <Card
             styles={{ body: { padding: 20 } }}
             style={{

@@ -21,6 +21,7 @@ import { completeTodo, deleteTodo, deleteTodoList, restoreTodo, saveTodoList, se
 import { Tip } from "@/components/tip";
 import { RichTextView } from "@/components/rich-text-view";
 import { EmptyState } from "@/components/empty-state";
+import { TodoLinkChip } from "@/components/todo-link-chips";
 import { SideMenu } from "@/components/side-menu";
 
 const VIEWS = [
@@ -217,6 +218,7 @@ export function TodoWorkspace() {
                 <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
                   <Typography.Text strong delete={completed}>{todo.title}</Typography.Text>
                   {todo.description && <DescriptionPreview todo={todo} />}
+                  <TodoLinkChip todo={todo} />
                   <Flex gap={8} wrap align="center" style={{ marginTop: 8 }}>
                     {todo.priority !== "none" && <Tag color={todo.priority === "high" ? "red" : todo.priority === "medium" ? "gold" : "blue"}><FlagOutlined /> {todo.priority}</Tag>}
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}><FolderOutlined /> {listName}</Typography.Text>

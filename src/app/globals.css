@@ -868,3 +868,9 @@ button.getting-started-action:focus-visible {
   }
 }
 
+
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}

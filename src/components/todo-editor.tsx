@@ -4,10 +4,10 @@ import { AppModal } from "@/components/app-modal";
 
 import { useState } from "react";
 import { App, Button, Checkbox, DatePicker, Flex, Form, Input, Segmented, Select, TimePicker, Typography } from "antd";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, ExportOutlined, LinkOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
-import { todoListId, isKnownList, fixedListOptions, ACTIVE_TODO_DATE, TODO_PRIORITIES, todoValidation, type Todo, type TodoList } from "@/lib/todos";
+import { todoListId, isKnownList, fixedListOptions, ACTIVE_TODO_DATE, TODO_PRIORITIES, normalizeLinkUrl, todoLink, todoValidation, type Todo, type TodoList } from "@/lib/todos";
 import { saveTodo } from "@/models/users/todos";
 import { RichTextEditor, plainTextToHtml } from "@/components/rich-text-editor";
 
@@ -26,6 +26,9 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
     subtasks: {}, createdAt: new Date().toISOString(), updatedAt: "", completedAt: null,
   });
   const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [linkText, setLinkText] = useState(() => (initial ? todoLink(initial) ?? "" : ""));
+  const normalizedLink = linkText.trim() ? normalizeLinkUrl(linkText) : null;
+  const linkInvalid = !!linkText.trim() && !normalizedLink;
   const patch = (next: Partial<Todo>) => setDraft((current) => ({ ...current, ...next }));
   const validation = todoValidation(draft);
 
@@ -37,10 +40,13 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
   }
 
   function submit() {
-    if (!user || validation) return;
+    if (!user || validation || linkInvalid) return;
     const now = new Date();
+    const rest: Todo & { links?: unknown } = { ...draft };
+    delete rest.links;
     saveTodo(user.uid, {
-      ...draft,
+      ...rest,
+      link: normalizedLink,
       id: draft.id || crypto.randomUUID(),
       date: draft.status === "done" ? draft.completedAt ? draft.date : dayjs(now).format("YYYY-MM-DD") : ACTIVE_TODO_DATE,
       completedAt: draft.status === "done" ? draft.completedAt ?? now.toISOString() : null,
@@ -93,8 +99,14 @@ export function TodoEditor({ initial, lists, listId, onClose }: {
             </Flex>
           </Flex>
         </Form.Item>
+        <Form.Item label="Link" help={linkInvalid ? "Enter a web address like example.com or https://example.com." : undefined} validateStatus={linkInvalid ? "error" : undefined}>
+          <Flex gap={8}>
+            <Input aria-label="To-do link" placeholder="Paste a link (optional)" prefix={<LinkOutlined />} value={linkText} allowClear onChange={(event) => setLinkText(event.target.value)} style={{ minWidth: 0 }} />
+            {normalizedLink && <Button aria-label="Open link" href={normalizedLink} target="_blank" rel="noopener noreferrer" icon={<ExportOutlined />} />}
+          </Flex>
+        </Form.Item>
         {validation && draft.title.trim() && <Typography.Paragraph type="danger">{validation}</Typography.Paragraph>}
-        <Button type="primary" htmlType="submit" block disabled={!!validation}>{initial ? "Save changes" : "Add to-do"}</Button>
+        <Button type="primary" htmlType="submit" block disabled={!!validation || linkInvalid}>{initial ? "Save changes" : "Add to-do"}</Button>
       </Form>
     </AppModal>
   );
