@@ -249,6 +249,7 @@ export default function SummaryPage() {
       `}</style>
 
       <Card
+        data-tour="records-summary"
         styles={{ body: { padding: 0 } }}
         style={{
           borderColor: token.colorBorderSecondary,

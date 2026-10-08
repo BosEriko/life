@@ -244,6 +244,7 @@ function NotesContent() {
         </SideMenu>
 
         <Card
+          data-tour="journal-main"
           styles={{ body: { padding: 20 } }}
           style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}
         >

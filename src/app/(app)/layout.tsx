@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { HealthDataProvider } from "@/components/health-data-provider";
 import { MobileNav } from "@/components/mobile-nav";
 import { ReportDownload } from "@/components/report-download";
+import { HomeChecklist } from "@/components/home-checklist";
 import { SectionIntro } from "@/components/section-intro";
 import { UnitsProvider } from "@/components/units-provider";
 
@@ -38,6 +39,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             }}
           >
             <SectionIntro />
+            <HomeChecklist />
             <>{children}</>
           </main>
           <ReportDownload />

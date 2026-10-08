@@ -162,7 +162,7 @@ export function TodoWorkspace() {
 
   const listCount = (id: string) => active.filter((todo) => todoListId(todo, lists) === id).length;
 
-  return <div style={{ paddingRight: screens.md === true ? 56 : 0 }}>
+  return <div>
     <PageHeading title="To-do" subtitle="A place for projects, next steps, and everything you want to finish." extra={<Button type="primary" icon={<CheckSquareOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>} />
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}
     <div style={{ display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" }}>
@@ -186,7 +186,7 @@ export function TodoWorkspace() {
           onSelect={(key) => navigateView("all", key)}
         />
       </Flex>
-      <Card styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
+      <Card data-tour="journal-main" styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
         <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 16 }}>
           <Typography.Title level={4} style={{ margin: 0, overflowWrap: "anywhere" }}>{heading}</Typography.Title>
           <Flex align="center" gap={8}>

@@ -95,13 +95,13 @@ export function FinanceAnalytics() {
   );
 
   return (
-    <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
+    <div style={{ minWidth: 0 }}>
       <PageHeading title="Analytics" subtitle="Where your money comes from and where it goes. Transfers and excluded accounts aren’t counted." />
       {financeError && <Alert type="error" title="Could not load your finance data. Reload to try again." style={{ marginBottom: 24 }} />}
       {history.error && <Alert type="warning" title="Older records could not be loaded, so long periods may be incomplete." style={{ marginBottom: 16 }} />}
       {!financeReady ? <Spin /> : (
         <div style={{ display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" }}>
-          <Card title="Filters" size="small" style={card}>
+          <Card data-tour="filters" title="Filters" size="small" style={card}>
             <Flex vertical gap={12}>
               {field("Period", <Select aria-label="Analytics period" value={period} onChange={setPeriod} options={PERIODS} style={{ width: "100%" }} />)}
               {field("Currency", <Select aria-label="Analytics currency" value={currency} onChange={(value) => { setCurrencyChoice(value); setAccountId("all"); }} options={(currencies.length ? currencies : [currency]).map((value) => ({ value, label: value }))} style={{ width: "100%" }} />)}
@@ -109,7 +109,7 @@ export function FinanceAnalytics() {
             </Flex>
           </Card>
 
-          <Flex vertical gap={16} style={{ minWidth: 0 }}>
+          <Flex vertical gap={16} data-tour="finance-charts" style={{ minWidth: 0 }}>
             {history.ready && financeRecords.length === 0 && history.rows.length === 0 && <Card styles={{ body: { padding: 24 } }} style={card}><EmptyState title="Your money, in perspective" description="Add records to reveal your spending and savings." action={<Link href="/finance/records"><Button type="primary">Go to Records</Button></Link>} /></Card>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: 12 }}>
               {tile("Income", money(income, currency), incomeColor)}

@@ -11,6 +11,10 @@ import { saveOnboarding } from "@/models/users/profile";
 import { sectionHasData, type OnboardingSection } from "@/lib/onboarding";
 
 const INTROS: Record<OnboardingSection, { title: string; body: string }> = {
+  health: {
+    title: "Welcome to Health",
+    body: "Log your weight, water, food, blood pressure and habits in a few taps, then watch your weekly averages and trends take shape.",
+  },
   journal: {
     title: "A little space for your day",
     body: "Notes, routines, and to-dos — all in one place.",

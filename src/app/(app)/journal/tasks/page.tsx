@@ -35,7 +35,7 @@ function TasksContent() {
   }
 
   return (
-    <div style={{ paddingRight: screens.md === true ? 56 : 0 }}>
+    <div>
       <PageHeading
         title="Tasks"
         subtitle="Build your routine, then check it off each day."
@@ -52,7 +52,7 @@ function TasksContent() {
           selectedKey={view}
           onSelect={(key) => setView(key as TaskView)}
         />
-        <Card styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
+        <Card data-tour="journal-main" styles={{ body: { padding: 20 } }} style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
           <Typography.Title level={4} style={{ margin: "0 0 16px" }}>{VIEWS.find((item) => item.value === view)?.label}</Typography.Title>
           <TasksList view={view} />
         </Card>

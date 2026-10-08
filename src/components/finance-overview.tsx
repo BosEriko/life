@@ -120,7 +120,7 @@ export function FinanceOverview() {
   const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : "0%");
 
   return (
-    <section aria-label="Finance analytics" style={{ marginTop: 32 }}>
+    <section aria-label="Finance analytics" data-tour="finance-overview" style={{ marginTop: 32 }}>
       <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 16 }}>
         <Typography.Title level={2} style={{ fontSize: 18, margin: 0 }}>Analytics</Typography.Title>
         <Flex align="center" gap={10} wrap justify="flex-end">

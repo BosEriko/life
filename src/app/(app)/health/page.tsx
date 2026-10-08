@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Button, Card, Flex, Spin, theme } from "antd";
 import { AverageStats } from "@/components/average-stats";
 import { CreditAlert } from "@/components/credit-alert";
-import { GettingStarted } from "@/components/getting-started";
 import { useHealthData } from "@/components/health-data-provider";
 import { IdealsModal } from "@/components/ideals-modal";
 import { PageHeading } from "@/components/page-heading";
@@ -49,9 +48,7 @@ export default function HealthPage() {
         marginBottom={18}
       />
 
-      <GettingStarted />
-
-      <div style={{ marginBottom: 24 }}>
+      <div data-tour="health-averages" style={{ marginBottom: 24 }}>
         <AverageStats />
       </div>
 
@@ -60,6 +57,7 @@ export default function HealthPage() {
       <div className="home-grid">
         <Flex vertical gap={24} style={{ minWidth: 0 }}>
           <Card
+            data-tour="health-trends"
             styles={{ body: { padding: 20 } }}
             style={{
               borderColor: token.colorBorderSecondary,
@@ -69,10 +67,8 @@ export default function HealthPage() {
           >
             <MetricsChart start={start} end={end} />
           </Card>
-          <HabitCalendar throughDate={end} />
-        </Flex>
-        <Flex vertical gap={24} style={{ minWidth: 0 }}>
           <Card
+            data-tour="health-recent"
             styles={{ body: { padding: 20 } }}
             style={{
               borderColor: token.colorBorderSecondary,
@@ -82,6 +78,9 @@ export default function HealthPage() {
           >
             <RecentEntries />
           </Card>
+        </Flex>
+        <Flex vertical gap={24} data-tour="health-habits" style={{ minWidth: 0 }}>
+          <HabitCalendar throughDate={end} />
         </Flex>
       </div>
 

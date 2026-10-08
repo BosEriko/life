@@ -52,6 +52,7 @@ export function EmergencyFundBanner() {
 
   return (
     <Card
+      data-tour="finance-emergency"
       role="status"
       styles={{ body: { padding: 20 } }}
       style={{ marginBottom: 24, position: "relative", overflow: "hidden", background: color, borderColor: color, color: textColor, boxShadow: token.boxShadowTertiary }}

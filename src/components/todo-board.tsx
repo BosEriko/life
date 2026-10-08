@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Alert, App, Button, Card, Empty, Flex, Grid, Select, Spin, Typography, theme } from "antd";
+import { Alert, App, Button, Card, Empty, Flex, Select, Spin, Typography, theme } from "antd";
 import { AlignLeftOutlined, CalendarOutlined, CheckCircleOutlined, CheckSquareOutlined, ClockCircleOutlined, LinkOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
@@ -90,7 +90,6 @@ export function TodoBoard() {
   const history = useTodoHistory(true, cutoff);
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const screens = Grid.useBreakpoint();
   const [now, setNow] = useState(() => new Date());
   const [listId, setListId] = useState("all");
   const [editor, setEditor] = useState<Todo | null | undefined>(undefined);
@@ -167,14 +166,14 @@ export function TodoBoard() {
   if (loading) return <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex>;
   if (!user) return <Empty description="Sign in to organize your board."><Link href="/login"><Button type="primary">Sign in</Button></Link></Empty>;
 
-  return <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
+  return <div style={{ minWidth: 0 }}>
     <PageHeading title="Board" subtitle="The same to-dos, organized by what comes next." extra={<>
       <Select aria-label="Filter list" value={selectedList} onChange={setListId} style={{ width: 180, maxWidth: "100%" }} options={[{ value: "all", label: "All lists" }, ...fixedListOptions(todoLists)]} />
       <Button type="primary" icon={<CheckSquareOutlined />} disabled={!todosReady || todoError} onClick={() => setEditor(null)}>Add to-do</Button>
     </>} />
     {todoError && <Alert type="error" title="Could not load your to-dos. Reload to try again." style={{ marginBottom: 16 }} />}
     {todosReady && !todoError && all.length === 0 && <Card styles={{ body: { padding: 24 } }} style={{ marginBottom: 16 }}><EmptyState title="See your plans take shape" description="Add a to-do, then drag it from planned to done." action={<Button type="primary" icon={<CheckSquareOutlined />} onClick={() => setEditor(null)}>Add a to-do</Button>} /></Card>}
-    {!todosReady ? <Spin /> : <div ref={rail} tabIndex={0} role="region" aria-label="To-do board" style={{ overflowX: "auto", paddingBottom: 16 }}>
+    {!todosReady ? <Spin /> : <div ref={rail} data-tour="journal-board" tabIndex={0} role="region" aria-label="To-do board" style={{ overflowX: "auto", paddingBottom: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(260px, 1fr))", gap: 16, minWidth: 1088, alignItems: "stretch" }}>
         {COLUMNS.map(({ value, label, Icon }) => {
           const items = filtered.filter((todo) => todoColumn(todo, now) === value).sort((a, b) => value === "done" ? (b.completedAt ?? "").localeCompare(a.completedAt ?? "") : (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31") || a.createdAt.localeCompare(b.createdAt));

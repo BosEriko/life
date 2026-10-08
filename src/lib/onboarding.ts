@@ -1,4 +1,4 @@
-export type OnboardingSection = "journal" | "finance" | "records";
+export type OnboardingSection = "health" | "journal" | "finance" | "records";
 
 export type Onboarding = {
   checklistDismissed: boolean;
@@ -9,7 +9,7 @@ export type Onboarding = {
 export const EMPTY_ONBOARDING: Onboarding = {
   checklistDismissed: false,
   welcomeTourDone: false,
-  introsDismissed: { journal: false, finance: false, records: false },
+  introsDismissed: { health: false, journal: false, finance: false, records: false },
 };
 
 export function readOnboarding(value: unknown): Onboarding {
@@ -19,6 +19,7 @@ export function readOnboarding(value: unknown): Onboarding {
     checklistDismissed: data.checklistDismissed === true,
     welcomeTourDone: data.welcomeTourDone === true,
     introsDismissed: {
+      health: intros.health === true,
       journal: intros.journal === true,
       finance: intros.finance === true,
       records: intros.records === true,

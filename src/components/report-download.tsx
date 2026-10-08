@@ -2,8 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FloatButton, Grid, theme } from "antd";
-import { MenuOutlined } from "@ant-design/icons";
+import { CheckSquareOutlined, MenuOutlined, ScheduleOutlined, TransactionOutlined, WalletOutlined } from "@ant-design/icons";
+import { usePathname, useRouter } from "next/navigation";
 import { BpModal } from "@/components/bp-modal";
+import { FinanceAccountModal } from "@/components/finance-account-modal";
+import { FinanceRecordModal } from "@/components/finance-record-modal";
+import { AddTaskModal } from "@/components/tasks-card";
+import { TodoEditor } from "@/components/todo-editor";
 import { HabitModal } from "@/components/habit-modal";
 import { useHealthData } from "@/components/health-data-provider";
 import { IntakeModal } from "@/components/intake-modal";
@@ -12,6 +17,9 @@ import { WaterModal } from "@/components/water-modal";
 import { WeightModal } from "@/components/weight-modal";
 import { Icon } from "@/components/icon";
 import { todayKey } from "@/models/users/dailies";
+import { accentColor } from "@/lib/accents";
+import { useIsDark } from "@/components/theme-provider";
+import { focusDatabaseAdd } from "@/lib/database-add";
 
 const MENU_SIDE_KEY = "quick-action-menu-side";
 const MENU_COLLAPSED_KEY = "quick-action-menu-collapsed";
@@ -26,7 +34,16 @@ export function ReportDownload() {
     bpReadings,
     waterLogs,
     intake: intakeEntries,
+    financeAccounts,
+    todoLists,
   } = useHealthData();
+  const pathname = usePathname();
+  const router = useRouter();
+  const section = pathname.split("/")[1];
+  const [pageModal, setPageModal] = useState<"account" | "record" | "todo" | "task" | null>(null);
+  const hasAccount = financeAccounts.some((account) => !account.deletedAt);
+  const isDark = useIsDark();
+  const accent = (name: Parameters<typeof accentColor>[0]) => ({ color: accentColor(name, isDark) });
 
   const controlStyle = {
     background: token.colorBgSpotlight,
@@ -133,36 +150,82 @@ export function ReportDownload() {
               : "translateX(0)",
         }}
       >
-        <FloatButton
-          icon={<Icon name="habits" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Habits")}
-          onClick={() => setHabitOpen(true)}
-          className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
-        />
-        <FloatButton
-          icon={<Icon name="weight" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Weight")}
-          onClick={() => setWeightOpen(true)}
-          className={`quick-action-health${hasWeightToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
-        />
-        <FloatButton
-          icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Blood pressure")}
-          onClick={() => setBpOpen(true)}
-          className={`quick-action-health${hasBpToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
-        />
-        <FloatButton
-          icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Water")}
-          onClick={() => setWaterOpen(true)}
-          className={`quick-action-health${hasWaterToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
-        />
-        <FloatButton
-          icon={<Icon name="intake" style={{ marginRight: 0, opacity: 1 }} />}
-          tooltip={tip("Food & drink")}
-          onClick={() => setIntakeOpen(true)}
-          className={`quick-action-health${hasIntakeToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
-        />
+        {section === "health" && <>
+          <FloatButton
+            icon={<Icon name="habits" style={{ marginRight: 0, opacity: 1 }} />}
+            tooltip={tip("Habits")}
+            onClick={() => setHabitOpen(true)}
+            className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+          <FloatButton
+            icon={<Icon name="weight" style={{ marginRight: 0, opacity: 1 }} />}
+            tooltip={tip("Weight")}
+            onClick={() => setWeightOpen(true)}
+            className={`quick-action-health${hasWeightToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+          <FloatButton
+            icon={<Icon name="bp" style={{ marginRight: 0, opacity: 1 }} />}
+            tooltip={tip("Blood pressure")}
+            onClick={() => setBpOpen(true)}
+            className={`quick-action-health${hasBpToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+          <FloatButton
+            icon={<Icon name="water" style={{ marginRight: 0, opacity: 1 }} />}
+            tooltip={tip("Water")}
+            onClick={() => setWaterOpen(true)}
+            className={`quick-action-health${hasWaterToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+          <FloatButton
+            icon={<Icon name="intake" style={{ marginRight: 0, opacity: 1 }} />}
+            tooltip={tip("Food & drink")}
+            onClick={() => setIntakeOpen(true)}
+            className={`quick-action-health${hasIntakeToday ? "" : " bp-pulse"}${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+        </>}
+        {section === "finance" && <>
+          <FloatButton
+            icon={<WalletOutlined style={accent("weight")} />}
+            tooltip={tip("Add account")}
+            aria-label="Add account"
+            onClick={() => setPageModal("account")}
+            className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+          <FloatButton
+            icon={<TransactionOutlined style={accent("habits")} />}
+            tooltip={tip(hasAccount ? "Add record" : "Add an account first")}
+            aria-label="Add record"
+            onClick={() => setPageModal(hasAccount ? "record" : "account")}
+            className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+        </>}
+        {section === "journal" && <>
+          <FloatButton
+            icon={<CheckSquareOutlined style={accent("notes")} />}
+            tooltip={tip("Add to-do")}
+            aria-label="Add to-do"
+            onClick={() => setPageModal("todo")}
+            className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+          <FloatButton
+            icon={<ScheduleOutlined style={accent("bpLow")} />}
+            tooltip={tip("Add task")}
+            aria-label="Add task"
+            onClick={() => setPageModal("task")}
+            className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+        </>}
+        {section === "records" && (
+          <FloatButton
+            icon={<Icon name="intake" style={{ marginRight: 0, opacity: 1 }} />}
+            tooltip={tip("Add food or drink")}
+            aria-label="Add food or drink"
+            onClick={() => {
+              if (pathname !== "/records/database") router.push("/records/database#add-item");
+              focusDatabaseAdd();
+            }}
+            className={`quick-action-health${collapsed ? " quick-action-health-collapsed" : ""}`}
+          />
+        )}
         <FloatButton
           aria-label={`Move menu to ${menuSide === "right" ? "left" : "right"}`}
           icon={
@@ -180,10 +243,10 @@ export function ReportDownload() {
           aria-label={collapsed ? "Expand menu" : "Collapse menu"}
           icon={<MenuOutlined />}
           style={controlStyle}
-          badge={{ count: collapsed ? pulsingCount : 0 }}
+          badge={{ count: collapsed && section === "health" ? pulsingCount : 0 }}
           tooltip={tip(collapsed ? "Expand menu" : "Collapse menu")}
           onClick={toggleMenuCollapsed}
-          className={collapsed && pulsingCount > 0 ? "bp-pulse" : undefined}
+          className={collapsed && section === "health" && pulsingCount > 0 ? "bp-pulse" : undefined}
         />
         {screens.md !== false ? (
           <FloatButton
@@ -209,6 +272,11 @@ export function ReportDownload() {
       <BpModal open={bpOpen} onClose={() => setBpOpen(false)} />
 
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} />
+
+      {pageModal === "account" && <FinanceAccountModal onClose={() => setPageModal(null)} />}
+      {pageModal === "record" && <FinanceRecordModal onClose={() => setPageModal(null)} onSaved={() => {}} />}
+      {pageModal === "todo" && <TodoEditor initial={null} lists={todoLists} listId="inbox" onClose={() => setPageModal(null)} />}
+      <AddTaskModal open={pageModal === "task"} onClose={() => setPageModal(null)} />
     </>
   );
 }

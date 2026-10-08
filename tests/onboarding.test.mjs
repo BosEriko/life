@@ -57,6 +57,8 @@ test("section banners hide once the section is already in use", () => {
   assert.equal(sectionHasData("journal", { ...empty, tasks: [{}] }), true);
   assert.equal(sectionHasData("records", empty), false);
   assert.equal(sectionHasData("records", { ...empty, bpReadings: [{}] }), true);
+  assert.equal(sectionHasData("health", empty), false);
+  assert.equal(sectionHasData("health", { ...empty, waterLogs: [{}] }), true);
 });
 
 test("onboarding flags default to off for missing or malformed profile data", () => {
@@ -66,6 +68,6 @@ test("onboarding flags default to off for missing or malformed profile data", ()
   assert.deepEqual(readOnboarding({ welcomeTourDone: true, introsDismissed: { finance: true, other: true } }), {
     checklistDismissed: false,
     welcomeTourDone: true,
-    introsDismissed: { journal: false, finance: true, records: false },
+    introsDismissed: { health: false, journal: false, finance: true, records: false },
   });
 });

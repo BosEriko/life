@@ -167,7 +167,7 @@ export function DashboardHeader() {
         ) : (
           <Flex align="center" gap={28}>
             <nav aria-label="Primary" data-tour="main-nav">
-              <Flex align="center" gap={28}>
+              <Flex align="center" gap={8}>
                 {navItems.map((item) => {
                   const active = pathname.split("/")[1] === item.key.split("/")[1];
                   return (
@@ -181,6 +181,7 @@ export function DashboardHeader() {
                         boxSizing: "border-box",
                         height: 72,
                         marginBlock: -12,
+                        paddingInline: 10,
                         fontSize: 13,
                         fontWeight: active ? 800 : 600,
                         color: active ? token.colorPrimary : token.colorTextSecondary,

@@ -40,6 +40,7 @@ import {
   type FoodKind,
 } from "@/models/foods";
 import { PageHeading } from "@/components/page-heading";
+import { focusDatabaseAdd } from "@/lib/database-add";
 
 const KIND_OPTIONS = [
   { label: "Food", value: "food" },
@@ -78,6 +79,12 @@ export function DatabasePanel() {
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [mineOnly, setMineOnly] = useState(true);
   const [editing, setEditing] = useState<FoodItem | null>(null);
+
+  useEffect(() => {
+    if (window.location.hash !== "#add-item") return;
+    const timer = window.setTimeout(focusDatabaseAdd, 150);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -188,10 +195,11 @@ export function DatabasePanel() {
       />
 
       <div className="split-grid">
-        <Card title="Add item" style={{ boxShadow: token.boxShadowTertiary }}>
+        <Card id="add-item" data-tour="records-add" title="Add item" style={{ boxShadow: token.boxShadowTertiary }}>
           <Flex vertical gap={12}>
             <Flex gap={8} wrap>
               <Input
+                id="database-add-name"
                 placeholder="Name (e.g. Chicken adobo)"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -262,6 +270,7 @@ export function DatabasePanel() {
         </Card>
 
         <Card
+          data-tour="records-list"
           title={`Items · ${visibleFoods.length}`}
           style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}
           extra={

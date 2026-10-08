@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Alert, App, Button, Card, Empty, Flex, Grid, Input, Pagination, Select, Spin, Tag, Typography, theme } from "antd";
-import { EditOutlined, HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, WalletOutlined, UnlockOutlined } from "@ant-design/icons";
+import { EditOutlined, HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, TransactionOutlined, UnlockOutlined, WalletOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { PageHeading } from "@/components/page-heading";
 import { FinanceAccountModal } from "@/components/finance-account-modal";
@@ -111,10 +111,10 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
 
 
   return (
-    <div style={{ minWidth: 0, paddingRight: screens.md === true ? 56 : 0 }}>
+    <div style={{ minWidth: 0 }}>
       <PageHeading title={view === "dashboard" ? "Finance" : view === "accounts" ? "Accounts" : "Records"} subtitle={view === "dashboard" ? "Your accounts, everyday spending, and money coming in." : view === "accounts" ? "Your money, organized by account." : "Every expense, income, and transfer in one place."} extra={<>
         <Button icon={<WalletOutlined />} disabled={!financeReady || financeError} onClick={() => setModal("account")}>Add account</Button>
-        <Button type="primary" icon={<PlusOutlined />} disabled={!financeReady || financeError || accounts.length === 0} onClick={() => setModal("record")}>Add record</Button>
+        <Button type="primary" icon={<TransactionOutlined />} disabled={!financeReady || financeError || accounts.length === 0} onClick={() => setModal("record")}>Add record</Button>
       </>} />
       {financeError && <Alert type="error" title="Could not load your finance data. Reload to try again." style={{ marginBottom: 24 }} />}
       {!financeReady ? <Spin /> : <>
@@ -136,7 +136,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           </Tip>}
         </Flex>}
         {view === "accounts" ? <div style={twoColumns}>
-          <Card title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
+          <Card data-tour="filters" title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
             <Flex vertical gap={12}>
               <div>
                 <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Search</Typography.Text>
@@ -158,7 +158,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           </Card>
           <div style={{ minWidth: 0 }}>
         {accounts.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Add your first account to start tracking your money."><Button type="primary" icon={<PlusOutlined />} onClick={() => setModal("account")}>Create account</Button></Empty></Card> :
-          <Card styles={{ body: { padding: filteredAccounts.length ? 20 : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
+          <Card data-tour="finance-accounts" styles={{ body: { padding: filteredAccounts.length ? 20 : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
             {filteredAccounts.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." /> :
               <Flex vertical gap={10}><SortableList ids={filteredAccounts.map((account) => account.id)} layout="list" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
                 renderOverlay={(id) => { const account = accountsById.get(id); return account ? <div style={{ padding: "14px 16px", background: `linear-gradient(${token.colorFillSecondary}, ${token.colorFillSecondary}), ${token.colorBgContainer}`, borderRadius: token.borderRadius }}>{accountRow(account)}</div> : null; }}
@@ -169,7 +169,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           </div>
         </div> : <>
         {accounts.length === 0 ? <Card><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Add your first account to start tracking your money."><Button type="primary" icon={<PlusOutlined />} onClick={() => setModal("account")}>Create account</Button></Empty></Card> :
-          <div className="account-cards">
+          <div className="account-cards" data-tour="finance-accounts">
             {filteredAccounts.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts match these filters." />}
             <SortableList ids={filteredAccounts.map((account) => account.id)} layout="grid" disabled={!financeReady || financeError || locked} onReorder={saveSubsetOrder}
               renderOverlay={(id) => { const account = accountsById.get(id); return account ? <Card styles={{ body: { padding: compactCards ? "10px 14px" : 16 } }} style={{ ...accountCardStyle(account), height: "100%" }}>{accountCardBody(account)}</Card> : null; }}
@@ -186,7 +186,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
         {view === "dashboard" && accounts.length > 0 && <FinanceOverview />}
 
         {view === "records" && <div style={twoColumns}>
-          <Card title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
+          <Card data-tour="filters" title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
             <Flex vertical gap={12}>
               <div>
                 <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>Search</Typography.Text>
@@ -205,8 +205,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           <div style={{ minWidth: 0 }}>
         {!history.ready && !history.error && <Typography.Paragraph type="secondary">Loading older records…</Typography.Paragraph>}
         {history.error && <Alert type="warning" title="Older records could not be loaded." action={<Button size="small" onClick={history.refresh}>Retry</Button>} style={{ marginBottom: 16 }} />}
-        {filtered.length === 0 ? <Card>{allRecords.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No records match these filters." /> : accounts.length === 0 ? <EmptyState title="Add an account first" description="Start with your cash, bank, or e-wallet." action={<Button type="primary" icon={<WalletOutlined />} disabled={financeError} onClick={() => setModal("account")}>Add account</Button>} /> : <EmptyState title="No records yet" description="Track an expense or income to update your balance." action={<Button type="primary" icon={<PlusOutlined />} disabled={financeError} onClick={() => setModal("record")}>Add your first record</Button>} />}</Card> :
-          <Flex vertical gap={16}>{recordDays(filtered.slice((currentPage - 1) * 20, currentPage * 20)).map(([date, dayRecords]) => <Card key={date} styles={{ body: { padding: 20 } }} style={{ boxShadow: token.boxShadowTertiary }}>
+        {filtered.length === 0 ? <Card>{allRecords.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No records match these filters." /> : accounts.length === 0 ? <EmptyState title="Add an account first" description="Start with your cash, bank, or e-wallet." action={<Button type="primary" icon={<WalletOutlined />} disabled={financeError} onClick={() => setModal("account")}>Add account</Button>} /> : <EmptyState title="No records yet" description="Track an expense or income to update your balance." action={<Button type="primary" icon={<TransactionOutlined />} disabled={financeError} onClick={() => setModal("record")}>Add your first record</Button>} />}</Card> :
+          <Flex vertical gap={16} data-tour="finance-records">{recordDays(filtered.slice((currentPage - 1) * 20, currentPage * 20)).map(([date, dayRecords]) => <Card key={date} styles={{ body: { padding: 20 } }} style={{ boxShadow: token.boxShadowTertiary }}>
             <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 14 }}>
               <Typography.Text style={{ fontSize: 16 }}>{dayjs(date).format("dddd, MMMM D, YYYY")}</Typography.Text>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>{dayRecords.length} {dayRecords.length === 1 ? "record" : "records"}</Typography.Text>

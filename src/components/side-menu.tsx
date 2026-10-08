@@ -35,6 +35,7 @@ export function SideMenu({
     <nav
       aria-label={ariaLabel}
       className="side-menu"
+      data-tour="side-menu"
       style={{
         minWidth: 0,
         overflow: "hidden",

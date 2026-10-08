@@ -18,7 +18,7 @@ function MeasuredSubmenuTabs({ tabs, pathname, variant }: SubmenuTabsProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [split, setSplit] = useState<{ visible: number[]; overflow: number[] } | null>(null);
-  const gap = variant === "header" ? 24 : 4;
+  const gap = variant === "header" ? 8 : 4;
   const activeIndex = tabs.findIndex((tab) => tab.href === pathname);
 
   useLayoutEffect(() => {
@@ -45,7 +45,7 @@ function MeasuredSubmenuTabs({ tabs, pathname, variant }: SubmenuTabsProps) {
           alignItems: "center",
           gap: 8,
           minHeight: 44,
-          padding: "0 2px",
+          padding: "0 10px",
           marginBottom: -1,
           fontSize: 13,
           fontWeight: active ? 800 : 600,
