@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -56,4 +56,11 @@ test("emergency fund goal falls back to six months for missing or unsupported va
   assert.equal(emergencyFundMonthsOrDefault(13), 6);
   assert.equal(emergencyFundMonthsOrDefault(6.5), 6);
   assert.equal(emergencyFundMonthsOrDefault("12"), 6);
+  assert.equal(DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, 12);
+  assert.equal(emergencyFundAverageMonthsOrDefault(undefined), 12);
+  assert.equal(emergencyFundAverageMonthsOrDefault(3), 3);
+  assert.equal(emergencyFundAverageMonthsOrDefault(1), 1);
+  assert.equal(emergencyFundAverageMonthsOrDefault(18), 12);
+  assert.equal(emergencyFundAverageMonthsOrDefault(0), 12);
+  assert.equal(emergencyFundAverageMonthsOrDefault("6"), 12);
 });

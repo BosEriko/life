@@ -40,6 +40,13 @@ export function emergencyFundMonthsOrDefault(value: unknown) {
   return typeof value === "number" && EMERGENCY_FUND_MONTHS.includes(value) ? value : DEFAULT_EMERGENCY_FUND_MONTHS;
 }
 
+export const EMERGENCY_FUND_AVERAGE_MONTHS = [1, 2, 3, 6, 9, 12];
+export const DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS = 12;
+
+export function emergencyFundAverageMonthsOrDefault(value: unknown) {
+  return typeof value === "number" && EMERGENCY_FUND_AVERAGE_MONTHS.includes(value) ? value : DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS;
+}
+
 export function accountTextColor(color: string) {
   const dark = "#172019";
   return apcaContrast("#ffffff", color) >= apcaContrast(dark, color) ? "#ffffff" : dark;

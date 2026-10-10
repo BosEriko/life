@@ -5,8 +5,8 @@ import { CheckCircleOutlined, DownOutlined, ExclamationCircleOutlined, FieldTime
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
-import { accountTextColor, EMERGENCY_FUND_MONTHS, money } from "@/lib/finance";
-import { setEmergencyFundMonths } from "@/models/users/finance";
+import { accountTextColor, EMERGENCY_FUND_AVERAGE_MONTHS, EMERGENCY_FUND_MONTHS, money } from "@/lib/finance";
+import { setEmergencyFundAverageMonths, setEmergencyFundMonths } from "@/models/users/finance";
 import { Tip } from "@/components/tip";
 import { todayKey } from "@/models/users/dailies";
 
@@ -16,7 +16,7 @@ export function EmergencyFundBanner() {
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const { user } = useAuth();
-  const { financeAccounts, financeRecords, financeEmergencyFundMonths: goal } = useHealthData();
+  const { financeAccounts, financeRecords, financeEmergencyFundMonths: goal, financeEmergencyFundAverageMonths: period } = useHealthData();
   const accounts = financeAccounts.filter((account) => !account.deletedAt && !account.excludeFromStatistics);
   if (accounts.length === 0) return null;
 
@@ -28,12 +28,12 @@ export function EmergencyFundBanner() {
   const balance = inCurrency.reduce((sum, account) => sum + account.balanceMinor, 0);
 
   const thisMonth = dayjs(todayKey()).startOf("month");
-  const since = thisMonth.subtract(12, "month").format("YYYY-MM-DD");
+  const since = thisMonth.subtract(period, "month").format("YYYY-MM-DD");
   const until = thisMonth.format("YYYY-MM-DD");
   const expenses = financeRecords.filter((record) => record.type === "expense" && ids.has(record.accountId) && record.date >= since && record.date < until);
   const spent = expenses.reduce((sum, record) => sum + record.amountMinor, 0);
   const firstMonth = expenses.reduce((min, record) => (record.date < min ? record.date : min), until);
-  const monthsCovered = Math.min(12, Math.max(1, thisMonth.diff(dayjs(firstMonth).startOf("month"), "month")));
+  const monthsCovered = Math.min(period, Math.max(1, thisMonth.diff(dayjs(firstMonth).startOf("month"), "month")));
   const average = expenses.length ? Math.round(spent / monthsCovered) : 0;
   const months = average > 0 ? Math.max(0, balance / average) : null;
   const shown = months === null ? null : months >= 10 ? Math.floor(months) : Math.floor(months * 10) / 10;
@@ -45,10 +45,14 @@ export function EmergencyFundBanner() {
 
   const textColor = accountTextColor(color);
   const accountCount = `${inCurrency.length} ${inCurrency.length === 1 ? "account" : "accounts"}`;
-  const formula = `Total balance of your ${accountCount} in ${currency} that count toward statistics ÷ your average monthly spending from those accounts over the last ${monthsCovered === 1 ? "full month" : `${monthsCovered} full months`} (up to 12, not counting this month). Your goal is ${monthsText(goal)}: reaching it is healthy, at least half of it is building, and under half is low.`;
+  const formula = `Total balance of your ${accountCount} in ${currency} that count toward statistics ÷ your average monthly spending from those accounts over the last ${monthsCovered === 1 ? "full month" : `${monthsCovered} full months`} (up to ${monthsText(period)}, not counting this month). Your goal is ${monthsText(goal)}: reaching it is healthy, at least half of it is building, and under half is low.`;
   const chooseGoal = (months: number) => {
     if (user) void setEmergencyFundMonths(user.uid, months).catch(() => message.error("Could not save your emergency fund goal."));
   };
+  const choosePeriod = (months: number) => {
+    if (user) void setEmergencyFundAverageMonths(user.uid, months).catch(() => message.error("Could not save your averaging period."));
+  };
+  const pillStyle = { color: "inherit", fontWeight: 600, background: "rgba(0, 0, 0, 0.22)", borderRadius: 999, paddingInline: 10 };
 
   return (
     <Card
@@ -63,16 +67,21 @@ export function EmergencyFundBanner() {
           <Flex align="center" gap={10} wrap>
             <Typography.Text strong style={{ color: "inherit" }}><Icon style={{ marginRight: 8 }} />Emergency fund</Typography.Text>
             {label && <span style={{ padding: "2px 10px", borderRadius: 999, background: "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600 }}>{label}</span>}
+            <Tip title={formula} placement="bottom">
+              <InfoCircleOutlined aria-label={formula} style={{ opacity: 0.85, cursor: "help" }} />
+            </Tip>
           </Flex>
-          <Flex align="center" gap={8}>
+          <Flex align="center" gap={8} wrap>
+            <Dropdown trigger={["click"]} menu={{ items: EMERGENCY_FUND_AVERAGE_MONTHS.map((value) => ({ key: String(value), label: monthsText(value) })), selectable: true, selectedKeys: [String(period)], onClick: ({ key }) => choosePeriod(Number(key)) }}>
+              <Button type="text" size="small" aria-label={`Average spending over: ${monthsText(period)}. Change period`} style={pillStyle}>
+                Average: {monthsText(period)} <DownOutlined style={{ fontSize: 10 }} />
+              </Button>
+            </Dropdown>
             <Dropdown trigger={["click"]} menu={{ items: EMERGENCY_FUND_MONTHS.map((value) => ({ key: String(value), label: monthsText(value) })), selectable: true, selectedKeys: [String(goal)], onClick: ({ key }) => chooseGoal(Number(key)), style: { maxHeight: 280, overflowY: "auto" } }}>
-              <Button type="text" size="small" aria-label={`Emergency fund goal: ${monthsText(goal)}. Change goal`} style={{ color: "inherit", fontWeight: 600, background: "rgba(0, 0, 0, 0.22)", borderRadius: 999, paddingInline: 10 }}>
+              <Button type="text" size="small" aria-label={`Emergency fund goal: ${monthsText(goal)}. Change goal`} style={pillStyle}>
                 Goal: {monthsText(goal)} <DownOutlined style={{ fontSize: 10 }} />
               </Button>
             </Dropdown>
-            <Tip title={formula} placement="left">
-              <InfoCircleOutlined aria-label={formula} style={{ opacity: 0.85, cursor: "help" }} />
-            </Tip>
           </Flex>
         </Flex>
         {shown === null && <Typography.Text style={{ display: "block", color: "inherit", fontSize: 16, marginTop: 14 }}>Log your expenses to see how many months your money would last.</Typography.Text>}

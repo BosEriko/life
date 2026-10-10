@@ -1,6 +1,6 @@
 import { collection, doc, FieldPath, increment, onSnapshot, orderBy, query, runTransaction, setDoc, updateDoc, where, writeBatch, type DocumentData, type QueryDocumentSnapshot } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
-import { accountValidation, balanceChanges, EMERGENCY_FUND_MONTHS, emergencyFundMonthsOrDefault, rebuiltBalance, recordValidation, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
+import { accountValidation, balanceChanges, EMERGENCY_FUND_AVERAGE_MONTHS, EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, rebuiltBalance, recordValidation, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 
 const settingsRef = (uid: string) => doc(getFirebaseDb(), "users", uid, "financeSettings", "current");
 
@@ -89,8 +89,8 @@ export function recalculateFinanceAccounts(uid: string, records: FinanceRecord[]
   });
 }
 
-export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number }) => void, fail: (error: Error) => void) {
-  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true, lastRecalculatedAt: (snapshot.data()?.lastRecalculatedAt as string | undefined) ?? null, emergencyFundMonths: emergencyFundMonthsOrDefault(snapshot.data()?.emergencyFundMonths) }), fail);
+export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number }) => void, fail: (error: Error) => void) {
+  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true, lastRecalculatedAt: (snapshot.data()?.lastRecalculatedAt as string | undefined) ?? null, emergencyFundMonths: emergencyFundMonthsOrDefault(snapshot.data()?.emergencyFundMonths), emergencyFundAverageMonths: emergencyFundAverageMonthsOrDefault(snapshot.data()?.emergencyFundAverageMonths) }), fail);
 }
 
 export function setFinanceAccountsLocked(uid: string, locked: boolean) {
@@ -100,6 +100,11 @@ export function setFinanceAccountsLocked(uid: string, locked: boolean) {
 export function setEmergencyFundMonths(uid: string, months: number) {
   if (!EMERGENCY_FUND_MONTHS.includes(months)) return Promise.reject(new Error("Choose a supported emergency fund goal."));
   return setDoc(settingsRef(uid), { emergencyFundMonths: months }, { merge: true });
+}
+
+export function setEmergencyFundAverageMonths(uid: string, months: number) {
+  if (!EMERGENCY_FUND_AVERAGE_MONTHS.includes(months)) return Promise.reject(new Error("Choose a supported averaging period."));
+  return setDoc(settingsRef(uid), { emergencyFundAverageMonths: months }, { merge: true });
 }
 
 export function mapFinanceRecord(snapshot: QueryDocumentSnapshot<DocumentData>): FinanceRecord {
