@@ -8,6 +8,7 @@ on:
       - firestore.indexes.json
       - firebase.json
       - .github/workflows/deploy-firestore-rules.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
