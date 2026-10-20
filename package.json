@@ -28,6 +28,7 @@
     "@tiptap/pm": "^3.31.4",
     "@tiptap/react": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
+    "@vercel/analytics": "^2.0.1",
     "antd": "^6.6.2",
     "dayjs": "^1.11.11",
     "dompurify": "^3.4.16",

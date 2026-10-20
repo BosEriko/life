@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { Analytics } from "@vercel/analytics/next";
 import "antd/dist/reset.css";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </AuthProvider>
           </ThemeProvider>
         </AntdRegistry>
+        <Analytics />
       </body>
     </html>
   );
