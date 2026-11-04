@@ -3,3 +3,5 @@ allowBuilds:
   core-js: false
   protobufjs: true
   unrs-resolver: true
+overrides:
+  jose: ^5.10.0
