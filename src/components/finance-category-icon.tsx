@@ -16,12 +16,14 @@ import {
   FileTextOutlined,
   GiftOutlined,
   HomeOutlined,
+  InteractionOutlined,
   MedicineBoxOutlined,
   PlaySquareOutlined,
   ReadOutlined,
   ShoppingOutlined,
   SwapOutlined,
   TagOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 
 const ICONS: Record<string, typeof TagOutlined> = {
@@ -37,6 +39,7 @@ const ICONS: Record<string, typeof TagOutlined> = {
   Gifts: GiftOutlined,
   Other: AppstoreOutlined,
   Transfer: SwapOutlined,
+  Debt: InteractionOutlined,
 };
 
 export function CategoryIcon({ category, style }: { category: string; style?: CSSProperties }) {
@@ -51,6 +54,7 @@ const ACCOUNT_TYPE_ICONS: Record<string, typeof TagOutlined> = {
   "Credit card": CreditCardOutlined,
   Investment: FundOutlined,
   Loan: DollarOutlined,
+  Debt: UserOutlined,
   Other: EllipsisOutlined,
 };
 

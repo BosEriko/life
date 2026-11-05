@@ -43,7 +43,7 @@ export function FinanceAnalytics() {
 
   const included = financeAccounts.filter((account) => !account.deletedAt && !account.excludeFromStatistics);
   const includedIds = new Set(included.map((account) => account.id));
-  const records = mergeById(financeRecords, history.rows).filter((record) => record.type !== "transfer" && includedIds.has(record.accountId));
+  const records = mergeById(financeRecords, history.rows).filter((record) => (record.type === "expense" || record.type === "income") && includedIds.has(record.accountId));
 
   const currencyCounts = new Map<string, number>();
   for (const record of records) currencyCounts.set(record.currency, (currencyCounts.get(record.currency) ?? 0) + 1);
@@ -96,7 +96,7 @@ export function FinanceAnalytics() {
 
   return (
     <div style={{ minWidth: 0 }}>
-      <PageHeading title="Analytics" subtitle="Where your money comes from and where it goes. Transfers and excluded accounts aren’t counted." />
+      <PageHeading title="Analytics" subtitle="Where your money comes from and where it goes. Transfers, debts, and excluded accounts aren’t counted." />
       {financeError && <Alert type="error" title="Could not load your finance data. Reload to try again." style={{ marginBottom: 24 }} />}
       {history.error && <Alert type="warning" title="Older records could not be loaded, so long periods may be incomplete." style={{ marginBottom: 16 }} />}
       {!financeReady ? <Spin /> : (

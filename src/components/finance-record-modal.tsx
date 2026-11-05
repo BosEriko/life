@@ -7,11 +7,18 @@ import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceDay } from "@/components/use-day-records";
-import { CATEGORIES, currencyDigits, recordValidation, toMinor, type FinanceRecord, sortAccounts, type FinanceAccount } from "@/lib/finance";
+import { CATEGORIES, currencyDigits, debtStatus, isDebtAccount, recordValidation, toMinor, type DebtAction, type FinanceRecord, sortAccounts, type FinanceAccount } from "@/lib/finance";
 import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { AccountBadge, CategoryIcon } from "@/components/finance-category-icon";
 import { ArrowRightOutlined, PlusOutlined } from "@ant-design/icons";
+
+const DEBT_ACTION_HINTS: Record<DebtAction, string> = {
+  borrow: "They give you money that you'll pay back.",
+  repay: "You pay back money you owe them.",
+  lend: "You give them money that they'll pay back.",
+  collect: "They pay back money they owe you.",
+};
 
 function accountOption(account: FinanceAccount) {
   return (
@@ -22,16 +29,19 @@ function accountOption(account: FinanceAccount) {
   );
 }
 
-export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: FinanceRecord; onClose: () => void; onSaved: () => void }) {
+export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: { initial?: FinanceRecord; defaultType?: FinanceRecord["type"]; onClose: () => void; onSaved: () => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { financeAccounts, financeRecords: records } = useHealthData();
   const accounts = sortAccounts(financeAccounts.filter((account) => !account.deletedAt));
-  const [type, setType] = useState<FinanceRecord["type"]>(initial?.type ?? "expense");
+  const ownAccounts = accounts.filter((item) => !isDebtAccount(item));
+  const debtAccounts = accounts.filter(isDebtAccount);
+  const [type, setType] = useState<FinanceRecord["type"]>(initial?.type ?? defaultType ?? "expense");
+  const [debtAction, setDebtAction] = useState<DebtAction>(initial?.debtAction ?? "borrow");
   const [amount, setAmount] = useState<number | null>(initial ? initial.amountMinor / 10 ** currencyDigits(initial.currency) : null);
-  const [accountId, setAccountId] = useState(initial?.accountId ?? accounts[0]?.id ?? "");
+  const [accountId, setAccountId] = useState(initial?.accountId ?? ownAccounts[0]?.id ?? "");
   const [destinationId, setDestinationId] = useState<string | null>(initial?.destinationId ?? null);
-  const [category, setCategory] = useState<string | undefined>(initial && initial.type !== "transfer" ? initial.category : undefined);
+  const [category, setCategory] = useState<string | undefined>(initial && initial.type !== "transfer" && initial.type !== "debt" ? initial.category : undefined);
   const [categorySearch, setCategorySearch] = useState("");
   const [labels, setLabels] = useState<string[]>(initial?.labels ?? []);
   const [date, setDate] = useState<Dayjs | null>(initial ? dayjs(initial.occurredAt) : null);
@@ -40,6 +50,12 @@ export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: Fi
   const [pendingOccurredAt, setPendingOccurredAt] = useState<string | null>(null);
   const saved = useRef(false);
   const account = accounts.find((item) => item.id === accountId);
+  const person = debtAccounts.find((item) => item.id === destinationId);
+  function choosePerson(id: string) {
+    setDestinationId(id);
+    const next = debtAccounts.find((item) => item.id === id);
+    if (next && account?.currency !== next.currency) setAccountId(ownAccounts.find((item) => item.currency === next.currency)?.id ?? "");
+  }
   const day = useFinanceDay((date ?? dayjs()).format("YYYY-MM-DD"), true);
   useEffect(() => {
     if (pending && day.rows.some((record) => record.id === pending && (!pendingOccurredAt || record.occurredAt === pendingOccurredAt)) && !saved.current) {
@@ -51,7 +67,7 @@ export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: Fi
   function save() {
     if (!user || !account || pending) return;
     const occurred = date ?? dayjs();
-    const record: FinanceRecord = { id: initial?.id ?? crypto.randomUUID(), type, amountMinor: amount === null ? NaN : toMinor(amount, account.currency), accountId, destinationId: type === "transfer" ? destinationId : null, currency: account.currency, category: type === "transfer" ? "Transfer" : category ?? "", labels, date: occurred.format("YYYY-MM-DD"), occurredAt: occurred.toISOString(), description: description.trim() };
+    const record: FinanceRecord = { id: initial?.id ?? crypto.randomUUID(), type, amountMinor: amount === null ? NaN : toMinor(amount, account.currency), accountId, destinationId: type === "transfer" || type === "debt" ? destinationId : null, currency: account.currency, category: type === "transfer" ? "Transfer" : type === "debt" ? "Debt" : category ?? "", labels, date: occurred.format("YYYY-MM-DD"), occurredAt: occurred.toISOString(), description: description.trim(), debtAction: type === "debt" ? debtAction : null };
     if (initial) {
       setPending(record.id);
       setPendingOccurredAt(record.occurredAt);
@@ -86,17 +102,21 @@ export function FinanceRecordModal({ initial, onClose, onSaved }: { initial?: Fi
     <Button type="primary" disabled={!day.ready || day.error || !!pending} onClick={save}>{initial ? "Save changes" : "Add record"}</Button>
   </Flex>}>
     <Form layout="vertical" onFinish={save}>
-      <Form.Item label="Record type"><Segmented block value={type} disabled={!!pending} onChange={setType} options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }, { value: "transfer", label: "Transfer" }]} /></Form.Item>
-      {type === "transfer" ? <>
+      <Form.Item label="Record type"><Segmented block value={type} disabled={!!pending} onChange={(value: FinanceRecord["type"]) => { setType(value); setDestinationId(null); if (account && isDebtAccount(account)) setAccountId(ownAccounts[0]?.id ?? ""); }} options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }, { value: "transfer", label: "Transfer" }, { value: "debt", label: "Debt" }]} /></Form.Item>
+      {type === "debt" ? debtAccounts.length === 0 ? <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>Add a debt account first: create an account with the type Debt for each person or lender, like Mom.</Typography.Paragraph> : <>
+        <Form.Item label="Action" extra={DEBT_ACTION_HINTS[debtAction]}><Segmented block value={debtAction} disabled={!!pending} onChange={setDebtAction} options={[{ value: "borrow", label: "Borrow" }, { value: "repay", label: "Repay" }, { value: "lend", label: "Lend" }, { value: "collect", label: "Collect" }]} /></Form.Item>
+        <Form.Item label="Person or lender" required extra={person ? `${person.name}: ${debtStatus(person)}` : undefined}><Select aria-label="Debt account" value={destinationId} disabled={!!pending} onChange={choosePerson} placeholder="Choose a debt account" options={debtAccounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
+        <Form.Item label="Your account" required><Select aria-label="Record account" value={accountId || undefined} disabled={!!pending} onChange={setAccountId} placeholder="Choose your account" options={ownAccounts.filter((item) => !person || item.currency === person.currency).map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
+      </> : type === "transfer" ? <>
         <Flex align="flex-end" gap={8}>
-          <Form.Item label="From account" required style={{ flex: 1, minWidth: 0, marginBottom: 8 }}><Select style={{ width: "100%" }} aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
+          <Form.Item label="From account" required style={{ flex: 1, minWidth: 0, marginBottom: 8 }}><Select style={{ width: "100%" }} aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={ownAccounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
           <ArrowRightOutlined aria-hidden style={{ fontSize: 16, opacity: 0.6, paddingBottom: 20 }} />
-          <Form.Item label="To account" required style={{ flex: 1, minWidth: 0, marginBottom: 8 }}><Select style={{ width: "100%" }} aria-label="Transfer destination" value={destinationId} disabled={!!pending} onChange={setDestinationId} options={accounts.filter((item) => item.id !== accountId && item.currency === account?.currency).map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
+          <Form.Item label="To account" required style={{ flex: 1, minWidth: 0, marginBottom: 8 }}><Select style={{ width: "100%" }} aria-label="Transfer destination" value={destinationId} disabled={!!pending} onChange={setDestinationId} options={ownAccounts.filter((item) => item.id !== accountId && item.currency === account?.currency).map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>
         </Flex>
         <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 24 }}>Only other accounts using the same currency can receive this transfer.</Typography.Paragraph>
-      </> : <Form.Item label="Account" required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={accounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>}
+      </> : <Form.Item label="Account" required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={ownAccounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>}
       <Form.Item label="Amount" required><InputNumber aria-label="Record amount" value={amount} disabled={!!pending} onChange={setAmount} min={0} precision={currencyDigits(account?.currency ?? "PHP")} style={{ width: "100%" }} suffix={account?.currency} /></Form.Item>
-      {type !== "transfer" && <Form.Item label="Category" required><Select aria-label="Record category" value={category} disabled={!!pending} onChange={(value) => { setCategory(value); setCategorySearch(""); }} showSearch={{ searchValue: categorySearch, onSearch: setCategorySearch, filterOption: (input, option) => option?.value === newCategory || String(option?.value ?? "").toLowerCase().includes(input.trim().toLowerCase()) }} onBlur={() => setCategorySearch("")} options={categoryOptions} placeholder="Select or type a new category" /></Form.Item>}
+      {type !== "transfer" && type !== "debt" && <Form.Item label="Category" required><Select aria-label="Record category" value={category} disabled={!!pending} onChange={(value) => { setCategory(value); setCategorySearch(""); }} showSearch={{ searchValue: categorySearch, onSearch: setCategorySearch, filterOption: (input, option) => option?.value === newCategory || String(option?.value ?? "").toLowerCase().includes(input.trim().toLowerCase()) }} onBlur={() => setCategorySearch("")} options={categoryOptions} placeholder="Select or type a new category" /></Form.Item>}
       <Form.Item label="Labels"><Select aria-label="Record labels" mode="tags" value={labels} disabled={!!pending} onChange={setLabels} options={knownLabels.map((value) => ({ value, label: value }))} placeholder="Select or create labels" /></Form.Item>
       <Form.Item label="Date and time"><DatePicker aria-label="Record date and time" showTime value={date} disabled={!!pending} onChange={setDate} style={{ width: "100%" }} placeholder="Current date and time" /><Typography.Text type="secondary">Leave blank to use the date and time when you save.</Typography.Text></Form.Item>
       <Form.Item label="Description"><Input.TextArea aria-label="Record description" value={description} disabled={!!pending} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} /></Form.Item>

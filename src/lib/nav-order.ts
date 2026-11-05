@@ -4,7 +4,7 @@ export type NavId = (typeof NAV_IDS)[number];
 
 export const SUBMENU_IDS = {
   journal: ["notes", "tasks", "todo", "board"],
-  finance: ["dashboard", "accounts", "records", "analytics"],
+  finance: ["dashboard", "accounts", "records", "debts", "analytics"],
   records: ["database", "summary"],
 } as const;
 
@@ -15,8 +15,13 @@ export type SubmenuOrder = { [Section in SubmenuSection]: string[] };
 export function readOrder<T extends string>(value: unknown, ids: readonly T[]): T[] {
   const known = new Set<string>(ids);
   const picked = Array.isArray(value) ? value.filter((id): id is T => typeof id === "string" && known.has(id)) : [];
-  const unique = [...new Set(picked)];
-  return [...unique, ...ids.filter((id) => !unique.includes(id))];
+  const order = [...new Set(picked)];
+  ids.forEach((id, index) => {
+    if (order.includes(id)) return;
+    const previous = ids.slice(0, index).reverse().find((item) => order.includes(item));
+    order.splice(previous ? order.indexOf(previous) + 1 : 0, 0, id);
+  });
+  return order;
 }
 
 export function readNavOrder(value: unknown): NavId[] {

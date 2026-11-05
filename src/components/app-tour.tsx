@@ -41,12 +41,13 @@ const TOURS: Record<TourName, StepSpec[]> = {
   finance: [
     { target: "submenu", title: "Finance pages", description: "Check balances, log transactions, and explore spending patterns." },
     { target: "finance-emergency", title: "Emergency fund", description: "How many months your money would last, against a goal you choose." },
+    { target: "finance-debts", title: "Who owes whom", description: "What you owe and what you're owed, then each debt by person." },
     { target: "finance-accounts", title: "Your accounts", description: "Balances at a glance. Tap one to edit it, or drag to reorder." },
     { target: "finance-overview", title: "Where it goes", description: "Cash flow, spending by category and account, and your savings rate." },
     { target: "filters", title: "Narrow it down", description: "Filter by type, account, currency, or period." },
-    { target: "finance-records", title: "Every record", description: "Expenses, income, and transfers, grouped by day." },
+    { target: "finance-records", title: "Every record", description: "Expenses, income, transfers, and debts, grouped by day." },
     { target: "finance-charts", title: "Spending patterns", description: "Totals, trends, top categories, and savings rate for the period." },
-    { target: "page-actions", title: "Start with an account", description: "Add your account and balance, then log expenses or income." },
+    { target: "page-actions", title: "Start with an account", description: "Add an account or a person, then log what comes in and goes out." },
     { target: "quick-log", title: "Quick add", description: "Add an account or record from this menu on any Finance page." },
   ],
   records: [

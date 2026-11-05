@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, debtStatus, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -45,6 +45,42 @@ test("recalculation rebuilds from the initial amount and all incoming and outgoi
 test("statistics omit transfers and excluded accounts, and separate currencies", () => {
   const records = [expense, income, transfer, { ...income, accountId: "bank" }, { ...income, accountId: "usd", currency: "USD" }];
   assert.deepEqual(financeStatistics(records, [cash, { ...bank, excludeFromStatistics: true }, dollar]), { PHP: { income: 50000, expense: 1234 }, USD: { income: 50000, expense: 0 } });
+});
+
+const mom = { ...cash, id: "mom", name: "Mom", type: "Debt", initialMinor: 0, balanceMinor: 0, excludeFromStatistics: true };
+const debt = { ...expense, id: "debt", type: "debt", amountMinor: 500000, destinationId: "mom", category: "Debt", debtAction: "borrow" };
+
+test("debt records move money between your account and the debt account", () => {
+  assert.deepEqual(balanceChanges(debt), [["cash", 500000], ["mom", -500000]]);
+  assert.deepEqual(balanceChanges({ ...debt, debtAction: "repay" }), [["cash", -500000], ["mom", 500000]]);
+  assert.deepEqual(balanceChanges({ ...debt, debtAction: "lend" }), [["cash", -500000], ["mom", 500000]]);
+  assert.deepEqual(balanceChanges({ ...debt, debtAction: "collect" }), [["cash", 500000], ["mom", -500000]]);
+  const borrowed = rebuiltBalance(mom, [debt, { ...debt, id: "repay", debtAction: "repay", amountMinor: 200000 }]);
+  assert.equal(borrowed, -300000);
+  assert.equal(rebuiltBalance(cash, [debt, { ...debt, id: "repay", debtAction: "repay", amountMinor: 200000 }]), cash.initialMinor + 300000);
+});
+
+test("debt records require a debt account, one of your own accounts and a valid action", () => {
+  const withMom = [...accounts, mom, { ...mom, id: "uncle", currency: "USD" }];
+  for (const debtAction of ["borrow", "repay", "lend", "collect"]) assert.equal(recordValidation({ ...debt, debtAction }, withMom), null);
+  assert.match(recordValidation({ ...debt, debtAction: undefined }, withMom), /borrow, repay, lend or collect/);
+  assert.match(recordValidation({ ...debt, debtAction: "steal" }, withMom), /borrow, repay, lend or collect/);
+  assert.match(recordValidation({ ...debt, destinationId: "bank" }, withMom), /debt account/);
+  assert.match(recordValidation({ ...debt, destinationId: null }, withMom), /debt account/);
+  assert.match(recordValidation({ ...debt, destinationId: "uncle" }, withMom), /same currency/);
+  assert.match(recordValidation({ ...debt, accountId: "mom", destinationId: "mom" }, withMom), /your own accounts/);
+  assert.match(recordValidation({ ...debt, destinationId: "mom" }, [...accounts, { ...mom, deletedAt: "2026-01-01" }]), /debt account/);
+  assert.match(recordValidation({ ...expense, accountId: "mom" }, withMom), /only be used in debt records/);
+  assert.match(recordValidation({ ...transfer, destinationId: "mom" }, withMom), /only be used in debt records/);
+});
+
+test("debt accounts stay out of statistics and describe who owes whom", () => {
+  assert.equal(accountValidation(mom), null);
+  assert.match(accountValidation({ ...mom, excludeFromStatistics: false }), /always excluded/);
+  assert.deepEqual(financeStatistics([expense, debt, { ...debt, id: "lend", debtAction: "lend" }], [cash, mom]), { PHP: { income: 0, expense: 1234 } });
+  assert.equal(debtStatus({ ...mom, balanceMinor: -300000 }), `You owe ${new Intl.NumberFormat(undefined, { style: "currency", currency: "PHP" }).format(3000)}`);
+  assert.equal(debtStatus({ ...mom, balanceMinor: 150000 }), `Owes you ${new Intl.NumberFormat(undefined, { style: "currency", currency: "PHP" }).format(1500)}`);
+  assert.equal(debtStatus(mom), "Settled");
 });
 
 test("emergency fund goal falls back to six months for missing or unsupported values", () => {

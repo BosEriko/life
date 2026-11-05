@@ -11,7 +11,7 @@ test("offline records self-echo and atomically update stored balances, including
   const app = initializeApp({ projectId: "demo-finance-offline" }, "finance-offline-test");
   const db = firestore.initializeFirestore(app, { localCache: firestore.memoryLocalCache() });
   await firestore.disableNetwork(db);
-  const output = ts.transpileModule(fs.readFileSync("src/models/users/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const output = ts.transpileModule(fs.readFileSync("src/models/users/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const models = {};
   vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(models, (name) => {
     if (name === "@/lib/firebase") return { getFirebaseDb: () => db };
@@ -71,6 +71,16 @@ test("offline records self-echo and atomically update stored balances, including
     assert.equal(balance("cash"), 96000);
     assert.equal(balance("bank"), 5000);
     await assert.rejects(models.addFinanceRecord("user", { ...record, id: "deleted-transfer", type: "transfer", destinationId: "bank" }, currentAccounts()), /same currency/);
+    pending(models.saveFinanceAccount("user", { ...account, id: "mom", name: "Mom", type: "Debt", initialMinor: 0, balanceMinor: 0, excludeFromStatistics: true }));
+    await waitFor(() => balance("mom") === 0);
+    const borrow = { ...record, id: "borrow", type: "debt", amountMinor: 500000, destinationId: "mom", category: "Debt", labels: [], debtAction: "borrow" };
+    pending(models.addFinanceRecord("user", borrow, currentAccounts()));
+    await waitFor(() => balance("cash") === 596000 && balance("mom") === -500000);
+    pending(models.addFinanceRecord("user", { ...borrow, id: "repay", amountMinor: 200000, debtAction: "repay" }, currentAccounts()));
+    await waitFor(() => balance("cash") === 396000 && balance("mom") === -300000);
+    pending(models.editFinanceRecord("user", borrow, { ...borrow, debtAction: "lend" }, currentAccounts()));
+    await waitFor(() => balance("cash") === -604000 && balance("mom") === 700000);
+    await assert.rejects(models.addFinanceRecord("user", { ...record, id: "debt-expense", accountId: "mom" }, currentAccounts()), /only be used in debt records/);
   } finally {
     off.forEach((unsubscribe) => unsubscribe());
     await firestore.terminate(db);
@@ -86,7 +96,7 @@ test("recalculation repairs all balances together and refuses stale record histo
   const records = [{ id: "transfer", type: "transfer", amountMinor: 2000, accountId: "cash", destinationId: "bank", currency: "PHP", date: "2020-01-01", occurredAt: "2020-01-01T12:00:00Z", category: "Transfer", labels: [], description: "" }];
   let revision = 1;
   let committed = [];
-  const output = ts.transpileModule(fs.readFileSync("src/models/users/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const output = ts.transpileModule(fs.readFileSync("src/models/users/finance.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const models = {};
   vm.runInThisContext(`(function(exports, require) { ${output}\n})`)(models, (name) => {
     if (name === "@/lib/firebase") return { getFirebaseDb: () => db };

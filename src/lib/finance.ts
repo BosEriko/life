@@ -1,8 +1,20 @@
-export const ACCOUNT_TYPES = ["Cash", "Bank account", "Savings", "Credit card", "Investment", "Loan", "Other"];
+export const ACCOUNT_TYPES = ["Cash", "Bank account", "Savings", "Credit card", "Investment", "Loan", "Debt", "Other"];
 export const CURRENCIES = ["PHP", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "HKD", "SGD", "KRW", "INR", "AED", "NZD"];
 export const CATEGORIES = ["Food & drink", "Shopping", "Housing", "Transportation", "Health", "Entertainment", "Education", "Bills", "Salary", "Gifts", "Other"];
 export type FinanceAccount = { id: string; name: string; color: string; type: string; initialMinor: number; balanceMinor: number; currency: string; excludeFromStatistics: boolean; provider?: string; order?: number; deletedAt?: string };
-export type FinanceRecord = { id: string; type: "expense" | "income" | "transfer"; amountMinor: number; accountId: string; destinationId: string | null; currency: string; category: string; labels: string[]; date: string; occurredAt: string; description: string };
+export const DEBT_ACTIONS = ["borrow", "repay", "lend", "collect"] as const;
+export type DebtAction = (typeof DEBT_ACTIONS)[number];
+export type FinanceRecord = { id: string; type: "expense" | "income" | "transfer" | "debt"; amountMinor: number; accountId: string; destinationId: string | null; currency: string; category: string; labels: string[]; date: string; occurredAt: string; description: string; debtAction?: DebtAction | null };
+
+export function isDebtAccount(account: Pick<FinanceAccount, "type">) {
+  return account.type === "Debt";
+}
+
+export function debtStatus(account: FinanceAccount) {
+  if (account.balanceMinor < 0) return `You owe ${money(-account.balanceMinor, account.currency)}`;
+  if (account.balanceMinor > 0) return `Owes you ${money(account.balanceMinor, account.currency)}`;
+  return "Settled";
+}
 
 export function sortAccounts(accounts: FinanceAccount[]) {
   return [...accounts].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.name.localeCompare(b.name));
@@ -58,13 +70,15 @@ export function accountValidation(account: FinanceAccount) {
   if (!/^#[0-9a-f]{6}$/i.test(account.color)) return "Enter a six-digit hexadecimal color, such as #326647.";
   if (!ACCOUNT_TYPES.includes(account.type) || !CURRENCIES.includes(account.currency)) return "Choose a valid account type and currency.";
   if (!Number.isSafeInteger(account.initialMinor) || account.balanceMinor !== account.initialMinor) return "Enter a valid initial amount.";
+  if (isDebtAccount(account) && !account.excludeFromStatistics) return "Debt accounts are always excluded from statistics.";
   return null;
 }
 
 export function recordValidation(record: FinanceRecord, accounts: FinanceAccount[]) {
   const account = accounts.find((item) => item.id === record.accountId);
   if (!account || account.deletedAt || account.currency !== record.currency) return "Choose an account.";
-  if (!["expense", "income", "transfer"].includes(record.type)) return "Choose a record type.";
+  if (!["expense", "income", "transfer", "debt"].includes(record.type)) return "Choose a record type.";
+  if (isDebtAccount(account)) return record.type === "debt" ? "Choose one of your own accounts." : "Debt accounts can only be used in debt records.";
   if (!Number.isSafeInteger(record.amountMinor) || record.amountMinor <= 0) return "Enter an amount greater than zero.";
   if (!Number.isFinite(Date.parse(record.occurredAt)) || !/^\d{4}-\d{2}-\d{2}$/.test(record.date)) return "Choose a valid date and time.";
   const date = new Date(`${record.date}T00:00:00Z`);
@@ -72,6 +86,12 @@ export function recordValidation(record: FinanceRecord, accounts: FinanceAccount
   if (record.type === "transfer") {
     const destination = accounts.find((item) => item.id === record.destinationId);
     if (!destination || destination.deletedAt || destination.id === account.id || destination.currency !== account.currency) return "Transfers require two different accounts with the same currency.";
+    if (isDebtAccount(destination)) return "Debt accounts can only be used in debt records.";
+  } else if (record.type === "debt") {
+    if (!DEBT_ACTIONS.includes(record.debtAction as DebtAction)) return "Choose borrow, repay, lend or collect.";
+    const person = accounts.find((item) => item.id === record.destinationId);
+    if (!person || person.deletedAt || !isDebtAccount(person)) return "Choose a debt account.";
+    if (person.currency !== account.currency) return "The debt account and your account must use the same currency.";
   } else if (!record.category.trim()) return "Choose a category.";
   if (record.category.length > 80 || record.description.length > 2000 || record.labels.some((label) => !label.trim() || label.length > 60) || record.labels.length > 20) return "Keep categories under 80 characters, labels under 60 characters (up to 20), and descriptions under 2,000 characters.";
   if (balanceChanges(record).some(([id, change]) => !Number.isSafeInteger((accounts.find((item) => item.id === id)?.balanceMinor ?? NaN) + change))) return "This record would exceed the supported account balance.";
@@ -79,6 +99,10 @@ export function recordValidation(record: FinanceRecord, accounts: FinanceAccount
 }
 
 export function balanceChanges(record: FinanceRecord): [string, number][] {
+  if (record.type === "debt") {
+    const incoming = record.debtAction === "borrow" || record.debtAction === "collect" ? record.amountMinor : -record.amountMinor;
+    return [[record.accountId, incoming], [record.destinationId!, -incoming]];
+  }
   if (record.type === "transfer") return [[record.accountId, -record.amountMinor], [record.destinationId!, record.amountMinor]];
   return [[record.accountId, record.type === "income" ? record.amountMinor : -record.amountMinor]];
 }
@@ -91,7 +115,7 @@ export function financeStatistics(records: FinanceRecord[], accounts: FinanceAcc
   const totals: Record<string, { income: number; expense: number }> = {};
   for (const record of records) {
     const account = accounts.find((item) => item.id === record.accountId);
-    if (!account || account.deletedAt || account.excludeFromStatistics || record.type === "transfer") continue;
+    if (!account || account.deletedAt || account.excludeFromStatistics || record.type === "transfer" || record.type === "debt") continue;
     const total = totals[record.currency] ??= { income: 0, expense: 0 };
     total[record.type] += record.amountMinor;
   }

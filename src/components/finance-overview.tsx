@@ -54,7 +54,7 @@ export function FinanceOverview() {
 
   const included = financeAccounts.filter((account) => !account.deletedAt && !account.excludeFromStatistics);
   const accountById = new Map(included.map((account) => [account.id, account]));
-  const all = mergeById(financeRecords, needHistory ? history.rows : []).filter((record) => record.type !== "transfer" && accountById.has(record.accountId));
+  const all = mergeById(financeRecords, needHistory ? history.rows : []).filter((record) => (record.type === "expense" || record.type === "income") && accountById.has(record.accountId));
 
   const counts = new Map<string, number>();
   for (const record of all) counts.set(record.currency, (counts.get(record.currency) ?? 0) + 1);
@@ -129,7 +129,7 @@ export function FinanceOverview() {
         </Flex>
       </Flex>
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
-        {start.format("MMM D, YYYY")} – {end.format("MMM D, YYYY")} · {currency} · Transfers and excluded accounts aren’t counted
+        {start.format("MMM D, YYYY")} – {end.format("MMM D, YYYY")} · {currency} · Transfers, debts, and excluded accounts aren’t counted
       </Typography.Paragraph>
       {needHistory && history.error && <Alert type="warning" title="Older records could not be loaded, so this range may be incomplete." style={{ marginBottom: 16 }} />}
 
