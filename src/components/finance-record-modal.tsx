@@ -35,7 +35,7 @@ export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: {
   const { financeAccounts, financeRecords: records } = useHealthData();
   const accounts = sortAccounts(financeAccounts.filter((account) => !account.deletedAt));
   const ownAccounts = accounts.filter((item) => !isDebtAccount(item));
-  const debtAccounts = accounts.filter(isDebtAccount);
+  const debtAccounts = accounts.filter((item) => isDebtAccount(item) && (!item.hiddenAt || item.id === initial?.destinationId));
   const [type, setType] = useState<FinanceRecord["type"]>(initial?.type ?? defaultType ?? "expense");
   const [debtAction, setDebtAction] = useState<DebtAction>(initial?.debtAction ?? "borrow");
   const [amount, setAmount] = useState<number | null>(initial ? initial.amountMinor / 10 ** currencyDigits(initial.currency) : null);

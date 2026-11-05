@@ -1,7 +1,7 @@
 export const ACCOUNT_TYPES = ["Cash", "Bank account", "Savings", "Credit card", "Investment", "Loan", "Debt", "Other"];
 export const CURRENCIES = ["PHP", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "HKD", "SGD", "KRW", "INR", "AED", "NZD"];
 export const CATEGORIES = ["Food & drink", "Shopping", "Housing", "Transportation", "Health", "Entertainment", "Education", "Bills", "Salary", "Gifts", "Other"];
-export type FinanceAccount = { id: string; name: string; color: string; type: string; initialMinor: number; balanceMinor: number; currency: string; excludeFromStatistics: boolean; provider?: string; order?: number; deletedAt?: string };
+export type FinanceAccount = { id: string; name: string; color: string; type: string; initialMinor: number; balanceMinor: number; currency: string; excludeFromStatistics: boolean; provider?: string; order?: number; deletedAt?: string; hiddenAt?: string | null };
 export const DEBT_ACTIONS = ["borrow", "repay", "lend", "collect"] as const;
 export type DebtAction = (typeof DEBT_ACTIONS)[number];
 export type FinanceRecord = { id: string; type: "expense" | "income" | "transfer" | "debt"; amountMinor: number; accountId: string; destinationId: string | null; currency: string; category: string; labels: string[]; date: string; occurredAt: string; description: string; debtAction?: DebtAction | null };

@@ -39,6 +39,10 @@ export function reorderFinanceAccounts(uid: string, ids: string[]) {
   return updateDoc(settingsRef(uid), first as FieldPath, rest[0], ...rest.slice(1));
 }
 
+export function setFinanceAccountHidden(uid: string, id: string, hidden: boolean) {
+  return updateDoc(settingsRef(uid), new FieldPath("accounts", id, "hiddenAt"), hidden ? new Date().toISOString() : null);
+}
+
 export function deleteFinanceAccount(uid: string, id: string) {
   return updateDoc(settingsRef(uid), new FieldPath("accounts", id, "deletedAt"), new Date().toISOString());
 }

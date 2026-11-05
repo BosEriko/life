@@ -81,6 +81,14 @@ test("offline records self-echo and atomically update stored balances, including
     pending(models.editFinanceRecord("user", borrow, { ...borrow, debtAction: "lend" }, currentAccounts()));
     await waitFor(() => balance("cash") === -604000 && balance("mom") === 700000);
     await assert.rejects(models.addFinanceRecord("user", { ...record, id: "debt-expense", accountId: "mom" }, currentAccounts()), /only be used in debt records/);
+    const hiddenAt = (id) => currentAccounts()?.find((account) => account.id === id)?.hiddenAt;
+    pending(models.setFinanceAccountHidden("user", "mom", true));
+    await waitFor(() => !!hiddenAt("mom"));
+    assert.equal(balance("mom"), 700000);
+    pending(models.addFinanceRecord("user", { ...borrow, id: "hidden-borrow", amountMinor: 100000 }, currentAccounts()));
+    await waitFor(() => balance("mom") === 600000);
+    pending(models.setFinanceAccountHidden("user", "mom", false));
+    await waitFor(() => hiddenAt("mom") === null);
   } finally {
     off.forEach((unsubscribe) => unsubscribe());
     await firestore.terminate(db);
