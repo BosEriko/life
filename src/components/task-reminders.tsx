@@ -7,9 +7,8 @@ import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { RichText, plainText } from "@/components/rich-text";
-import { allTaskSubtasksDone, formatTaskTime, overdueTasks, pendingTaskDate, taskSubtaskChecks, type Task } from "@/lib/task-schedule";
+import { allTaskSubtasksDone, formatTaskTime, overdueTasks, pendingTaskDate, taskSubtaskChecks, type SubtaskChecks, type Task } from "@/lib/task-schedule";
 import { filterTodos, isTodoOverdue, type Todo } from "@/lib/todos";
-import { setTaskChecked } from "@/models/users/tasks";
 import { completeTodo } from "@/models/users/todos";
 import { TaskSubtasks } from "@/components/task-subtasks";
 import { TaskDescription } from "@/components/task-description";
@@ -43,9 +42,7 @@ export function useTodayAgenda(): { date: string; now: Date | null; tasks: Task[
   return { date, now, tasks: today, dueNow, todos: todayTodos, attention: dueNow.size + todayTodos.length };
 }
 
-export function TaskReminderList({ date, overdue, dueNow }: { date: string; overdue: Task[]; dueNow?: Set<string> }) {
-  const { user } = useAuth();
-  const { message } = App.useApp();
+export function TaskReminderList({ date, overdue, dueNow, onCheck }: { date: string; overdue: Task[]; dueNow?: Set<string>; onCheck: (task: Task, subtasks: SubtaskChecks) => void }) {
   const { token } = theme.useToken();
   const { taskChecks } = useHealthData();
 
@@ -64,9 +61,7 @@ export function TaskReminderList({ date, overdue, dueNow }: { date: string; over
               aria-label={`Mark ${plainText(task.title)} as done`}
               checked={false}
               disabled={!allTaskSubtasksDone(task, subtasks)}
-              onChange={() => {
-                if (user) setTaskChecked(user.uid, date, task.id, true, task, subtasks).catch(() => message.error("Could not update task."));
-              }}
+              onChange={() => onCheck(task, subtasks)}
             />
             <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
               <Flex align="baseline" justify="space-between" gap={8} wrap>

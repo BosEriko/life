@@ -20,7 +20,7 @@ const DEBT_ACTION_HINTS: Record<DebtAction, string> = {
   collect: "They pay back money they owe you.",
 };
 
-function accountOption(account: FinanceAccount) {
+export function accountOption(account: FinanceAccount) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
       <AccountBadge account={account} />

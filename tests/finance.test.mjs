@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, debtStatus, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -81,6 +81,35 @@ test("debt accounts stay out of statistics and describe who owes whom", () => {
   assert.equal(debtStatus({ ...mom, balanceMinor: -300000 }), `You owe ${new Intl.NumberFormat(undefined, { style: "currency", currency: "PHP" }).format(3000)}`);
   assert.equal(debtStatus({ ...mom, balanceMinor: 150000 }), `Owes you ${new Intl.NumberFormat(undefined, { style: "currency", currency: "PHP" }).format(1500)}`);
   assert.equal(debtStatus(mom), "Settled");
+});
+
+test("tasks linked to finance log one expense or income per checked-off day", () => {
+  const finance = { type: "expense", accountId: "cash", amountMinor: 150000, category: "Bills", description: "" };
+  const task = { id: "internet", title: "Pay internet", time: "09:30" };
+  assert.equal(taskRecordId("internet", "2026-11-05"), "task-internet-2026-11-05");
+  const now = new Date("2026-11-11T03:00:00Z");
+  const today = taskRecord(task, "2026-11-11", finance, accounts, "2026-11-11", now);
+  assert.equal(today.id, "task-internet-2026-11-11");
+  assert.equal(today.occurredAt, now.toISOString());
+  assert.equal(today.description, "Pay internet");
+  assert.equal(today.currency, "PHP");
+  assert.equal(today.taskId, "internet");
+  assert.equal(recordValidation(today, accounts), null);
+  assert.deepEqual(balanceChanges(today), [["cash", -150000]]);
+  const past = taskRecord(task, "2026-11-05", { ...finance, type: "income", description: " Refund " }, accounts, "2026-11-11", now);
+  assert.equal(past.date, "2026-11-05");
+  assert.equal(past.occurredAt, new Date("2026-11-05T09:30:00").toISOString());
+  assert.equal(past.description, "Refund");
+  assert.deepEqual(balanceChanges(past), [["cash", 150000]]);
+});
+
+test("task finance settings need an own account, an amount and a category", () => {
+  const finance = { type: "expense", accountId: "cash", amountMinor: 150000, category: "Bills", description: "" };
+  const withMom = [...accounts, { ...cash, id: "mom", type: "Debt", excludeFromStatistics: true }, { ...cash, id: "old", deletedAt: "2026-01-01" }];
+  assert.equal(taskFinanceValidation(finance, withMom), null);
+  for (const [patch, pattern] of [[{ accountId: "mom" }, /account/], [{ accountId: "old" }, /account/], [{ accountId: "missing" }, /account/], [{ amountMinor: 0 }, /greater than zero/], [{ amountMinor: 1.5 }, /greater than zero/], [{ category: " " }, /category/], [{ type: "transfer" }, /expense or income/]]) {
+    assert.match(taskFinanceValidation({ ...finance, ...patch }, withMom), pattern);
+  }
 });
 
 test("emergency fund goal falls back to six months for missing or unsupported values", () => {

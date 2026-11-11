@@ -6,6 +6,7 @@ import { Badge, Button, Drawer, Empty, Flex, Grid, Popover, Segmented, Typograph
 import { ArrowRightOutlined, BellOutlined, CheckSquareOutlined, InfoCircleOutlined, ScheduleOutlined } from "@ant-design/icons";
 import { Tip } from "@/components/tip";
 import { TASK_REMINDER_HINT, TaskReminderList, TodayTodoList, useTodayAgenda } from "@/components/task-reminders";
+import { useTaskCompletion } from "@/components/task-finance";
 
 type Tab = "tasks" | "todos";
 
@@ -13,6 +14,7 @@ export function NotificationBell() {
   const { token } = theme.useToken();
   const { date, now, tasks, dueNow, todos, attention } = useTodayAgenda();
   const [open, setOpen] = useState(false);
+  const completion = useTaskCompletion();
   const [tab, setTab] = useState<Tab>("tasks");
   const screens = Grid.useBreakpoint();
   const sheet = screens.md === false;
@@ -42,7 +44,7 @@ export function NotificationBell() {
       />
       <div style={{ maxHeight: "min(60vh, 460px)", overflowY: "auto", marginTop: 4 }}>
         {tab === "tasks" ? (
-          tasks.length ? <TaskReminderList date={date} overdue={tasks} dueNow={dueNow} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No tasks left for today." style={{ margin: "20px 0 8px" }} />
+          tasks.length ? <TaskReminderList date={date} overdue={tasks} dueNow={dueNow} onCheck={(task, subtasks) => completion.check(task, date, subtasks)} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No tasks left for today." style={{ margin: "20px 0 8px" }} />
         ) : todos.length ? (
           <TodayTodoList todos={todos} now={now} />
         ) : (
@@ -85,13 +87,17 @@ export function NotificationBell() {
         >
           {content}
         </Drawer>
+        {completion.sheet}
       </>
     );
   }
 
   return (
-    <Popover trigger="click" placement="bottomRight" open={open} onOpenChange={setOpen} content={content} arrow={false}>
-      {bell}
-    </Popover>
+    <>
+      <Popover trigger="click" placement="bottomRight" open={open} onOpenChange={setOpen} content={content} arrow={false}>
+        {bell}
+      </Popover>
+      {completion.sheet}
+    </>
   );
 }

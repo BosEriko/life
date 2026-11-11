@@ -5,8 +5,8 @@ import { AppModal } from "@/components/app-modal";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Select, Spin, TimePicker, Typography, theme } from "antd";
-import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Alert, App, Button, Checkbox, DatePicker, Empty, Flex, Input, InputNumber, Segmented, Select, Spin, Switch, TimePicker, Typography, theme } from "antd";
+import { AlignLeftOutlined, ClockCircleOutlined, ScheduleOutlined, EditOutlined, LeftOutlined, RightOutlined, SyncOutlined, PlusOutlined, DeleteOutlined, TransactionOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
@@ -16,11 +16,15 @@ import { RichText, markdownLiteToHtml, plainText } from "@/components/rich-text"
 import { Tip } from "@/components/tip";
 import { allTaskSubtasksDone, formatTaskTime, pendingTaskDate, taskSubtaskChecks, type Task } from "@/lib/task-schedule";
 import { TaskSubtasks } from "@/components/task-subtasks";
-import { removeTask, saveTask, setTaskChecked } from "@/models/users/tasks";
+import { removeTask, saveTask } from "@/models/users/tasks";
 import { todayKey } from "@/models/users/dailies";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { TaskDescription } from "@/components/task-description";
 import { EmptyState } from "@/components/empty-state";
+import { ownFinanceAccounts, useTaskCompletion } from "@/components/task-finance";
+import { CategoryIcon } from "@/components/finance-category-icon";
+import { accountOption } from "@/components/finance-record-modal";
+import { CATEGORIES, currencyDigits, money, taskFinanceValidation, toMinor, type FinanceAccount } from "@/lib/finance";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REPEATS = ["daily", "weekly", "monthly", "yearly"] as const;
@@ -46,8 +50,20 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
   const { message } = App.useApp();
   const [draft, setDraft] = useState(initial);
   const [subtaskTitle, setSubtaskTitle] = useState("");
+  const { financeAccounts, financeRecords } = useHealthData();
+  const ownAccounts = ownFinanceAccounts(financeAccounts);
   const patch = (values: Partial<Task>) => setDraft((current) => ({ ...current, ...values }));
-  const valid = draft.title.trim().length > 0 && draft.description.length <= 2000 && draft.time && draft.startDate && Number.isInteger(draft.interval) && draft.interval >= 1 && (draft.repeat !== "weekly" || draft.weekdays.length > 0) && (draft.subtasks ?? []).every((subtask) => subtask.title.trim().length > 0);
+  const finance = draft.finance;
+  const financeAccount = financeAccounts.find((account) => account.id === finance?.accountId);
+  const financeCurrency = financeAccount?.currency ?? "PHP";
+  const patchFinance = (values: Partial<NonNullable<Task["finance"]>>) => setDraft((current) => current.finance ? { ...current, finance: { ...current.finance, ...values } } : current);
+  const categories = [...new Set([...CATEGORIES, ...financeRecords.filter((record) => record.type === "expense" || record.type === "income").map((record) => record.category), ...(finance?.category ? [finance.category] : [])])];
+  const chooseFinanceAccount = (accountId: string) => {
+    const next = financeAccounts.find((account) => account.id === accountId);
+    if (!finance || !next) return;
+    patchFinance({ accountId, amountMinor: toMinor(finance.amountMinor / 10 ** currencyDigits(financeCurrency), next.currency) });
+  };
+  const valid = draft.title.trim().length > 0 && draft.description.length <= 2000 && draft.time && draft.startDate && Number.isInteger(draft.interval) && draft.interval >= 1 && (draft.repeat !== "weekly" || draft.weekdays.length > 0) && (draft.subtasks ?? []).every((subtask) => subtask.title.trim().length > 0) && (!finance || taskFinanceValidation(finance, ownAccounts) === null);
 
   function addSubtask() {
     if (!subtaskTitle.trim() || (draft.subtasks?.length ?? 0) >= 50) return;
@@ -100,6 +116,19 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
           <Select aria-label="Week of month" style={{ flex: 1, minWidth: 120 }} value={draft.ordinal} options={[{ value: 1, label: "First" }, { value: 2, label: "Second" }, { value: 3, label: "Third" }, { value: 4, label: "Fourth" }, { value: -1, label: "Last" }]} onChange={(ordinal) => patch({ ordinal })} />
           <Select aria-label="Task weekday" style={{ flex: 1, minWidth: 140 }} value={draft.weekday} options={WEEKDAYS.map((label, value) => ({ label, value }))} onChange={(weekday) => patch({ weekday })} />
         </Flex>}
+        <Flex align="center" justify="space-between" gap={12} style={{ marginTop: 6 }}>
+          <Typography.Text strong><TransactionOutlined style={{ marginRight: 8 }} />Log to Finance when checked off</Typography.Text>
+          <Switch aria-label="Log to Finance when checked off" checked={!!finance} disabled={!finance && ownAccounts.length === 0} onChange={(on) => patch({ finance: on ? { type: "expense", accountId: ownAccounts[0]?.id ?? "", amountMinor: 0, category: "Bills", description: "" } : null })} />
+        </Flex>
+        {!finance && ownAccounts.length === 0 && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Add an account in Finance first to link this task.</Typography.Text>}
+        {finance && <Flex vertical gap={10}>
+          <Segmented block aria-label="Finance record type" value={finance.type} onChange={(type) => patchFinance({ type: type as "expense" | "income" })} options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }]} />
+          <Select aria-label="Finance account" value={finance.accountId || undefined} onChange={chooseFinanceAccount} placeholder="Account" options={ownAccounts.map((account: FinanceAccount) => ({ value: account.id, label: accountOption(account) }))} />
+          <InputNumber aria-label="Finance amount" placeholder="Amount" value={finance.amountMinor ? finance.amountMinor / 10 ** currencyDigits(financeCurrency) : null} onChange={(value) => patchFinance({ amountMinor: value === null ? 0 : toMinor(value, financeCurrency) })} min={0} precision={currencyDigits(financeCurrency)} style={{ width: "100%" }} suffix={financeCurrency} />
+          <Select aria-label="Finance category" value={finance.category || undefined} onChange={(category) => patchFinance({ category })} placeholder="Category" showSearch options={categories.map((value) => ({ value, label: <span><CategoryIcon category={value} style={{ marginRight: 8 }} />{value}</span> }))} />
+          <Input aria-label="Finance description" placeholder={draft.title.trim() ? `Description (defaults to "${draft.title.trim()}")` : "Description (defaults to the task title)"} maxLength={2000} value={finance.description} onChange={(event) => patchFinance({ description: event.target.value })} />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>Checking this task off opens a quick confirm with this amount, which you can change. Unchecking removes the record.</Typography.Text>
+        </Flex>}
         {initial.id && <Typography.Text type="secondary">Changes apply to the recurring schedule. Completed days remain saved.</Typography.Text>}
         <Button type="primary" disabled={!valid} onClick={submit}>{initial.id ? "Save changes" : "Add task"}</Button>
         {initial.id && <Button onClick={onCancel}>Cancel</Button>}
@@ -127,12 +156,13 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const { tasks, tasksReady, taskChecks } = useHealthData();
+  const { tasks, tasksReady, taskChecks, financeAccounts } = useHealthData();
   const [date, setDate] = useState(todayKey);
   const [editing, setEditing] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const manage = view !== "today";
+  const completion = useTaskCompletion();
   const { row, error } = useTaskDay(date, !manage);
   const checks = row ? [...taskChecks.filter((entry) => entry.date !== date), row] : taskChecks;
   const due = tasks.filter((task) => row?.completed[task.id] || pendingTaskDate(task, date, checks)).sort((a, b) => a.time.localeCompare(b.time) || a.title.localeCompare(b.title));
@@ -141,6 +171,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
 
   return (
     <div style={{ minWidth: 0 }}>
+      {completion.sheet}
       <AppModal open={editOpen} centered title={<><ScheduleOutlined /> Edit task</>} footer={null} onCancel={() => setEditOpen(false)} afterClose={() => setEditing(null)}>
         {editing && <TaskForm key={editing.id} initial={editing} onSaved={() => setEditOpen(false)} onCancel={() => setEditOpen(false)} />}
       </AppModal>
@@ -160,7 +191,8 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
         const subtasks = taskSubtaskChecks(task, date, checks);
         return <Flex key={task.id} align="flex-start" gap={12} style={{ padding: "14px 16px", marginBottom: 10, borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
           {!manage && <Checkbox aria-label={`Complete ${plainText(task.title)}`} checked={checked} disabled={!row || error || (!checked && !allTaskSubtasksDone(task, subtasks))} onChange={(event) => {
-            if (user) setTaskChecked(user.uid, date, task.id, event.target.checked, task, subtasks).catch(() => message.error("Could not update task."));
+            if (event.target.checked) completion.check(task, date, subtasks);
+            else completion.uncheck(task, date, subtasks);
           }} />}
           <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
             <Typography.Text strong delete={!manage && checked}><RichText text={task.title} /></Typography.Text>
@@ -168,6 +200,7 @@ export function TasksList({ view = "today" }: { view?: TaskView }) {
             <Flex gap={12} wrap style={{ fontSize: 12 }}>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}><ClockCircleOutlined style={{ marginRight: 6 }} />{formatTaskTime(task.time)}</Typography.Text>
               <Tip title={scheduleHint(task)}><Typography.Text type="secondary" style={{ fontSize: 12 }}><SyncOutlined style={{ marginRight: 6 }} />{task.interval === 1 ? `Every ${UNITS[task.repeat]}` : `Every ${task.interval} ${unit(task.repeat, task.interval)}`}</Typography.Text></Tip>
+              {task.finance && (() => { const account = financeAccounts.find((item) => item.id === task.finance?.accountId); return <Typography.Text type="secondary" style={{ fontSize: 12 }}><TransactionOutlined style={{ marginRight: 6 }} />{account ? `${money(task.finance.amountMinor, account.currency)} ${task.finance.type} · ${account.name}${account.provider ? ` · ${account.provider}` : ""}${account.deletedAt ? " (deleted)" : ""}` : `${task.finance.type} · account missing`}</Typography.Text>; })()}
             </Flex>
             <TaskSubtasks task={task} date={date} completed={subtasks} disabled={!row || error} readOnly={manage} />
           </div>

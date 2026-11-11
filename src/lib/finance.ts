@@ -1,10 +1,12 @@
+import type { Task, TaskFinance } from "@/lib/task-schedule";
+
 export const ACCOUNT_TYPES = ["Cash", "Bank account", "Savings", "Credit card", "Investment", "Loan", "Debt", "Other"];
 export const CURRENCIES = ["PHP", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "HKD", "SGD", "KRW", "INR", "AED", "NZD"];
 export const CATEGORIES = ["Food & drink", "Shopping", "Housing", "Transportation", "Health", "Entertainment", "Education", "Bills", "Salary", "Gifts", "Other"];
 export type FinanceAccount = { id: string; name: string; color: string; type: string; initialMinor: number; balanceMinor: number; currency: string; excludeFromStatistics: boolean; provider?: string; order?: number; deletedAt?: string; hiddenAt?: string | null };
 export const DEBT_ACTIONS = ["borrow", "repay", "lend", "collect"] as const;
 export type DebtAction = (typeof DEBT_ACTIONS)[number];
-export type FinanceRecord = { id: string; type: "expense" | "income" | "transfer" | "debt"; amountMinor: number; accountId: string; destinationId: string | null; currency: string; category: string; labels: string[]; date: string; occurredAt: string; description: string; debtAction?: DebtAction | null };
+export type FinanceRecord = { id: string; type: "expense" | "income" | "transfer" | "debt"; amountMinor: number; accountId: string; destinationId: string | null; currency: string; category: string; labels: string[]; date: string; occurredAt: string; description: string; debtAction?: DebtAction | null; taskId?: string };
 
 export function isDebtAccount(account: Pick<FinanceAccount, "type">) {
   return account.type === "Debt";
@@ -120,4 +122,37 @@ export function financeStatistics(records: FinanceRecord[], accounts: FinanceAcc
     total[record.type] += record.amountMinor;
   }
   return totals;
+}
+
+export function taskRecordId(taskId: string, date: string) {
+  return `task-${taskId}-${date}`;
+}
+
+export function taskFinanceValidation(finance: TaskFinance, accounts: FinanceAccount[]) {
+  const account = accounts.find((item) => item.id === finance.accountId);
+  if (!["expense", "income"].includes(finance.type)) return "Choose expense or income.";
+  if (!account || account.deletedAt || isDebtAccount(account)) return "Choose an account.";
+  if (!Number.isSafeInteger(finance.amountMinor) || finance.amountMinor <= 0) return "Enter an amount greater than zero.";
+  if (!finance.category.trim() || finance.category.length > 80) return "Choose a category.";
+  if (finance.description.length > 2000) return "Keep the description under 2,000 characters.";
+  return null;
+}
+
+export function taskRecord(task: Pick<Task, "id" | "title" | "time">, date: string, finance: TaskFinance, accounts: FinanceAccount[], today: string, now: Date): FinanceRecord {
+  const account = accounts.find((item) => item.id === finance.accountId);
+  return {
+    id: taskRecordId(task.id, date),
+    type: finance.type,
+    amountMinor: finance.amountMinor,
+    accountId: finance.accountId,
+    destinationId: null,
+    currency: account?.currency ?? "",
+    category: finance.category.trim(),
+    labels: [],
+    date,
+    occurredAt: (date === today ? now : new Date(`${date}T${task.time}:00`)).toISOString(),
+    description: finance.description.trim() || task.title.trim(),
+    debtAction: null,
+    taskId: task.id,
+  };
 }

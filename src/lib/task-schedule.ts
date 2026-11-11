@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 
 export type TaskSubtask = { id: string; title: string };
 export type SubtaskChecks = Record<string, boolean>;
+export type TaskFinance = { type: "expense" | "income"; accountId: string; amountMinor: number; category: string; description: string };
 
 export type Task = {
   id: string;
@@ -22,6 +23,7 @@ export type Task = {
   previousCompletedThrough?: string;
   subtasks?: TaskSubtask[];
   subtaskProgress?: { date: string; since: string; completed: SubtaskChecks };
+  finance?: TaskFinance | null;
 };
 
 export function allTaskSubtasksDone(task: Task, completed: SubtaskChecks): boolean {
