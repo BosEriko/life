@@ -20,6 +20,7 @@ function generateCode(): string {
 function serializeLink(id: string, data: FirebaseFirestore.DocumentData) {
   return {
     code: id,
+    kind: data.kind === "emergencyFund" ? "emergencyFund" : "health",
     label: (data.label as string | undefined) ?? null,
     createdAt: (data.createdAt as number | undefined) ?? null,
     expiresAt: (data.expiresAt as number | undefined) ?? null,
@@ -49,13 +50,14 @@ export async function POST(request: Request) {
   const uid = await uidFromRequest(request);
   if (!uid) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { label?: unknown; expiresInMs?: unknown; maxUses?: unknown };
+  let body: { kind?: unknown; label?: unknown; expiresInMs?: unknown; maxUses?: unknown };
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "Invalid body" }, { status: 400 });
   }
 
+  const kind = body.kind === "emergencyFund" ? "emergencyFund" : "health";
   const label =
     typeof body.label === "string" && body.label.trim()
       ? body.label.trim().slice(0, 60)
@@ -80,6 +82,7 @@ export async function POST(request: Request) {
   const now = Date.now();
   const payload = {
     uid,
+    kind,
     label,
     createdAt: now,
     expiresAt: expiresInMs != null ? now + expiresInMs : null,

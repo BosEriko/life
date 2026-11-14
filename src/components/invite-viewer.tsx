@@ -31,6 +31,12 @@ import {
   type WeightUnit,
 } from "@/lib/units";
 import { PageHeading } from "@/components/page-heading";
+import { EmergencyFundCard } from "@/components/emergency-fund-banner";
+import { currencyDigits, emergencyFundOutlook, money, type EmergencyFund } from "@/lib/finance";
+import type { MonthPoint } from "@/components/finance-month-chart";
+import dynamic from "next/dynamic";
+
+const FinanceMonthChart = dynamic(() => import("@/components/finance-month-chart").then((mod) => mod.FinanceMonthChart), { ssr: false, loading: () => <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> });
 
 type DailyRow = {
   date: string;
@@ -43,7 +49,17 @@ type DailyRow = {
   intakeCount: number;
 };
 
+type FundPayload = {
+  kind: "emergencyFund";
+  ownerName: string;
+  fund: EmergencyFund | null;
+  today: string;
+  asOf: string;
+  link: InvitePayload["link"];
+};
+
 type InvitePayload = {
+  kind?: "health";
   ownerName: string;
   weightUnit: string | null;
   volumeUnit: string | null;
@@ -60,7 +76,7 @@ type InvitePayload = {
 type ViewState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ok"; data: InvitePayload };
+  | { status: "ok"; data: InvitePayload | FundPayload };
 
 function average(values: number[]): number | null {
   if (values.length === 0) return null;
@@ -231,8 +247,133 @@ function StatCard({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-export function InviteViewer({ code }: { code: string }) {
+const INCOME_COLOR = { light: "#0f9488", dark: "#28a0a0" };
+const EXPENSE_COLOR = { light: "#a8502c", dark: "#d4643a" };
+
+function FundDetails({ fund, today, isDark }: { fund: EmergencyFund; today: string; isDark: boolean }) {
   const { token } = theme.useToken();
+  const outlook = emergencyFundOutlook(fund, today);
+  const mode = isDark ? "dark" : "light";
+  const scale = 10 ** currencyDigits(fund.currency);
+  const goalText = `${fund.goal} ${fund.goal === 1 ? "month" : "months"}`;
+  const chart: MonthPoint[] = fund.history.flatMap((month) => {
+    const label = dayjs(`${month.month}-01`).format("MMM YY");
+    return [
+      { month: label, type: "Income" as const, value: month.income / scale },
+      { month: label, type: "Expenses" as const, value: month.expense / scale },
+    ];
+  });
+  const hint = (text: string) => (
+    <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginTop: 6 }}>{text}</Typography.Text>
+  );
+
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 12, marginBottom: 24 }}>
+        <StatCard
+          label="Gap to goal"
+          value={outlook === null ? "—" : outlook.gap > 0 ? (
+            <>{money(outlook.gap, fund.currency)}{hint(`more to reach ${goalText} (${money(outlook.target, fund.currency)})`)}</>
+          ) : (
+            <span style={{ color: token.colorSuccess }}>Goal reached{hint(`${money(-outlook.gap, fund.currency)} above the ${goalText} target`)}</span>
+          )}
+        />
+        <StatCard
+          label="Saving pace"
+          value={outlook === null ? "—" : outlook.saving >= 0 ? (
+            <>{money(outlook.saving, fund.currency)}/month{hint(outlook.savingsRate !== null ? `Keeps ${Math.round(outlook.savingsRate * 100)}% of income on average` : "Average income minus spending")}</>
+          ) : (
+            <span style={{ color: token.colorError }}>−{money(-outlook.saving, fund.currency)}/month{hint("Spending more than income on average")}</span>
+          )}
+        />
+        <StatCard
+          label="Goal reached by"
+          value={outlook === null ? "—" : outlook.gap <= 0 ? "Already there" : outlook.goalMonth ? (
+            <>{dayjs(`${outlook.goalMonth}-01`).format("MMM YYYY")}{hint("At the current saving pace")}</>
+          ) : (
+            <>—{hint("Not on track at the current pace")}</>
+          )}
+        />
+      </div>
+      {chart.length > 0 && (
+        <Card size="small" style={{ borderColor: token.colorBorderSecondary, borderRadius: token.borderRadiusLG }}>
+          <Typography.Text type="secondary" style={{ display: "block", fontSize: 12 }}>Income vs spending by month</Typography.Text>
+          {fund.average > 0 && <Typography.Text type="secondary" style={{ display: "block", fontSize: 12 }}>Dashed line: average spending of {money(fund.average, fund.currency)}/month</Typography.Text>}
+          <FinanceMonthChart
+            data={chart}
+            currency={fund.currency}
+            colors={[INCOME_COLOR[mode], EXPENSE_COLOR[mode]]}
+            isDark={isDark}
+            average={fund.average > 0 ? fund.average / scale : undefined}
+          />
+        </Card>
+      )}
+    </>
+  );
+}
+
+function SharedHeader({ expiresAt }: { expiresAt: number | null }) {
+  const { token } = theme.useToken();
+  return (
+    <header
+      style={{
+        background: token.colorBgContainer,
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+      }}
+    >
+      <Flex
+        align="center"
+        justify="space-between"
+        gap={12}
+        wrap
+        style={{ maxWidth: 1240, margin: "0 auto", padding: "14px 20px", minHeight: 60 }}
+      >
+        <Flex align="center" gap={10}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              flexShrink: 0,
+              borderRadius: 9,
+              background: token.colorPrimary,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon
+              name="brand"
+              style={{
+                margin: 0,
+                opacity: 1,
+                color: token.colorTextLightSolid,
+                fontSize: 15,
+              }}
+            />
+          </div>
+          <Typography.Text style={{ fontSize: 15, fontWeight: 800 }}>
+            Life Tracker · shared, read-only
+          </Typography.Text>
+        </Flex>
+        {expiresAt ? (
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: 999,
+              fontSize: 11,
+              background: token.colorFillSecondary,
+              color: token.colorTextSecondary,
+            }}
+          >
+            Expires {dayjs(expiresAt).format("MMM D, h:mm A")}
+          </span>
+        ) : null}
+      </Flex>
+    </header>
+  );
+}
+
+export function InviteViewer({ code }: { code: string }) {
   const isDark = useIsDark();
   const [state, setState] = useState<ViewState>({ status: "loading" });
 
@@ -251,7 +392,7 @@ export function InviteViewer({ code }: { code: string }) {
           });
           return;
         }
-        setState({ status: "ok", data: body as InvitePayload });
+        setState({ status: "ok", data: body as InvitePayload | FundPayload });
       })
       .catch(() => {
         if (active) {
@@ -266,7 +407,7 @@ export function InviteViewer({ code }: { code: string }) {
     };
   }, [code]);
 
-  const data = state.status === "ok" ? state.data : null;
+  const data = state.status === "ok" && state.data.kind !== "emergencyFund" ? state.data : null;
 
   const weightUnit: WeightUnit =
     data && isWeightUnit(data.weightUnit) ? data.weightUnit : DEFAULT_UNITS.weight;
@@ -320,6 +461,40 @@ export function InviteViewer({ code }: { code: string }) {
           subTitle={state.message}
         />
       </Flex>
+    );
+  }
+
+  if (state.data.kind === "emergencyFund") {
+    const shared = state.data;
+    return (
+      <>
+        <SharedHeader expiresAt={shared.link.expiresAt} />
+        <div style={{ maxWidth: 1240, margin: "0 auto", padding: "32px 20px 40px" }}>
+          <PageHeading
+            title={`${shared.ownerName}'s emergency fund`}
+            subtitle={`How many months ${shared.ownerName}'s savings would cover at their usual spending · As of ${dayjs(shared.asOf).format("MMM D, YYYY h:mm A")}${
+              shared.link.remainingUses != null
+                ? ` · ${shared.link.remainingUses} view${shared.link.remainingUses === 1 ? "" : "s"} left`
+                : ""
+            }`}
+          />
+          {shared.fund ? (
+            <>
+              <EmergencyFundCard fund={shared.fund} ownerName={shared.ownerName} />
+              <FundDetails fund={shared.fund} today={shared.today} isDark={isDark} />
+            </>
+          ) : (
+            <Card>
+              <Typography.Text type="secondary">
+                {shared.ownerName} hasn&apos;t added any accounts that count toward their emergency fund yet.
+              </Typography.Text>
+            </Card>
+          )}
+          <Typography.Paragraph type="secondary" style={{ textAlign: "center", fontSize: 12, marginTop: 32 }}>
+            <Link href="/">Life Tracker</Link> — track your own health and money, free.
+          </Typography.Paragraph>
+        </div>
+      </>
     );
   }
 
@@ -543,61 +718,7 @@ export function InviteViewer({ code }: { code: string }) {
 
   return (
     <>
-      <header
-        style={{
-          background: token.colorBgContainer,
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-        }}
-      >
-        <Flex
-          align="center"
-          justify="space-between"
-          gap={12}
-          wrap
-          style={{ maxWidth: 1240, margin: "0 auto", padding: "14px 20px", minHeight: 60 }}
-        >
-          <Flex align="center" gap={10}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                flexShrink: 0,
-                borderRadius: 9,
-                background: token.colorPrimary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icon
-                name="brand"
-                style={{
-                  margin: 0,
-                  opacity: 1,
-                  color: token.colorTextLightSolid,
-                  fontSize: 15,
-                }}
-              />
-            </div>
-            <Typography.Text style={{ fontSize: 15, fontWeight: 800 }}>
-              Life Tracker · shared, read-only
-            </Typography.Text>
-          </Flex>
-          {state.data.link.expiresAt ? (
-            <span
-              style={{
-                padding: "4px 10px",
-                borderRadius: 999,
-                fontSize: 11,
-                background: token.colorFillSecondary,
-                color: token.colorTextSecondary,
-              }}
-            >
-              Expires {dayjs(state.data.link.expiresAt).format("MMM D, h:mm A")}
-            </span>
-          ) : null}
-        </Flex>
-      </header>
+      <SharedHeader expiresAt={state.data.link.expiresAt} />
 
     <div style={{ maxWidth: 1240, margin: "0 auto", padding: "32px 20px 40px" }}>
       <PageHeading

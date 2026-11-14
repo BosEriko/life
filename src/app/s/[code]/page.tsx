@@ -3,7 +3,7 @@ import { InviteViewer } from "@/components/invite-viewer";
 
 const TITLE = "Shared Life Tracker data";
 const DESCRIPTION =
-  "Someone shared a 7-day health summary with you via Life Tracker — no sign-in needed to view it.";
+  "Someone shared their Life Tracker data with you — no sign-in needed to view it.";
 
 export const metadata: Metadata = {
   title: TITLE,

@@ -2,10 +2,9 @@
 
 import { App, Button, Card, Dropdown, Flex, Typography, theme } from "antd";
 import { CheckCircleOutlined, DownOutlined, ExclamationCircleOutlined, FieldTimeOutlined, InfoCircleOutlined, SafetyOutlined, ShoppingOutlined, WalletOutlined, WarningOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
-import { accountTextColor, EMERGENCY_FUND_AVERAGE_MONTHS, EMERGENCY_FUND_MONTHS, money } from "@/lib/finance";
+import { accountTextColor, EMERGENCY_FUND_AVERAGE_MONTHS, EMERGENCY_FUND_MONTHS, emergencyFund, money, type EmergencyFund } from "@/lib/finance";
 import { setEmergencyFundAverageMonths, setEmergencyFundMonths } from "@/models/users/finance";
 import { Tip } from "@/components/tip";
 import { todayKey } from "@/models/users/dailies";
@@ -13,50 +12,37 @@ import { todayKey } from "@/models/users/dailies";
 const STATUS_COLORS = { good: "#2f6b45", fair: "#7a5212", low: "#8c442c", neutral: "#3e5a4a" };
 
 export function EmergencyFundBanner() {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { user } = useAuth();
   const { financeAccounts, financeRecords, financeEmergencyFundMonths: goal, financeEmergencyFundAverageMonths: period } = useHealthData();
-  const accounts = financeAccounts.filter((account) => !account.deletedAt && !account.excludeFromStatistics);
-  if (accounts.length === 0) return null;
-
-  const currencyCounts = new Map<string, number>();
-  for (const account of accounts) currencyCounts.set(account.currency, (currencyCounts.get(account.currency) ?? 0) + 1);
-  const currency = [...currencyCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
-  const inCurrency = accounts.filter((account) => account.currency === currency);
-  const ids = new Set(inCurrency.map((account) => account.id));
-  const balance = inCurrency.reduce((sum, account) => sum + account.balanceMinor, 0);
-
-  const thisMonth = dayjs(todayKey()).startOf("month");
-  const since = thisMonth.subtract(period, "month").format("YYYY-MM-DD");
-  const until = thisMonth.format("YYYY-MM-DD");
-  const expenses = financeRecords.filter((record) => record.type === "expense" && ids.has(record.accountId) && record.date >= since && record.date < until);
-  const spent = expenses.reduce((sum, record) => sum + record.amountMinor, 0);
-  const firstMonth = expenses.reduce((min, record) => (record.date < min ? record.date : min), until);
-  const monthsCovered = Math.min(period, Math.max(1, thisMonth.diff(dayjs(firstMonth).startOf("month"), "month")));
-  const average = expenses.length ? Math.round(spent / monthsCovered) : 0;
-  const months = average > 0 ? Math.max(0, balance / average) : null;
-  const shown = months === null ? null : months >= 10 ? Math.floor(months) : Math.floor(months * 10) / 10;
-
-  const status = months === null ? "neutral" : months >= goal ? "good" : months >= goal / 2 ? "fair" : "low";
-  const color = STATUS_COLORS[status];
-  const Icon = status === "good" ? CheckCircleOutlined : status === "fair" ? ExclamationCircleOutlined : status === "low" ? WarningOutlined : CheckCircleOutlined;
-  const label = status === "good" ? "Healthy" : status === "fair" ? "Building" : status === "low" ? "Low" : null;
-
-  const textColor = accountTextColor(color);
-  const accountCount = `${inCurrency.length} ${inCurrency.length === 1 ? "account" : "accounts"}`;
-  const formula = `Total balance of your ${accountCount} in ${currency} that count toward statistics ÷ your average monthly spending from those accounts over the last ${monthsCovered === 1 ? "full month" : `${monthsCovered} full months`} (up to ${monthsText(period)}, not counting this month). Your goal is ${monthsText(goal)}: reaching it is healthy, at least half of it is building, and under half is low.`;
+  const fund = emergencyFund(financeAccounts, financeRecords, goal, period, todayKey());
+  if (!fund) return null;
   const chooseGoal = (months: number) => {
     if (user) void setEmergencyFundMonths(user.uid, months).catch(() => message.error("Could not save your emergency fund goal."));
   };
   const choosePeriod = (months: number) => {
     if (user) void setEmergencyFundAverageMonths(user.uid, months).catch(() => message.error("Could not save your averaging period."));
   };
+  return <EmergencyFundCard fund={fund} onGoal={chooseGoal} onPeriod={choosePeriod} />;
+}
+
+export function EmergencyFundCard({ fund, onGoal, onPeriod, ownerName }: { fund: EmergencyFund; onGoal?: (months: number) => void; onPeriod?: (months: number) => void; ownerName?: string }) {
+  const { token } = theme.useToken();
+  const { currency, accountCount: count, balance, monthsCovered, average, months, shown, status, goal, period } = fund;
+  const color = STATUS_COLORS[status];
+  const Icon = status === "good" ? CheckCircleOutlined : status === "fair" ? ExclamationCircleOutlined : status === "low" ? WarningOutlined : CheckCircleOutlined;
+  const label = status === "good" ? "Healthy" : status === "fair" ? "Building" : status === "low" ? "Low" : null;
+
+  const textColor = accountTextColor(color);
+  const accountCount = `${count} ${count === 1 ? "account" : "accounts"}`;
+  const whose = ownerName ? `${ownerName}'s` : "your";
+  const formula = `Total balance of ${whose} ${accountCount} in ${currency} that count toward statistics ÷ ${whose} average monthly spending from those accounts over the last ${monthsCovered === 1 ? "full month" : `${monthsCovered} full months`} (up to ${monthsText(period)}, not counting this month). ${ownerName ? `${ownerName}'s` : "Your"} goal is ${monthsText(goal)}: reaching it is healthy, at least half of it is building, and under half is low.`;
   const pillStyle = { color: "inherit", fontWeight: 600, background: "rgba(0, 0, 0, 0.22)", borderRadius: 999, paddingInline: 10 };
+  const staticPill = { ...pillStyle, display: "inline-flex", alignItems: "center", height: 24, fontSize: 14 };
 
   return (
     <Card
-      data-tour="finance-emergency"
+      data-tour={onGoal ? "finance-emergency" : undefined}
       role="status"
       styles={{ body: { padding: 20 } }}
       style={{ marginBottom: 24, position: "relative", overflow: "hidden", background: color, borderColor: color, color: textColor, boxShadow: token.boxShadowTertiary }}
@@ -72,25 +58,25 @@ export function EmergencyFundBanner() {
             </Tip>
           </Flex>
           <Flex align="center" gap={8} wrap>
-            <Dropdown trigger={["click"]} menu={{ items: EMERGENCY_FUND_AVERAGE_MONTHS.map((value) => ({ key: String(value), label: monthsText(value) })), selectable: true, selectedKeys: [String(period)], onClick: ({ key }) => choosePeriod(Number(key)) }}>
+            {onPeriod ? <Dropdown trigger={["click"]} menu={{ items: EMERGENCY_FUND_AVERAGE_MONTHS.map((value) => ({ key: String(value), label: monthsText(value) })), selectable: true, selectedKeys: [String(period)], onClick: ({ key }) => onPeriod(Number(key)) }}>
               <Button type="text" size="small" aria-label={`Average spending over: ${monthsText(period)}. Change period`} style={pillStyle}>
                 Average: {monthsText(period)} <DownOutlined style={{ fontSize: 10 }} />
               </Button>
-            </Dropdown>
-            <Dropdown trigger={["click"]} menu={{ items: EMERGENCY_FUND_MONTHS.map((value) => ({ key: String(value), label: monthsText(value) })), selectable: true, selectedKeys: [String(goal)], onClick: ({ key }) => chooseGoal(Number(key)), style: { maxHeight: 280, overflowY: "auto" } }}>
+            </Dropdown> : <span style={staticPill}>Average: {monthsText(period)}</span>}
+            {onGoal ? <Dropdown trigger={["click"]} menu={{ items: EMERGENCY_FUND_MONTHS.map((value) => ({ key: String(value), label: monthsText(value) })), selectable: true, selectedKeys: [String(goal)], onClick: ({ key }) => onGoal(Number(key)), style: { maxHeight: 280, overflowY: "auto" } }}>
               <Button type="text" size="small" aria-label={`Emergency fund goal: ${monthsText(goal)}. Change goal`} style={pillStyle}>
                 Goal: {monthsText(goal)} <DownOutlined style={{ fontSize: 10 }} />
               </Button>
-            </Dropdown>
+            </Dropdown> : <span style={staticPill}>Goal: {monthsText(goal)}</span>}
           </Flex>
         </Flex>
-        {shown === null && <Typography.Text style={{ display: "block", color: "inherit", fontSize: 16, marginTop: 14 }}>Log your expenses to see how many months your money would last.</Typography.Text>}
+        {shown === null && <Typography.Text style={{ display: "block", color: "inherit", fontSize: 16, marginTop: 14 }}>{ownerName ? `${ownerName} hasn't logged enough expenses yet to work out how many months their money would last.` : "Log your expenses to see how many months your money would last."}</Typography.Text>}
         <Flex gap={32} wrap style={{ marginTop: 14 }}>
           {shown !== null && <Stat icon={<FieldTimeOutlined />} label="Coverage" value={monthsText(shown)} />}
           <Stat icon={<WalletOutlined />} label="Balance" value={money(balance, currency)} />
           {average > 0 && <Stat icon={<ShoppingOutlined />} label="Average spending" value={`${money(average, currency)}/month`} />}
         </Flex>
-        {months !== null && <div style={{ marginTop: 18 }}><GoalMeter months={months} goal={goal} /></div>}
+        {months !== null && <div style={{ marginTop: 18 }}><GoalMeter months={months} goal={goal} whose={whose} /></div>}
       </div>
     </Card>
   );
@@ -109,10 +95,10 @@ function monthsText(months: number) {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(months)} ${months === 1 ? "month" : "months"}`;
 }
 
-function GoalMeter({ months, goal }: { months: number; goal: number }) {
+function GoalMeter({ months, goal, whose }: { months: number; goal: number; whose: string }) {
   const progress = Math.min(1, months / goal);
   return (
-    <div role="meter" aria-label={`Progress toward your ${monthsText(goal)} emergency fund goal`} aria-valuemin={0} aria-valuemax={goal} aria-valuenow={Math.min(goal, Math.round(months * 10) / 10)} style={{ minWidth: 0 }}>
+    <div role="meter" aria-label={`Progress toward ${whose} ${monthsText(goal)} emergency fund goal`} aria-valuemin={0} aria-valuemax={goal} aria-valuenow={Math.min(goal, Math.round(months * 10) / 10)} style={{ minWidth: 0 }}>
       <div style={{ position: "relative", height: 8, borderRadius: 999, background: "rgba(0, 0, 0, 0.22)" }}>
         <div style={{ width: `${progress * 100}%`, height: "100%", borderRadius: 999, background: "currentColor" }} />
         <span aria-hidden style={{ position: "absolute", left: "50%", top: -3, bottom: -3, width: 2, marginLeft: -1, borderRadius: 1, background: "currentColor", opacity: 0.6 }} />

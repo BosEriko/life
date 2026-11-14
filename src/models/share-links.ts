@@ -1,7 +1,10 @@
 import type { User } from "firebase/auth";
 
+export type ShareKind = "health" | "emergencyFund";
+
 export type ShareLink = {
   code: string;
+  kind: ShareKind;
   label: string | null;
   createdAt: number | null;
   expiresAt: number | null;
@@ -11,6 +14,7 @@ export type ShareLink = {
 };
 
 export type CreateShareLinkInput = {
+  kind: ShareKind;
   label?: string | null;
   expiresInMs?: number | null;
   maxUses?: number | null;

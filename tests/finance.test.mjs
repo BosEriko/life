@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFund, emergencyFundOutlook, emergencyFundSince, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -128,4 +128,45 @@ test("emergency fund goal falls back to six months for missing or unsupported va
   assert.equal(emergencyFundAverageMonthsOrDefault(18), 12);
   assert.equal(emergencyFundAverageMonthsOrDefault(0), 12);
   assert.equal(emergencyFundAverageMonthsOrDefault("6"), 12);
+});
+
+test("emergency fund divides counted balance by average spending over full past months", () => {
+  const account = (id, balanceMinor, extra = {}) => ({ id, name: id, color: "#000000", type: "Cash", initialMinor: 0, balanceMinor, currency: "PHP", excludeFromStatistics: false, ...extra });
+  const accounts = [account("a", 60000), account("b", 30000), account("x", 999999, { excludeFromStatistics: true }), account("d", 5000, { deletedAt: "2026-01-01" }), account("u", 100, { currency: "USD" })];
+  const expense = (date, amountMinor, accountId = "a") => ({ type: "expense", accountId, date, amountMinor });
+  const records = [expense("2026-09-03", 10000), expense("2026-10-20", 20000, "b"), expense("2026-11-02", 50000), expense("2026-10-01", 7000, "x"), { type: "income", accountId: "a", date: "2026-10-05", amountMinor: 90000 }, expense("2025-01-01", 1000)];
+  const fund = emergencyFund(accounts, records, 6, 12, "2026-11-14");
+  assert.equal(fund.currency, "PHP");
+  assert.equal(fund.accountCount, 2);
+  assert.equal(fund.balance, 90000);
+  assert.equal(fund.monthsCovered, 2);
+  assert.equal(fund.average, 15000);
+  assert.equal(fund.months, 6);
+  assert.equal(fund.shown, 6);
+  assert.equal(fund.status, "good");
+  assert.equal(emergencyFund(accounts, records, 12, 12, "2026-11-14").status, "fair");
+  assert.equal(emergencyFund(accounts, records, 1, 1, "2026-11-14").average, 20000);
+  assert.equal(emergencyFund(accounts, [], 6, 12, "2026-11-14").status, "neutral");
+  assert.equal(emergencyFund([account("x", 1, { excludeFromStatistics: true })], [], 6, 12, "2026-11-14"), null);
+  assert.equal(emergencyFundSince("2026-02-10", 3), "2025-11-01");
+  assert.equal(emergencyFundSince("2026-11-14", 12), "2025-11-01");
+});
+
+test("emergency fund history and outlook cover the averaged months", () => {
+  const accounts = [{ id: "a", name: "a", color: "#000000", type: "Cash", initialMinor: 0, balanceMinor: 30000, currency: "PHP", excludeFromStatistics: false }];
+  const records = [
+    { type: "expense", accountId: "a", date: "2026-09-03", amountMinor: 10000 },
+    { type: "income", accountId: "a", date: "2026-09-15", amountMinor: 25000 },
+    { type: "expense", accountId: "a", date: "2026-10-20", amountMinor: 10000 },
+    { type: "income", accountId: "a", date: "2026-10-01", amountMinor: 15000 },
+    { type: "income", accountId: "a", date: "2026-11-01", amountMinor: 99999 },
+  ];
+  const fund = emergencyFund(accounts, records, 6, 12, "2026-11-14");
+  assert.deepEqual(fund.history, [{ month: "2026-09", expense: 10000, income: 25000 }, { month: "2026-10", expense: 10000, income: 15000 }]);
+  assert.equal(fund.averageIncome, 20000);
+  assert.deepEqual(emergencyFundOutlook(fund, "2026-11-14"), { target: 60000, gap: 30000, saving: 10000, savingsRate: 0.5, goalMonth: "2027-02" });
+  assert.equal(emergencyFundOutlook({ ...fund, balance: 70000 }, "2026-11-14").goalMonth, null);
+  assert.equal(emergencyFundOutlook({ ...fund, averageIncome: 5000 }, "2026-11-14").goalMonth, null);
+  assert.equal(emergencyFundOutlook({ ...fund, average: 0 }, "2026-11-14"), null);
+  assert.equal(emergencyFundOutlook({ ...fund, averageIncome: 0 }, "2026-11-14").savingsRate, null);
 });

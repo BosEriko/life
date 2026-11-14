@@ -9,6 +9,7 @@ import {
   Flex,
   Input,
   InputNumber,
+  Segmented,
   Select,
   Table,
   Tag,
@@ -25,6 +26,7 @@ import {
   inviteUrl,
   listShareLinks,
   shareLinkStatus,
+  type ShareKind,
   type ShareLink,
 } from "@/models/share-links";
 import { PageHeading } from "@/components/page-heading";
@@ -36,6 +38,16 @@ const EXPIRY_OPTIONS = [
   { label: "7 days", value: String(7 * 24 * 60 * 60 * 1000) },
   { label: "30 days", value: String(30 * 24 * 60 * 60 * 1000) },
 ];
+
+const KIND_OPTIONS: { label: string; value: ShareKind }[] = [
+  { label: "Health", value: "health" },
+  { label: "Emergency fund", value: "emergencyFund" },
+];
+
+const KIND_HINT: Record<ShareKind, string> = {
+  health: "Your last 7 days of weight, blood pressure, water and food, with your ideal ranges.",
+  emergencyFund: "Your emergency fund card: months covered, balance, average monthly spending and goal. No accounts or records are shown.",
+};
 
 const STATUS_TAG: Record<
   ReturnType<typeof shareLinkStatus>,
@@ -55,6 +67,7 @@ export function SharePanel() {
   const [loaded, setLoaded] = useState(false);
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
 
+  const [kind, setKind] = useState<ShareKind>("health");
   const [label, setLabel] = useState("");
   const [expiry, setExpiry] = useState("never");
   const [limited, setLimited] = useState(false);
@@ -92,12 +105,14 @@ export function SharePanel() {
     setCreating(true);
     try {
       const link = await createShareLink(user, {
+        kind,
         label: label.trim() ? label.trim() : null,
         expiresInMs: expiry === "never" ? null : Number(expiry),
         maxUses: limited ? (maxUses ?? null) : null,
       });
       setLinks((prev) => [link, ...prev]);
       setJustCreated(link);
+      setKind("health");
       setLabel("");
       setExpiry("never");
       setLimited(false);
@@ -130,6 +145,12 @@ export function SharePanel() {
       title: "Label",
       dataIndex: "label",
       render: (value: string | null) => value ?? "—",
+    },
+    {
+      title: "Type",
+      dataIndex: "kind",
+      render: (value: ShareKind) =>
+        KIND_OPTIONS.find((option) => option.value === value)?.label ?? "Health",
     },
     {
       title: "Created",
@@ -190,6 +211,22 @@ export function SharePanel() {
       <Flex vertical gap={20}>
         <Card size="small" title="Create a link">
           <Flex vertical gap={12}>
+            <div>
+              <Typography.Text style={{ display: "block", marginBottom: 6 }}>
+                What to share
+              </Typography.Text>
+              <Segmented<ShareKind>
+                value={kind}
+                onChange={setKind}
+                options={KIND_OPTIONS}
+              />
+              <Typography.Text
+                type="secondary"
+                style={{ display: "block", fontSize: 12, marginTop: 6 }}
+              >
+                {KIND_HINT[kind]}
+              </Typography.Text>
+            </div>
             <Input
               placeholder="Label (optional, e.g. For mom)"
               value={label}
@@ -262,7 +299,7 @@ export function SharePanel() {
             dataSource={links}
             columns={columns}
             pagination={false}
-            scroll={{ x: 640 }}
+            scroll={{ x: 760 }}
             locale={{ emptyText: "No links yet." }}
           />
         </Card>

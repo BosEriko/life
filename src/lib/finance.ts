@@ -61,6 +61,65 @@ export function emergencyFundAverageMonthsOrDefault(value: unknown) {
   return typeof value === "number" && EMERGENCY_FUND_AVERAGE_MONTHS.includes(value) ? value : DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS;
 }
 
+function monthStart(today: string, monthsBack: number) {
+  const [year, month] = today.split("-").map(Number);
+  const index = year * 12 + month - 1 - monthsBack;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}-01`;
+}
+
+function monthsBetween(from: string, to: string) {
+  const [fromYear, fromMonth] = from.split("-").map(Number);
+  const [toYear, toMonth] = to.split("-").map(Number);
+  return (toYear - fromYear) * 12 + toMonth - fromMonth;
+}
+
+export function emergencyFundSince(today: string, period: number) {
+  return monthStart(today, period);
+}
+
+export function emergencyFund(accounts: FinanceAccount[], records: Pick<FinanceRecord, "type" | "accountId" | "date" | "amountMinor">[], goal: number, period: number, today: string) {
+  const counted = accounts.filter((account) => !account.deletedAt && !account.excludeFromStatistics);
+  if (counted.length === 0) return null;
+  const currencyCounts = new Map<string, number>();
+  for (const account of counted) currencyCounts.set(account.currency, (currencyCounts.get(account.currency) ?? 0) + 1);
+  const currency = [...currencyCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const inCurrency = counted.filter((account) => account.currency === currency);
+  const ids = new Set(inCurrency.map((account) => account.id));
+  const balance = inCurrency.reduce((sum, account) => sum + account.balanceMinor, 0);
+
+  const until = monthStart(today, 0);
+  const since = monthStart(today, period);
+  const expenses = records.filter((record) => record.type === "expense" && ids.has(record.accountId) && record.date >= since && record.date < until);
+  const spent = expenses.reduce((sum, record) => sum + record.amountMinor, 0);
+  const firstMonth = expenses.reduce((min, record) => (record.date < min ? record.date : min), until);
+  const monthsCovered = Math.min(period, Math.max(1, monthsBetween(firstMonth, until)));
+  const average = expenses.length ? Math.round(spent / monthsCovered) : 0;
+  const historyStart = monthStart(today, monthsCovered);
+  const incomes = records.filter((record) => record.type === "income" && ids.has(record.accountId) && record.date >= historyStart && record.date < until);
+  const averageIncome = Math.round(incomes.reduce((sum, record) => sum + record.amountMinor, 0) / monthsCovered);
+  const history = Array.from({ length: monthsCovered }, (_, index) => {
+    const month = monthStart(today, monthsCovered - index).slice(0, 7);
+    const total = (type: string) => records.filter((record) => record.type === type && ids.has(record.accountId) && record.date.startsWith(month)).reduce((sum, record) => sum + record.amountMinor, 0);
+    return { month, expense: total("expense"), income: total("income") };
+  });
+  const months = average > 0 ? Math.max(0, balance / average) : null;
+  const shown = months === null ? null : months >= 10 ? Math.floor(months) : Math.floor(months * 10) / 10;
+  const status: "good" | "fair" | "low" | "neutral" = months === null ? "neutral" : months >= goal ? "good" : months >= goal / 2 ? "fair" : "low";
+  return { currency, accountCount: inCurrency.length, balance, monthsCovered, average, averageIncome, history, months, shown, status, goal, period };
+}
+
+export type EmergencyFund = NonNullable<ReturnType<typeof emergencyFund>>;
+
+export function emergencyFundOutlook(fund: Pick<EmergencyFund, "balance" | "average" | "averageIncome" | "goal">, today: string) {
+  if (fund.average <= 0) return null;
+  const target = fund.average * fund.goal;
+  const gap = target - fund.balance;
+  const saving = fund.averageIncome - fund.average;
+  const savingsRate = fund.averageIncome > 0 ? saving / fund.averageIncome : null;
+  const goalMonth = gap > 0 && saving > 0 ? monthStart(today, -Math.ceil(gap / saving)).slice(0, 7) : null;
+  return { target, gap, saving, savingsRate, goalMonth };
+}
+
 export function accountTextColor(color: string) {
   const dark = "#172019";
   return apcaContrast("#ffffff", color) >= apcaContrast(dark, color) ? "#ffffff" : dark;
