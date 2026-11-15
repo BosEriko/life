@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFund, emergencyFundOutlook, emergencyFundSince, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFund, emergencyFundOutlook, sortByLatestDebtRecord, emergencyFundSince, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -169,4 +169,15 @@ test("emergency fund history and outlook cover the averaged months", () => {
   assert.equal(emergencyFundOutlook({ ...fund, averageIncome: 5000 }, "2026-11-14").goalMonth, null);
   assert.equal(emergencyFundOutlook({ ...fund, average: 0 }, "2026-11-14"), null);
   assert.equal(emergencyFundOutlook({ ...fund, averageIncome: 0 }, "2026-11-14").savingsRate, null);
+});
+
+test("people are ordered by their most recent debt record", () => {
+  const person = (id) => ({ id, name: id, color: "#000000", type: "Debt", initialMinor: 0, balanceMinor: 0, currency: "PHP", excludeFromStatistics: true });
+  const records = [
+    { type: "debt", destinationId: "mom", occurredAt: "2026-10-01T10:00:00.000Z" },
+    { type: "debt", destinationId: "friend", occurredAt: "2026-11-02T10:00:00.000Z" },
+    { type: "debt", destinationId: "mom", occurredAt: "2026-11-01T10:00:00.000Z" },
+    { type: "transfer", destinationId: "none", occurredAt: "2026-12-01T10:00:00.000Z" },
+  ];
+  assert.deepEqual(sortByLatestDebtRecord([person("none"), person("mom"), person("friend"), person("aunt")], records).map((item) => item.id), ["friend", "mom", "none", "aunt"]);
 });

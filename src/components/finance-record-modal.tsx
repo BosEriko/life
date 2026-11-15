@@ -7,7 +7,7 @@ import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceDay } from "@/components/use-day-records";
-import { CATEGORIES, currencyDigits, debtStatus, isDebtAccount, recordValidation, toMinor, type DebtAction, type FinanceRecord, sortAccounts, type FinanceAccount } from "@/lib/finance";
+import { CATEGORIES, currencyDigits, debtStatus, isDebtAccount, recordValidation, toMinor, type DebtAction, type FinanceRecord, sortAccounts, sortByLatestDebtRecord, type FinanceAccount } from "@/lib/finance";
 import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { AccountBadge, CategoryIcon } from "@/components/finance-category-icon";
@@ -35,7 +35,7 @@ export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: {
   const { financeAccounts, financeRecords: records } = useHealthData();
   const accounts = sortAccounts(financeAccounts.filter((account) => !account.deletedAt));
   const ownAccounts = accounts.filter((item) => !isDebtAccount(item));
-  const debtAccounts = accounts.filter((item) => isDebtAccount(item) && (!item.hiddenAt || item.id === initial?.destinationId));
+  const debtAccounts = sortByLatestDebtRecord(accounts.filter((item) => isDebtAccount(item) && (!item.hiddenAt || item.id === initial?.destinationId)), records);
   const [type, setType] = useState<FinanceRecord["type"]>(initial?.type ?? defaultType ?? "expense");
   const [debtAction, setDebtAction] = useState<DebtAction>(initial?.debtAction ?? "borrow");
   const [amount, setAmount] = useState<number | null>(initial ? initial.amountMinor / 10 ** currencyDigits(initial.currency) : null);

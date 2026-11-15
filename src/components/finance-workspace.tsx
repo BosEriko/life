@@ -10,7 +10,7 @@ import { FinanceRecordModal } from "@/components/finance-record-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
-import { ACCOUNT_TYPES, accountTextColor, debtStatus, isDebtAccount, money, sortAccounts, type DebtAction, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
+import { ACCOUNT_TYPES, accountTextColor, debtStatus, isDebtAccount, money, sortAccounts, sortByLatestDebtRecord, type DebtAction, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import { deleteFinanceAccount, deleteFinanceRecord, reorderFinanceAccounts, setFinanceAccountHidden, setFinanceAccountsLocked } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
@@ -117,9 +117,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     </>
   );
   const hiddenCount = debtAccounts.filter((account) => account.hiddenAt).length;
-  const people = debtAccounts
-    .filter((account) => (showHidden || !account.hiddenAt) && (currency === "all" || account.currency === currency) && (!query || account.name.toLowerCase().includes(query)))
-    .sort((a, b) => (lastDebtRecord.get(b.id) ?? "").localeCompare(lastDebtRecord.get(a.id) ?? ""));
+  const people = sortByLatestDebtRecord(debtAccounts
+    .filter((account) => (showHidden || !account.hiddenAt) && (currency === "all" || account.currency === currency) && (!query || account.name.toLowerCase().includes(query))), allRecords);
   const accountListCard = (list: FinanceAccount[], tour: string, emptyText: string) => (
     <Card data-tour={tour} styles={{ body: { padding: list.length ? 20 : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
             {list.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} /> :

@@ -18,6 +18,12 @@ export function debtStatus(account: FinanceAccount) {
   return "Settled";
 }
 
+export function sortByLatestDebtRecord(accounts: FinanceAccount[], records: Pick<FinanceRecord, "type" | "destinationId" | "occurredAt">[]) {
+  const latest = new Map<string, string>();
+  for (const record of records) if (record.type === "debt" && record.destinationId && record.occurredAt > (latest.get(record.destinationId) ?? "")) latest.set(record.destinationId, record.occurredAt);
+  return [...accounts].sort((a, b) => (latest.get(b.id) ?? "").localeCompare(latest.get(a.id) ?? ""));
+}
+
 export function sortAccounts(accounts: FinanceAccount[]) {
   return [...accounts].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.name.localeCompare(b.name));
 }
