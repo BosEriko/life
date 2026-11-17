@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFund, emergencyFundOutlook, sortByLatestDebtRecord, emergencyFundSince, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFund, emergencyFundOutlook, sortByLatestDebtRecord, parseWiseAmount, wiseRecord, emergencyFundSince, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -180,4 +180,27 @@ test("people are ordered by their most recent debt record", () => {
     { type: "transfer", destinationId: "none", occurredAt: "2026-12-01T10:00:00.000Z" },
   ];
   assert.deepEqual(sortByLatestDebtRecord([person("none"), person("mom"), person("friend"), person("aunt")], records).map((item) => item.id), ["friend", "mom", "none", "aunt"]);
+});
+
+test("Wise amounts are parsed with their sign and currency", () => {
+  assert.deepEqual(parseWiseAmount("150 JPY"), { value: 150, currency: "JPY", sign: 0 });
+  assert.deepEqual(parseWiseAmount("<positive>+ 1,234.50 PHP</positive>"), { value: 1234.5, currency: "PHP", sign: 1 });
+  assert.deepEqual(parseWiseAmount("<negative>- 10.12 USD</negative>"), { value: 10.12, currency: "USD", sign: -1 });
+  assert.equal(parseWiseAmount(""), null);
+  assert.equal(parseWiseAmount(undefined), null);
+});
+
+test("Wise activities become records on the matching currency account", () => {
+  const accounts = { PHP: "wise-php", USD: "wise-usd" };
+  const activity = (extra) => ({ id: "A1", type: "CARD_PAYMENT", title: "<strong>Jollibee</strong>", description: "Spent by you", primaryAmount: "250.75 PHP", secondaryAmount: "", status: "COMPLETED", createdOn: "2026-11-16T04:30:00.000Z", ...extra });
+  assert.deepEqual(wiseRecord(activity({}), accounts, "2026-11-16", "wise-1"), { id: "wise-1", type: "expense", amountMinor: 25075, accountId: "wise-php", destinationId: null, currency: "PHP", category: "Other", labels: [], date: "2026-11-16", occurredAt: "2026-11-16T04:30:00.000Z", description: "Jollibee", debtAction: null, wiseId: "A1" });
+  assert.equal(wiseRecord(activity({ primaryAmount: "1,000 JPY", secondaryAmount: "6.80 USD" }), accounts, "2026-11-16", "x").accountId, "wise-usd");
+  assert.equal(wiseRecord(activity({ primaryAmount: "1,000 JPY" }), accounts, "2026-11-16", "x"), null);
+  assert.equal(wiseRecord(activity({ type: "BALANCE_DEPOSIT", primaryAmount: "500 PHP" }), accounts, "2026-11-16", "x").type, "income");
+  assert.equal(wiseRecord(activity({ primaryAmount: "<positive>+ 99 PHP</positive>" }), accounts, "2026-11-16", "x").type, "income");
+  assert.equal(wiseRecord(activity({ status: "IN_PROGRESS" }), accounts, "2026-11-16", "x").type, "expense");
+  assert.equal(wiseRecord(activity({ type: "TRANSFER", status: "IN_PROGRESS" }), accounts, "2026-11-16", "x"), null);
+  assert.equal(wiseRecord(activity({ status: "CANCELLED" }), accounts, "2026-11-16", "x"), "remove");
+  assert.equal(wiseRecord(activity({ type: "INTERBALANCE" }), accounts, "2026-11-16", "x"), null);
+  assert.equal(wiseRecord(activity({ primaryAmount: "0 PHP" }), accounts, "2026-11-16", "x"), null);
 });

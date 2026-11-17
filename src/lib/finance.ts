@@ -3,10 +3,10 @@ import type { Task, TaskFinance } from "@/lib/task-schedule";
 export const ACCOUNT_TYPES = ["Cash", "Bank account", "Savings", "Credit card", "Investment", "Loan", "Debt", "Other"];
 export const CURRENCIES = ["PHP", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "HKD", "SGD", "KRW", "INR", "AED", "NZD"];
 export const CATEGORIES = ["Food & drink", "Shopping", "Housing", "Transportation", "Health", "Entertainment", "Education", "Bills", "Salary", "Gifts", "Other"];
-export type FinanceAccount = { id: string; name: string; color: string; type: string; initialMinor: number; balanceMinor: number; currency: string; excludeFromStatistics: boolean; provider?: string; order?: number; deletedAt?: string; hiddenAt?: string | null };
+export type FinanceAccount = { id: string; name: string; color: string; type: string; initialMinor: number; balanceMinor: number; currency: string; excludeFromStatistics: boolean; provider?: string; order?: number; deletedAt?: string; hiddenAt?: string | null; source?: "wise" | null };
 export const DEBT_ACTIONS = ["borrow", "repay", "lend", "collect"] as const;
 export type DebtAction = (typeof DEBT_ACTIONS)[number];
-export type FinanceRecord = { id: string; type: "expense" | "income" | "transfer" | "debt"; amountMinor: number; accountId: string; destinationId: string | null; currency: string; category: string; labels: string[]; date: string; occurredAt: string; description: string; debtAction?: DebtAction | null; taskId?: string };
+export type FinanceRecord = { id: string; type: "expense" | "income" | "transfer" | "debt"; amountMinor: number; accountId: string; destinationId: string | null; currency: string; category: string; labels: string[]; date: string; occurredAt: string; description: string; debtAction?: DebtAction | null; taskId?: string; wiseId?: string };
 
 export function isDebtAccount(account: Pick<FinanceAccount, "type">) {
   return account.type === "Debt";
@@ -220,4 +220,37 @@ export function taskRecord(task: Pick<Task, "id" | "title" | "time">, date: stri
     debtAction: null,
     taskId: task.id,
   };
+}
+
+export type WiseActivity = { id: string; type: string; title: string; description?: string; primaryAmount: string; secondaryAmount?: string; status: string; createdOn: string };
+
+const WISE_INCOME = new Set(["BALANCE_DEPOSIT", "BALANCE_CASHBACK", "CARD_CASHBACK", "BALANCE_INTEREST", "REWARD", "FEE_REFUND", "EXCESS_REFUND", "ACQUIRING_PAYMENT"]);
+const WISE_EXPENSE = new Set(["CARD_PAYMENT", "CASH_WITHDRAWAL", "DIRECT_DEBIT_TRANSACTION", "BALANCE_HOLD_FEE", "BALANCE_ASSET_FEE", "TRANSFER"]);
+
+export function wiseText(text: string | undefined) {
+  return (text ?? "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+export function parseWiseAmount(text: string | undefined) {
+  const raw = text ?? "";
+  const plain = wiseText(raw);
+  const match = /([0-9][0-9,]*(?:\.[0-9]+)?)\s*([A-Z]{3})/.exec(plain);
+  if (!match) return null;
+  const value = Number(match[1].replace(/,/g, ""));
+  if (!Number.isFinite(value)) return null;
+  const sign = /<positive>/i.test(raw) || /^\+/.test(plain) ? 1 : /<negative>/i.test(raw) || /^[-\u2212]/.test(plain) ? -1 : 0;
+  return { value, currency: match[2], sign };
+}
+
+export function wiseRecord(activity: WiseActivity, accountIds: Record<string, string>, date: string, id: string): FinanceRecord | "remove" | null {
+  if (activity.status === "CANCELLED") return "remove";
+  if (activity.status !== "COMPLETED" && !(activity.status === "IN_PROGRESS" && activity.type === "CARD_PAYMENT")) return null;
+  const amount = [parseWiseAmount(activity.primaryAmount), parseWiseAmount(activity.secondaryAmount)].find((item) => item && accountIds[item.currency]);
+  if (!amount) return null;
+  const type = amount.sign === 1 ? "income" : amount.sign === -1 ? "expense" : WISE_INCOME.has(activity.type) ? "income" : WISE_EXPENSE.has(activity.type) ? "expense" : null;
+  if (!type) return null;
+  const amountMinor = toMinor(amount.value, amount.currency);
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return null;
+  const description = (wiseText(activity.title) || wiseText(activity.description) || "Wise").slice(0, 2000);
+  return { id, type, amountMinor, accountId: accountIds[amount.currency], destinationId: null, currency: amount.currency, category: "Other", labels: [], date, occurredAt: new Date(activity.createdOn).toISOString(), description, debtAction: null, wiseId: activity.id };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Pagination, Select, Spin, Tag, Typography, theme } from "antd";
 import { EditOutlined, EyeInvisibleOutlined, EyeOutlined, HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, TransactionOutlined, UnlockOutlined, UserAddOutlined, WalletOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -12,6 +12,7 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
 import { ACCOUNT_TYPES, accountTextColor, debtStatus, isDebtAccount, money, sortAccounts, sortByLatestDebtRecord, type DebtAction, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
+import { autoSyncWise } from "@/models/wise";
 import { deleteFinanceAccount, deleteFinanceRecord, reorderFinanceAccounts, setFinanceAccountHidden, setFinanceAccountsLocked } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FinanceOverview } from "@/components/finance-overview";
@@ -33,6 +34,11 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const accounts = sortAccounts(allAccounts.filter((account) => !account.deletedAt));
   const ownAccounts = accounts.filter((account) => !isDebtAccount(account));
   const debtAccounts = accounts.filter(isDebtAccount);
+  const wiseLinked = accounts.some((account) => account.source === "wise");
+  useEffect(() => {
+    if (!user || !wiseLinked) return;
+    autoSyncWise(user)?.catch((error: Error) => message.warning({ key: "wise-sync", content: `Wise sync failed: ${error.message}` }));
+  }, [user, wiseLinked, message]);
   const [showHidden, setShowHidden] = useState(false);
   const history = useFinanceHistory(view === "records", cutoff);
   const [modal, setModal] = useState<"account" | "record" | null>(null);
