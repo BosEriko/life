@@ -5,11 +5,13 @@ import { Alert, App, Button, Card, Flex, Input, Popconfirm, Skeleton, Typography
 import { ApiOutlined, DisconnectOutlined, ExportOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAuth } from "@/components/auth-provider";
+import { useHealthData } from "@/components/health-data-provider";
 import { connectWise, disconnectWise, getWiseStatus, syncWiseNow, WISE_TOKEN_URL, type WiseStatus } from "@/models/wise";
 
 export function WiseCard() {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const { financeAccounts } = useHealthData();
   const [status, setStatus] = useState<WiseStatus | null>(null);
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState<"connect" | "sync" | "disconnect" | null>(null);
@@ -39,7 +41,7 @@ export function WiseCard() {
     if (!user) return;
     setStatus(await connectWise(user, token));
     setToken("");
-    message.success("Wise connected. Your transactions are being imported into Finance.");
+    message.success("Wise connected. Now link it to an account from Finance → Accounts.");
   });
 
   const sync = () => run("sync", async () => {
@@ -56,12 +58,18 @@ export function WiseCard() {
     message.success("Wise disconnected. Your imported records and accounts stay in Finance.");
   });
 
+  const linked = status?.connected
+    ? Object.values(status.links).map((id) => financeAccounts.find((account) => account.id === id && !account.deletedAt)?.name ?? null).filter((name): name is string => name !== null)
+    : [];
+
   return (
     <Card size="small" title={<><ApiOutlined style={{ marginRight: 8 }} />Wise</>}>
       {status === null ? <Skeleton active paragraph={{ rows: 2 }} /> : status.connected ? (
         <Flex vertical gap={12}>
           <Typography.Paragraph type="secondary" style={{ fontSize: 13, margin: 0 }}>
-            Connected{status.currencies.length ? ` · ${status.currencies.map((currency) => `Wise ${currency}`).join(", ")}` : ""}. New activity syncs automatically whenever you open Finance, and each Wise account&apos;s balance matches Wise.
+            {linked.length
+              ? <>Connected. Syncing into {linked.join(", ")}. New activity syncs whenever you open Finance, and linked balances match Wise.</>
+              : <>Connected. To start syncing, open Finance → Accounts, add or edit an account, and turn on <strong>Sync with Wise</strong>.</>}
           </Typography.Paragraph>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {status.lastSyncedAt ? `Last synced ${dayjs(status.lastSyncedAt).format("MMM D, YYYY h:mm A")}` : "Not synced yet"}
@@ -77,7 +85,7 @@ export function WiseCard() {
       ) : (
         <Flex vertical gap={12}>
           <Typography.Paragraph type="secondary" style={{ fontSize: 13, margin: 0 }}>
-            Import your Wise card payments, transfers and deposits into Finance automatically.
+            Import your Wise card payments, transfers and deposits into Finance automatically. After connecting, choose which accounts sync with Wise.
           </Typography.Paragraph>
           <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
             <li>Open <Typography.Link href={WISE_TOKEN_URL} target="_blank" rel="noreferrer">Wise API tokens <ExportOutlined style={{ fontSize: 11 }} /></Typography.Link> and sign in.</li>

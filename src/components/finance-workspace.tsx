@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Pagination, Select, Spin, Tag, Typography, theme } from "antd";
-import { EditOutlined, EyeInvisibleOutlined, EyeOutlined, HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, TransactionOutlined, UnlockOutlined, UserAddOutlined, WalletOutlined } from "@ant-design/icons";
+import { EditOutlined, EyeInvisibleOutlined, EyeOutlined, HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, SyncOutlined, TransactionOutlined, UnlockOutlined, UserAddOutlined, WalletOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { PageHeading } from "@/components/page-heading";
 import { FinanceAccountModal } from "@/components/finance-account-modal";
@@ -91,6 +91,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     <div style={{ flex: 1, minWidth: 0 }}>
       <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>{account.type} · {account.currency}{account.provider ? ` · ${account.provider}` : ""}{isDebtAccount(account) ? ` · ${debtStatus(account)}` : account.excludeFromStatistics ? " · Excluded from statistics" : ""}{isDebtAccount(account) && !draggable ? ` · ${lastDebtRecord.has(account.id) ? `Last record ${dayjs(lastDebtRecord.get(account.id)).format("MMM D, YYYY")}` : "No records yet"}` : ""}</Typography.Text>
+      {account.source === "wise" && <Tag icon={<SyncOutlined />} color="green" title="Synced from Wise" style={{ marginLeft: 8 }}>Synced</Tag>}
       {account.hiddenAt && <Tag style={{ marginLeft: 8 }}>Hidden</Tag>}
     </div>
     <Typography.Text strong style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", minWidth: 0, overflowWrap: "anywhere", textAlign: "right" }}>{money(account.balanceMinor, account.currency)}</Typography.Text>
@@ -116,7 +117,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     <>
               <AccountTypeIcon type={account.type} style={{ position: "absolute", right: -10, bottom: -13, fontSize: 78, opacity: 0.14, pointerEvents: "none" }} />
               <div style={{ position: "relative" }}>
-              <Flex gap={8} align="start" justify="space-between"><div style={{ minWidth: 0 }}><Typography.Text strong style={{ display: "block", color: "inherit", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>{account.provider && <Typography.Text style={{ display: "block", color: "inherit", opacity: 0.85, fontSize: 12, overflowWrap: "anywhere" }}>{account.provider}</Typography.Text>}</div>{handle}</Flex>
+              <Flex gap={8} align="start" justify="space-between"><div style={{ minWidth: 0 }}><Typography.Text strong style={{ display: "block", color: "inherit", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>{account.provider && <Typography.Text style={{ display: "block", color: "inherit", opacity: 0.85, fontSize: 12, overflowWrap: "anywhere" }}>{account.provider}</Typography.Text>}</div><Flex align="center" gap={6} style={{ flexShrink: 0 }}>{account.source === "wise" && <span title="Synced from Wise" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "1px 8px", borderRadius: 999, background: "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}><SyncOutlined />Synced</span>}{handle}</Flex></Flex>
               <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.2, margin: 0, overflowWrap: "anywhere", fontVariantNumeric: "tabular-nums" }}>{money(account.balanceMinor, account.currency)}</div>
               {isDebtAccount(account) && <Typography.Text style={{ display: "block", color: "inherit", opacity: 0.85, fontSize: 12 }}>{debtStatus(account)}</Typography.Text>}
               </div>

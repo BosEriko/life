@@ -1,7 +1,7 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { FieldPath, FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { balanceChanges, CURRENCIES, toMinor, wiseRecord, type FinanceAccount, type FinanceRecord, type WiseActivity } from "@/lib/finance";
+import { balanceChanges, CURRENCIES, isDebtAccount, toMinor, wiseRecord, type FinanceAccount, type FinanceRecord, type WiseActivity } from "@/lib/finance";
 
 const API = "https://api.wise.com";
 const FIRST_SYNC_DAYS = 365;
@@ -40,9 +40,36 @@ export async function wiseProfileId(token: string) {
   return profile.id;
 }
 
+export async function wiseBalances(connection: WiseConnection) {
+  const balances = await wiseGet<{ currency: string; amount: { value: number } }[]>(connection.token, `/v4/profiles/${connection.profileId}/balances?types=STANDARD`);
+  return balances.filter((balance) => CURRENCIES.includes(balance.currency)).map((balance) => ({ currency: balance.currency, amountMinor: toMinor(balance.amount.value, balance.currency) }));
+}
+
+export async function linkWiseAccount(uid: string, accountId: string, currency: string | null) {
+  const connection = await readWiseConnection(uid);
+  if (!connection) throw new WiseError("Connect Wise in Settings first.");
+  const account = ((await settingsRef(uid).get()).data()?.accounts ?? {})[accountId] as FinanceAccount | undefined;
+  if (!account || account.deletedAt || isDebtAccount(account)) throw new WiseError("That account can't be linked to Wise.");
+  if (currency !== null && account.currency !== currency) throw new WiseError(`This account is in ${account.currency}, so it can only sync your Wise ${account.currency} balance.`);
+  const links = Object.fromEntries(Object.entries(connection.accounts).filter(([key, id]) => id !== accountId && key !== currency));
+  const unlinked = Object.entries(connection.accounts).filter(([key, id]) => id !== accountId && key === currency).map(([, id]) => id);
+  if (currency !== null) links[currency] = accountId;
+  await connectionRef(uid).update({ accounts: links, ...(currency !== null ? { syncedThrough: null, lastSyncedAt: null } : {}) });
+  const sources: Record<string, unknown> = { [`accounts.${accountId}.source`]: currency === null ? null : "wise" };
+  for (const id of unlinked) sources[`accounts.${id}.source`] = null;
+  await settingsRef(uid).update(sources);
+  if (currency !== null) await syncWise(uid, { force: true });
+}
+
 export async function readWiseConnection(uid: string) {
   const snap = await connectionRef(uid).get();
-  return snap.exists ? (snap.data() as WiseConnection) : null;
+  if (!snap.exists) return null;
+  const connection = snap.data() as WiseConnection;
+  if (Object.keys(connection.accounts).length === 0) return connection;
+  const accounts = ((await settingsRef(uid).get()).data()?.accounts ?? {}) as Record<string, FinanceAccount>;
+  const live = Object.fromEntries(Object.entries(connection.accounts).filter(([currency, id]) => accounts[id] && !accounts[id].deletedAt && accounts[id].currency === currency));
+  if (Object.keys(live).length !== Object.keys(connection.accounts).length) await connectionRef(uid).update({ accounts: live });
+  return { ...connection, accounts: live };
 }
 
 export async function saveWiseConnection(uid: string, token: string, profileId: number) {
@@ -145,25 +172,20 @@ async function runSync(uid: string, connection: WiseConnection, now: Date) {
   ]);
   const timezone = typeof profileSnap.get("timezone") === "string" ? (profileSnap.get("timezone") as string) : null;
   const existingAccounts = (settingsSnap.data()?.accounts ?? {}) as Record<string, FinanceAccount>;
-  let nextOrder = Math.max(-1, ...Object.values(existingAccounts).map((account) => account.order ?? -1)) + 1;
-
-  const accounts: Record<string, string> = { ...connection.accounts };
-  const created: FinanceAccount[] = [];
+  const accounts: Record<string, string> = {};
   const live: Record<string, string> = {};
   const targets = new Map<string, number>();
-  for (const balance of balances) {
-    if (!CURRENCIES.includes(balance.currency)) continue;
-    const mapped = accounts[balance.currency];
-    const account = mapped ? existingAccounts[mapped] : undefined;
-    if (mapped && account?.deletedAt) continue;
-    const id = account ? mapped : randomUUID();
-    if (!account) {
-      created.push({ id, name: `Wise ${balance.currency}`, color: "#163300", type: "Bank account", initialMinor: 0, balanceMinor: 0, currency: balance.currency, excludeFromStatistics: false, provider: "Wise", order: nextOrder++, source: "wise" });
-    }
-    accounts[balance.currency] = id;
-    live[balance.currency] = id;
-    targets.set(id, toMinor(balance.amount.value, balance.currency));
+  for (const [currency, id] of Object.entries(connection.accounts)) {
+    const account = existingAccounts[id];
+    if (!account || account.deletedAt || account.currency !== currency) continue;
+    accounts[currency] = id;
+    const balance = balances.find((item) => item.currency === currency);
+    if (!balance) continue;
+    live[currency] = id;
+    targets.set(id, toMinor(balance.amount.value, currency));
   }
+
+  if (targets.size === 0) return { accounts, added: 0, updated: 0, removed: 0 };
 
   const since = connection.syncedThrough
     ? new Date(new Date(connection.syncedThrough).getTime() - OVERLAP_DAYS * 86_400_000)
@@ -199,7 +221,6 @@ async function runSync(uid: string, connection: WiseConnection, now: Date) {
   await commitInChunks(writes);
 
   const settingsUpdates: Record<string, unknown> = { revision: FieldValue.increment(1) };
-  for (const account of created) settingsUpdates[`accounts.${account.id}`] = account;
   for (const [id, target] of targets) {
     const [asSource, asDestination] = await Promise.all([
       userRef.collection("financeRecords").where("accountId", "==", id).get(),
@@ -212,16 +233,10 @@ async function runSync(uid: string, connection: WiseConnection, now: Date) {
       seen.add(snap.id);
       for (const [accountId, change] of balanceChanges({ ...snap.data(), id: snap.id } as FinanceRecord)) if (accountId === id) changes += change;
     }
-    const isNew = created.some((account) => account.id === id);
-    if (isNew) {
-      settingsUpdates[`accounts.${id}`] = { ...(settingsUpdates[`accounts.${id}`] as FinanceAccount), initialMinor: target - changes, balanceMinor: target };
-    } else {
-      settingsUpdates[`accounts.${id}.initialMinor`] = target - changes;
-      settingsUpdates[`accounts.${id}.balanceMinor`] = target;
-      settingsUpdates[`accounts.${id}.source`] = "wise";
-    }
+    settingsUpdates[`accounts.${id}.initialMinor`] = target - changes;
+    settingsUpdates[`accounts.${id}.balanceMinor`] = target;
+    settingsUpdates[`accounts.${id}.source`] = "wise";
   }
-  await settingsRef(uid).set({}, { merge: true });
   await settingsRef(uid).update(settingsUpdates);
   return { accounts, added, updated, removed };
 }

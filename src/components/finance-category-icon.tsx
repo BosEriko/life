@@ -1,6 +1,7 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { ComponentType, CSSProperties } from "react";
+import { siWise } from "simple-icons";
 import { accountTextColor } from "@/lib/finance";
 import {
   AppstoreOutlined,
@@ -47,20 +48,29 @@ export function CategoryIcon({ category, style }: { category: string; style?: CS
   return <Icon aria-hidden style={style} />;
 }
 
-const ACCOUNT_TYPE_ICONS: Record<string, typeof TagOutlined> = {
+function WiseIcon({ style, ...rest }: { style?: CSSProperties; "aria-hidden"?: boolean }) {
+  return (
+    <span role="img" className="anticon" style={style} {...rest}>
+      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d={siWise.path} /></svg>
+    </span>
+  );
+}
+
+const ACCOUNT_TYPE_ICONS: Record<string, ComponentType<{ style?: CSSProperties; "aria-hidden"?: boolean }>> = {
   Cash: WalletOutlined,
   "Bank account": BankOutlined,
   Savings: SafetyOutlined,
   "Credit card": CreditCardOutlined,
   Investment: FundOutlined,
   Loan: DollarOutlined,
+  Wise: WiseIcon,
   Debt: UserOutlined,
   Other: EllipsisOutlined,
 };
 
 export function AccountTypeIcon({ type, style }: { type: string; style?: CSSProperties }) {
-  const Icon = ACCOUNT_TYPE_ICONS[type] ?? WalletOutlined;
-  return <Icon aria-hidden style={style} />;
+  const TypeIcon = ACCOUNT_TYPE_ICONS[type] ?? WalletOutlined;
+  return <TypeIcon aria-hidden style={style} />;
 }
 
 export function AccountBadge({ account, size = 20 }: { account: { color: string; type: string }; size?: number }) {

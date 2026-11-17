@@ -1,11 +1,11 @@
 import { uidFromRequest } from "@/lib/api-auth";
-import { readWiseConnection, removeWiseConnection, saveWiseConnection, syncWise, WiseError, wiseProfileId } from "@/lib/wise-sync";
+import { readWiseConnection, removeWiseConnection, saveWiseConnection, syncWise, WiseError, wiseBalances, wiseProfileId } from "@/lib/wise-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-async function status(uid: string) {
+async function status(uid: string, withBalances = false) {
   const connection = await readWiseConnection(uid);
   if (!connection) return { connected: false as const };
   return {
@@ -13,14 +13,19 @@ async function status(uid: string) {
     connectedAt: connection.connectedAt,
     lastSyncedAt: connection.lastSyncedAt,
     lastError: connection.lastError,
-    currencies: Object.keys(connection.accounts).sort(),
+    links: connection.accounts,
+    ...(withBalances ? { balances: await wiseBalances(connection) } : {}),
   };
 }
 
 export async function GET(request: Request) {
   const uid = await uidFromRequest(request);
   if (!uid) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  return Response.json(await status(uid));
+  try {
+    return Response.json(await status(uid, new URL(request.url).searchParams.get("balances") === "1"));
+  } catch (error) {
+    return Response.json({ error: error instanceof WiseError ? error.message : "Could not reach Wise." }, { status: 502 });
+  }
 }
 
 export async function POST(request: Request) {

@@ -2,7 +2,7 @@ import type { User } from "firebase/auth";
 
 export type WiseStatus =
   | { connected: false }
-  | { connected: true; connectedAt: string; lastSyncedAt: string | null; lastError: string | null; currencies: string[] };
+  | { connected: true; connectedAt: string; lastSyncedAt: string | null; lastError: string | null; links: Record<string, string>; balances?: { currency: string; amountMinor: number }[] };
 
 export const WISE_TOKEN_URL = "https://wise.com/your-account/integrations-and-tools/api-tokens";
 
@@ -14,8 +14,12 @@ async function call(user: User, path: string, init: RequestInit = {}) {
   return body;
 }
 
-export async function getWiseStatus(user: User) {
-  return (await call(user, "/api/integrations/wise")) as WiseStatus;
+export async function getWiseStatus(user: User, withBalances = false) {
+  return (await call(user, `/api/integrations/wise${withBalances ? "?balances=1" : ""}`)) as WiseStatus;
+}
+
+export async function linkWiseAccount(user: User, accountId: string, currency: string | null) {
+  await call(user, "/api/integrations/wise/link", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountId, currency }) });
 }
 
 export async function connectWise(user: User, token: string) {
