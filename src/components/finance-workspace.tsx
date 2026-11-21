@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Alert, App, Button, Card, Checkbox, Empty, Flex, Grid, Input, Pagination, Select, Spin, Tag, Typography, theme } from "antd";
 import { EditOutlined, EyeInvisibleOutlined, EyeOutlined, HolderOutlined, LockOutlined, PlusOutlined, SearchOutlined, SyncOutlined, TransactionOutlined, UnlockOutlined, UserAddOutlined, WalletOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { PageHeading } from "@/components/page-heading";
+import { AppModal } from "@/components/app-modal";
 import { FinanceAccountModal } from "@/components/finance-account-modal";
 import { FinanceRecordModal } from "@/components/finance-record-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -17,6 +18,7 @@ import { deleteFinanceAccount, deleteFinanceRecord, reorderFinanceAccounts, setF
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
+import { DebtProgressCard } from "@/components/debt-progress-card";
 import { AccountBadge, AccountTypeIcon, CategoryIcon } from "@/components/finance-category-icon";
 import { mergeSubsetOrder } from "@/lib/reorder";
 
@@ -40,7 +42,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     autoSyncWise(user)?.catch((error: Error) => message.warning({ key: "wise-sync", content: `Wise sync failed: ${error.message}` }));
   }, [user, wiseLinked, message]);
   const [showHidden, setShowHidden] = useState(false);
-  const history = useFinanceHistory(view === "records", cutoff);
+  const [personId, setPersonId] = useState<string | null>(null);
+  const history = useFinanceHistory(view === "records" || view === "debts", cutoff);
   const [modal, setModal] = useState<"account" | "record" | null>(null);
   const [editingAccount, setEditingAccount] = useState<FinanceAccount | null>(null);
   const [editingRecord, setEditingRecord] = useState<FinanceRecord | null>(null);
@@ -96,7 +99,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     </div>
     <Typography.Text strong style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", minWidth: 0, overflowWrap: "anywhere", textAlign: "right" }}>{money(account.balanceMinor, account.currency)}</Typography.Text>
     <Flex gap={2} onKeyDown={(event) => event.stopPropagation()}>
-      <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${account.name}`} onClick={() => setEditingAccount(account)} />
+      <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${account.name}`} onClick={(event) => { event.stopPropagation(); setEditingAccount(account); }} />
       {isDebtAccount(account) ? <Tip title={account.hiddenAt ? "Unhide" : "Hide"}><Button type="text" size="small" icon={account.hiddenAt ? <EyeOutlined /> : <EyeInvisibleOutlined />} aria-label={`${account.hiddenAt ? "Unhide" : "Hide"} ${account.name}`} onClick={() => toggleHidden(account)} /></Tip> : <ConfirmDeleteButton ariaLabel={`Delete ${account.name}`} tooltip="Delete account" hint="Tap again to delete this account. Existing records will be kept." onConfirm={() => removeAccount(account)} />}
     </Flex>
   </Flex>
@@ -141,6 +144,27 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
     && (recordType === "all" || record.type === recordType)
     && (!query || [record.description, record.category, ...record.labels, accountNames.get(record.accountId), accountNames.get(record.destinationId ?? "")].join(" ").toLowerCase().includes(query)),
   ).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id));
+  const recordItem = (record: FinanceRecord, withDate = false) => (
+    <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
+              <Flex justify="space-between" align="start" gap={12} wrap>
+                <div style={{ minWidth: 0, flex: "1 1 180px", overflowWrap: "anywhere" }}>
+                  <Typography.Text strong><CategoryIcon category={record.type === "transfer" ? "Transfer" : record.type === "debt" ? "Debt" : record.category} style={{ marginRight: 6 }} />{record.type === "debt" && record.debtAction ? `${DEBT_VERBS[record.debtAction]} ${accountNames.get(record.destinationId ?? "") ?? "Unknown account"}` : record.category}</Typography.Text>
+                  <div><Typography.Text type="secondary">{accountNames.get(record.accountId) ?? "Unknown account"}{record.destinationId && record.type !== "debt" ? ` → ${accountNames.get(record.destinationId) ?? "Unknown account"}` : ""} · {dayjs(record.occurredAt).format(withDate ? "MMM D, YYYY · h:mm A" : "h:mm A")}</Typography.Text></div>
+                  {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
+                  {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
+                </div>
+                <Flex align="center" gap={8}>
+                  <Typography.Text strong style={{ fontSize: 16, overflowWrap: "anywhere", color: recordSign(record) === "+" ? token.colorSuccess : recordSign(record) === "−" ? token.colorError : token.colorText }}>{recordSign(record)}{money(record.amountMinor, record.currency)}</Typography.Text>
+                  <Flex gap={2}>
+                    <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${record.category} record`} onClick={() => setEditingRecord(record)} />
+                    <ConfirmDeleteButton ariaLabel={`Delete ${record.category} record`} tooltip="Delete record" hint="Tap again to delete this record" onConfirm={() => removeRecord(record)} />
+                  </Flex>
+                </Flex>
+              </Flex>
+            </div>
+  );
+  const person = personId ? debtAccounts.find((account) => account.id === personId) ?? null : null;
+  const personRecords = person ? allRecords.filter((record) => record.type === "debt" && record.destinationId === person.id).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id)) : [];
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / 20)));
   const twoColumns = { display: "grid", gridTemplateColumns: screens.lg === true ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 24, alignItems: "start" } as const;
 
@@ -153,6 +177,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
       </>} />
       {financeError && <Alert type="error" title="Could not load your finance data. Reload to try again." style={{ marginBottom: 24 }} />}
       {!financeReady ? <Spin /> : <>
+        {view === "debts" && debtAccounts.length > 0 && <DebtProgressCard accounts={debtAccounts} records={allRecords} />}
         {view === "debts" && (debtAccounts.length === 0 ? <Card style={{ marginBottom: 24 }}><EmptyState title="No one yet" description="Add a person you borrow from or lend to, like Mom or a friend." action={<Button type="primary" icon={<UserAddOutlined />} disabled={financeError} onClick={() => setModal("account")}>Add person</Button>} /></Card> : <div style={twoColumns}>
           <Card data-tour="filters" title="Filters" size="small" style={{ minWidth: 0, boxShadow: token.boxShadowTertiary }}>
             <Flex vertical gap={12}>
@@ -170,7 +195,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
           <div style={{ minWidth: 0 }}>
             <Card data-tour="finance-accounts" styles={{ body: { padding: people.length ? 20 : 24 } }} style={{ boxShadow: token.boxShadowTertiary }}>
               {people.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={hiddenCount && !showHidden && !query && currency === "all" ? "Everyone is hidden. Turn on Show hidden to see them." : "No one matches these filters."} /> :
-                <Flex vertical gap={10}>{people.map((account) => <div key={account.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary, opacity: account.hiddenAt ? 0.7 : 1 }}>{accountRow(account, false)}</div>)}</Flex>}
+                <Flex vertical gap={10}>{people.map((account) => <div key={account.id} role="button" tabIndex={0} aria-label={`Show records with ${account.name}`} onClick={() => setPersonId(account.id)} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); setPersonId(account.id); } }} className="debt-person-row" style={{ "--row-accent": token.colorPrimary, padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary, opacity: account.hiddenAt ? 0.7 : 1, cursor: "pointer" } as CSSProperties}>{accountRow(account, false)}</div>)}</Flex>}
             </Card>
           </div>
         </div>)}
@@ -260,23 +285,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
               <Typography.Text style={{ fontSize: 16 }}>{dayjs(date).format("dddd, MMMM D, YYYY")}</Typography.Text>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>{dayRecords.length} {dayRecords.length === 1 ? "record" : "records"}</Typography.Text>
             </Flex>
-            <Flex vertical gap={10}>{dayRecords.map((record) => <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
-              <Flex justify="space-between" align="start" gap={12} wrap>
-                <div style={{ minWidth: 0, flex: "1 1 180px", overflowWrap: "anywhere" }}>
-                  <Typography.Text strong><CategoryIcon category={record.type === "transfer" ? "Transfer" : record.type === "debt" ? "Debt" : record.category} style={{ marginRight: 6 }} />{record.type === "debt" && record.debtAction ? `${DEBT_VERBS[record.debtAction]} ${accountNames.get(record.destinationId ?? "") ?? "Unknown account"}` : record.category}</Typography.Text>
-                  <div><Typography.Text type="secondary">{accountNames.get(record.accountId) ?? "Unknown account"}{record.destinationId && record.type !== "debt" ? ` → ${accountNames.get(record.destinationId) ?? "Unknown account"}` : ""} · {dayjs(record.occurredAt).format("h:mm A")}</Typography.Text></div>
-                  {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
-                  {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
-                </div>
-                <Flex align="center" gap={8}>
-                  <Typography.Text strong style={{ fontSize: 16, overflowWrap: "anywhere", color: recordSign(record) === "+" ? token.colorSuccess : recordSign(record) === "−" ? token.colorError : token.colorText }}>{recordSign(record)}{money(record.amountMinor, record.currency)}</Typography.Text>
-                  <Flex gap={2}>
-                    <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${record.category} record`} onClick={() => setEditingRecord(record)} />
-                    <ConfirmDeleteButton ariaLabel={`Delete ${record.category} record`} tooltip="Delete record" hint="Tap again to delete this record" onConfirm={() => removeRecord(record)} />
-                  </Flex>
-                </Flex>
-              </Flex>
-            </div>)}</Flex>
+            <Flex vertical gap={10}>{dayRecords.map((record) => recordItem(record))}</Flex>
           </Card>)}</Flex>}
         {filtered.length > 0 && <Flex justify="center" style={{ marginTop: 20 }}><Pagination current={currentPage} onChange={setPage} pageSize={20} total={filtered.length} size="small" simple={screens.md !== true} showSizeChanger={false} /></Flex>}
           </div>
@@ -285,6 +294,14 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
       {modal === "account" && <FinanceAccountModal defaultType={view === "debts" ? "Debt" : undefined} onClose={() => setModal(null)} />}
       {editingAccount && <FinanceAccountModal key={editingAccount.id} initial={editingAccount} onClose={() => setEditingAccount(null)} />}
       {modal === "record" && <FinanceRecordModal defaultType={view === "debts" && debtAccounts.length > 0 ? "debt" : undefined} onClose={() => setModal(null)} onSaved={history.refresh} />}
+      {person && <AppModal open title={person.name} onCancel={() => setPersonId(null)} footer={null} width={640}>
+        <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 16 }}>
+          <Typography.Text strong style={{ fontSize: 16 }}>{debtStatus(person)}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>{personRecords.length} {personRecords.length === 1 ? "record" : "records"}{!history.ready && !history.error ? " · loading older records…" : ""}</Typography.Text>
+        </Flex>
+        {history.error && <Alert type="warning" title="Older records could not be loaded." action={<Button size="small" onClick={history.refresh}>Retry</Button>} style={{ marginBottom: 16 }} />}
+        {personRecords.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={`No records with ${person.name} yet.`} /> : <Flex vertical gap={10}>{personRecords.map((record) => recordItem(record, true))}</Flex>}
+      </AppModal>}
       {editingRecord && <FinanceRecordModal key={editingRecord.id} initial={editingRecord} onClose={() => setEditingRecord(null)} onSaved={history.refresh} />}
     </div>
   );

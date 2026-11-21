@@ -544,6 +544,16 @@ body.todo-board-grabbing * {
   outline: none;
 }
 
+.debt-person-row {
+  transition: box-shadow 150ms ease;
+}
+
+.debt-person-row:hover,
+.debt-person-row:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--row-accent);
+  outline: none;
+}
+
 @media (max-width: 575px) {
   .add-account-tile {
     min-height: 0;

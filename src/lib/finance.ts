@@ -254,3 +254,22 @@ export function wiseRecord(activity: WiseActivity, accountIds: Record<string, st
   const description = (wiseText(activity.title) || wiseText(activity.description) || "Wise").slice(0, 2000);
   return { id, type, amountMinor, accountId: accountIds[amount.currency], destinationId: null, currency: amount.currency, category: "Other", labels: [], date, occurredAt: new Date(activity.createdOn).toISOString(), description, debtAction: null, wiseId: activity.id };
 }
+
+export function debtProgress(accounts: FinanceAccount[], records: Pick<FinanceRecord, "type" | "destinationId" | "debtAction" | "amountMinor">[]) {
+  const people = accounts.filter((account) => isDebtAccount(account) && !account.deletedAt && !account.hiddenAt);
+  if (people.length === 0) return null;
+  const counts = new Map<string, number>();
+  for (const person of people) counts.set(person.currency, (counts.get(person.currency) ?? 0) + 1);
+  const currency = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const inCurrency = people.filter((person) => person.currency === currency);
+  const ids = new Set(inCurrency.map((person) => person.id));
+  const paid = (action: DebtAction) => records.filter((record) => record.type === "debt" && record.debtAction === action && ids.has(record.destinationId ?? "")).reduce((sum, record) => sum + record.amountMinor, 0);
+  const side = (settled: number, remaining: number) => ({ settled, remaining, total: settled + remaining, progress: settled + remaining > 0 ? settled / (settled + remaining) : null });
+  return {
+    currency,
+    people: inCurrency.length,
+    otherCurrencies: people.length - inCurrency.length,
+    owe: side(paid("repay"), inCurrency.reduce((sum, person) => sum + Math.max(0, -person.balanceMinor), 0)),
+    owed: side(paid("collect"), inCurrency.reduce((sum, person) => sum + Math.max(0, person.balanceMinor), 0)),
+  };
+}

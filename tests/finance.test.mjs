@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFund, emergencyFundOutlook, sortByLatestDebtRecord, parseWiseAmount, wiseRecord, emergencyFundSince, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
+import { accountValidation, balanceChanges, currencyDigits, debtStatus, taskFinanceValidation, taskRecord, taskRecordId, DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, emergencyFund, emergencyFundOutlook, sortByLatestDebtRecord, parseWiseAmount, wiseRecord, debtProgress, emergencyFundSince, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, financeStatistics, rebuiltBalance, recordValidation, toMinor } from "../src/lib/finance.ts";
 
 const cash = { id: "cash", name: "Cash", color: "#326647", type: "Cash", currency: "PHP", initialMinor: 100000, balanceMinor: 100000, excludeFromStatistics: false };
 const bank = { ...cash, id: "bank", type: "Bank account", initialMinor: 200000, balanceMinor: 200000 };
@@ -203,4 +203,19 @@ test("Wise activities become records on the matching currency account", () => {
   assert.equal(wiseRecord(activity({ status: "CANCELLED" }), accounts, "2026-11-16", "x"), "remove");
   assert.equal(wiseRecord(activity({ type: "INTERBALANCE" }), accounts, "2026-11-16", "x"), null);
   assert.equal(wiseRecord(activity({ primaryAmount: "0 PHP" }), accounts, "2026-11-16", "x"), null);
+});
+
+test("debt progress counts repayments and collections for visible people only", () => {
+  const person = (id, balanceMinor, extra = {}) => ({ id, name: id, color: "#000000", type: "Debt", initialMinor: 0, balanceMinor, currency: "PHP", excludeFromStatistics: true, ...extra });
+  const debt = (destinationId, debtAction, amountMinor) => ({ type: "debt", destinationId, debtAction, amountMinor });
+  const accounts = [person("mom", -300000), person("ana", 50000), person("old", -900000, { hiddenAt: "2026-01-01" }), person("gone", -1, { deletedAt: "2026-01-01" }), person("usd", -100, { currency: "USD" }), { ...person("cash", 999), type: "Cash" }];
+  const records = [debt("mom", "borrow", 500000), debt("mom", "repay", 200000), debt("ana", "lend", 100000), debt("ana", "collect", 50000), debt("old", "repay", 777), { type: "expense", destinationId: null, amountMinor: 5 }];
+  const progress = debtProgress(accounts, records);
+  assert.equal(progress.currency, "PHP");
+  assert.equal(progress.people, 2);
+  assert.equal(progress.otherCurrencies, 1);
+  assert.deepEqual(progress.owe, { settled: 200000, remaining: 300000, total: 500000, progress: 0.4 });
+  assert.deepEqual(progress.owed, { settled: 50000, remaining: 50000, total: 100000, progress: 0.5 });
+  assert.equal(debtProgress([person("x", 0, { hiddenAt: "y" })], []), null);
+  assert.equal(debtProgress([person("x", 0)], []).owe.progress, null);
 });
