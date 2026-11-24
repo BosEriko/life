@@ -10,7 +10,8 @@ import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Tip } from "@/components/tip";
 import { SortableList } from "@/components/sortable-list";
-import { CATEGORY_ICON_NAMES, CategoryBadge, CategoryGlyph } from "@/components/finance-category-icon";
+import { CategoryBadge } from "@/components/finance-category-icon";
+import { FinanceIconPicker } from "@/components/finance-icon-picker";
 import { categoryDeleteBlocker, categoryTree, categoryValidation, DEFAULT_CATEGORIES, isLockedCategory, nextCategoryOrder, type FinanceCategory } from "@/lib/finance-categories";
 import { deleteFinanceCategory, reorderFinanceCategories, resetFinanceCategories, saveFinanceCategory } from "@/models/users/finance";
 
@@ -19,18 +20,14 @@ const PRESET_COLORS = [...new Set(DEFAULT_CATEGORIES.filter((category) => catego
 function CategoryModal({ initial, onClose }: { initial: FinanceCategory; onClose: () => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const { financeCategories: categories, financeCategoriesSeeded: seeded } = useHealthData();
   const existing = categories.some((category) => category.id === initial.id);
   const [name, setName] = useState(initial.name);
   const [color, setColor] = useState(initial.color);
   const [icon, setIcon] = useState(initial.icon);
   const [parentId, setParentId] = useState(initial.parentId);
-  const [iconSearch, setIconSearch] = useState("");
   const hasChildren = categories.some((category) => category.parentId === initial.id);
   const mains = categoryTree(categories).filter(({ category, depth }) => depth === 0 && category.id !== initial.id).map(({ category }) => category);
-  const query = iconSearch.trim().toLowerCase();
-  const icons = CATEGORY_ICON_NAMES.filter((value) => !query || value.replace(/-/g, " ").includes(query));
   function save() {
     if (!user) return;
     const category: FinanceCategory = { ...initial, name, color, icon, parentId, order: parentId === initial.parentId && existing ? initial.order : nextCategoryOrder(categories, parentId) };
@@ -53,15 +50,7 @@ function CategoryModal({ initial, onClose }: { initial: FinanceCategory; onClose
         <ColorPicker aria-label="Category color" value={color} disabledAlpha showText onChangeComplete={(value) => setColor(value.toHexString().toUpperCase())} presets={[{ label: "Default colors", colors: PRESET_COLORS }]} />
       </Form.Item>
       <Form.Item label="Icon" required style={{ marginBottom: 0 }}>
-        <Input aria-label="Search icons" placeholder="Search icons…" value={iconSearch} onChange={(event) => setIconSearch(event.target.value)} allowClear style={{ marginBottom: 8 }} />
-        <div role="listbox" aria-label="Category icon" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: 6, maxHeight: 200, overflowY: "auto", padding: 2 }}>
-          {icons.map((value) => (
-            <Tip key={value} title={value.replace(/-/g, " ")}>
-              <Button role="option" aria-selected={value === icon} aria-label={value.replace(/-/g, " ")} onClick={() => setIcon(value)} style={{ height: 40, padding: 0, borderColor: value === icon ? token.colorPrimary : undefined, background: value === icon ? token.colorPrimaryBg : undefined }} icon={<CategoryGlyph icon={value} style={{ fontSize: 16, color: value === icon ? color : undefined }} />} />
-            </Tip>
-          ))}
-          {icons.length === 0 && <Typography.Text type="secondary" style={{ gridColumn: "1 / -1" }}>No icons match.</Typography.Text>}
-        </div>
+        <FinanceIconPicker value={icon} color={color} onChange={setIcon} />
       </Form.Item>
     </Form>
   </AppModal>;

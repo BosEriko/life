@@ -38,3 +38,22 @@ export function CategoryDonut({ data, currency, domain, range, isDark }: { data:
     />
   );
 }
+
+export function BudgetPaceChart({ data, currency, colors, isDark }: { data: { label: string; value: number; series: string }[]; currency: string; colors: [string, string, string]; isDark: boolean }) {
+  return (
+    <Line
+      data={data}
+      xField="label"
+      yField="value"
+      colorField="series"
+      autoFit
+      height={200}
+      theme={isDark ? "classicDark" : "classic"}
+      scale={{ color: { domain: ["Spent", "Ideal pace", "Projected"], range: colors } }}
+      style={{ lineWidth: 2, lineDash: (points: { series: string }[]) => (points[0]?.series === "Spent" ? null : [4, 4]) }}
+      axis={{ x: { title: null, tickCount: 6 }, y: { title: null, labelFormatter: (value: number) => Intl.NumberFormat(undefined, { notation: "compact" }).format(value) } }}
+      legend={{ color: { position: "bottom", layout: { justifyContent: "center" } } }}
+      tooltip={{ items: [{ channel: "y", valueFormatter: currencyFormat(currency) }] }}
+    />
+  );
+}

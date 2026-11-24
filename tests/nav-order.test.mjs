@@ -24,10 +24,10 @@ test("items are sorted to match the order", () => {
 });
 
 test("sub-page order defaults per section and ignores pages from other sections", () => {
-  assert.deepEqual(readSubmenuOrder(undefined), { journal: ["notes", "tasks", "todo", "board"], finance: ["dashboard", "accounts", "records", "debts", "analytics"], records: ["database", "summary"] });
+  assert.deepEqual(readSubmenuOrder(undefined), { journal: ["notes", "tasks", "todo", "board"], finance: ["dashboard", "accounts", "records", "debts", "budgets", "analytics"], records: ["database", "summary"] });
   const order = readSubmenuOrder({ records: ["summary", "dashboard", "database"], finance: ["analytics", "notes"], journal: "board" });
   assert.deepEqual(order.records, ["summary", "database"]);
-  assert.deepEqual(order.finance, ["dashboard", "accounts", "records", "debts", "analytics"]);
+  assert.deepEqual(order.finance, ["dashboard", "accounts", "records", "debts", "budgets", "analytics"]);
   assert.deepEqual(order.journal, ["notes", "tasks", "todo", "board"]);
 });
 
@@ -37,7 +37,7 @@ test("the shared order reader keeps the same rules for any list", () => {
 });
 
 test("a new Debts page lands after Records in saved Finance orders", () => {
-  assert.deepEqual(readSubmenuOrder({ finance: ["dashboard", "accounts", "records", "analytics"] }).finance, ["dashboard", "accounts", "records", "debts", "analytics"]);
-  assert.deepEqual(readSubmenuOrder({ finance: ["analytics", "records", "dashboard", "accounts"] }).finance, ["analytics", "records", "debts", "dashboard", "accounts"]);
-  assert.deepEqual(readSubmenuOrder({ finance: ["debts", "dashboard", "accounts", "records", "analytics"] }).finance, ["debts", "dashboard", "accounts", "records", "analytics"]);
+  assert.deepEqual(readSubmenuOrder({ finance: ["dashboard", "accounts", "records", "analytics"] }).finance, ["dashboard", "accounts", "records", "debts", "budgets", "analytics"]);
+  assert.deepEqual(readSubmenuOrder({ finance: ["analytics", "records", "dashboard", "accounts"] }).finance, ["analytics", "records", "debts", "budgets", "dashboard", "accounts"]);
+  assert.deepEqual(readSubmenuOrder({ finance: ["debts", "dashboard", "accounts", "records", "analytics"] }).finance, ["debts", "budgets", "dashboard", "accounts", "records", "analytics"]);
 });

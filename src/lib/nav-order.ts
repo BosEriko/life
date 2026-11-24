@@ -4,7 +4,7 @@ export type NavId = (typeof NAV_IDS)[number];
 
 export const SUBMENU_IDS = {
   journal: ["notes", "tasks", "todo", "board"],
-  finance: ["dashboard", "accounts", "records", "debts", "analytics"],
+  finance: ["dashboard", "accounts", "records", "debts", "budgets", "analytics"],
   records: ["database", "summary"],
 } as const;
 

@@ -1,15 +1,13 @@
 "use client";
 
 import { Select } from "antd";
+import type { FinanceCategory } from "@/lib/finance-categories";
 import { useHealthData } from "@/components/health-data-provider";
 import { CategoryBadge } from "@/components/finance-category-icon";
 import { categoryTree, DELETED_CATEGORY_ID, mainCategory, resolveCategory } from "@/lib/finance-categories";
 
-export function CategorySelect({ value, onChange, disabled, ariaLabel, placeholder = "Select a category" }: { value?: string; onChange: (id: string) => void; disabled?: boolean; ariaLabel: string; placeholder?: string }) {
-  const { financeCategories: categories } = useHealthData();
-  const current = value ? resolveCategory(categories, value) : undefined;
-  const rows = categoryTree(categories).filter(({ category }) => category.id !== DELETED_CATEGORY_ID || current?.id === DELETED_CATEGORY_ID);
-  const options = rows.map(({ category, depth }) => ({
+function categoryOptions(categories: FinanceCategory[], includeDeleted: boolean) {
+  return categoryTree(categories).filter(({ category }) => category.id !== DELETED_CATEGORY_ID || includeDeleted).map(({ category, depth }) => ({
     value: category.id,
     depth,
     search: depth ? `${mainCategory(categories, category).name} ${category.name}` : category.name,
@@ -21,6 +19,19 @@ export function CategorySelect({ value, onChange, disabled, ariaLabel, placehold
       </span>
     ),
   }));
+}
+
+const renderOption = (option: { label?: React.ReactNode; data: { depth?: number } }) => <div style={{ paddingLeft: option.data.depth ? 24 : 0, fontWeight: option.data.depth ? undefined : 600 }}>{option.label}</div>;
+
+export function CategoryMultiSelect({ value, onChange, ariaLabel, placeholder }: { value: string[]; onChange: (ids: string[]) => void; ariaLabel: string; placeholder?: string }) {
+  const { financeCategories: categories } = useHealthData();
+  const known = new Set(categories.map((category) => category.id));
+  return <Select mode="multiple" aria-label={ariaLabel} value={value.filter((id) => known.has(id))} onChange={onChange} placeholder={placeholder} showSearch={{ optionFilterProp: "search" }} options={categoryOptions(categories, false)} optionRender={renderOption} allowClear />;
+}
+
+export function CategorySelect({ value, onChange, disabled, ariaLabel, placeholder = "Select a category" }: { value?: string; onChange: (id: string) => void; disabled?: boolean; ariaLabel: string; placeholder?: string }) {
+  const { financeCategories: categories } = useHealthData();
+  const current = value ? resolveCategory(categories, value) : undefined;
   return (
     <Select
       aria-label={ariaLabel}
@@ -29,8 +40,8 @@ export function CategorySelect({ value, onChange, disabled, ariaLabel, placehold
       onChange={onChange}
       placeholder={placeholder}
       showSearch={{ optionFilterProp: "search" }}
-      options={options}
-      optionRender={(option) => <div style={{ paddingLeft: option.data.depth ? 24 : 0, fontWeight: option.data.depth ? undefined : 600 }}>{option.label}</div>}
+      options={categoryOptions(categories, current?.id === DELETED_CATEGORY_ID)}
+      optionRender={renderOption}
     />
   );
 }
