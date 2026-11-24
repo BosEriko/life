@@ -120,7 +120,7 @@ export function FinanceOverview() {
       <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 16 }}>
         <Typography.Title level={2} style={{ fontSize: 18, margin: 0 }}>Analytics</Typography.Title>
         <Flex align="center" gap={10} wrap justify="flex-end">
-          <RangeFilter range={range} onChange={setRange} ariaLabel="Finance date range" />
+          <RangeFilter range={range} onChange={setRange} ariaLabel="Finance date range" thisMonth />
           {currencies.length > 1 && <Select aria-label="Analytics currency" value={currency} onChange={setCurrencyChoice} options={currencies.map((value) => ({ value, label: value }))} style={{ width: 100 }} />}
         </Flex>
       </Flex>

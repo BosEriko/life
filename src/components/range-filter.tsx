@@ -29,38 +29,49 @@ export function RangeFilter({
   onChange,
   ariaLabel = "Date range",
   style,
+  thisMonth = false,
 }: {
   range: DateRange;
   onChange: (range: DateRange) => void;
   ariaLabel?: string;
   style?: CSSProperties;
+  thisMonth?: boolean;
 }) {
   const today = dayjs(todayKey());
   const [start, end] = range;
   const [custom, setCustom] = useState(false);
+  const [month, setMonth] = useState(false);
   const endIsToday = end.isSame(today, "day");
+  const isMonth = thisMonth && endIsToday && start != null && start.isSame(today.startOf("month"), "day");
   const presetValue = endIsToday
     ? start == null
       ? "all"
       : PRESET_DAYS.find((n) => today.diff(start, "day") + 1 === Number(n))
     : undefined;
-  const value = custom || !presetValue ? "custom" : presetValue;
+  const value = custom ? "custom" : isMonth && (month || !presetValue) ? "month" : presetValue ?? "custom";
 
   function applyPreset(next: string) {
     setCustom(next === "custom");
+    setMonth(next === "month");
     if (next === "custom") return;
-    if (next === "all") onChange([null, today]);
+    if (next === "month") onChange([today.startOf("month"), today]);
+    else if (next === "all") onChange([null, today]);
     else onChange([today.subtract(Number(next) - 1, "day"), today]);
   }
 
   return (
     <Flex align="center" justify="center" gap={10} wrap style={style}>
-      <Flex gap={8}>
+      <Flex gap={8} wrap justify="center">
         <Segmented
           options={RANGE_OPTIONS}
-          value={value === "custom" ? "" : value}
+          value={value === "custom" || value === "month" ? "" : value}
           onChange={(next) => applyPreset(next as string)}
         />
+        {thisMonth && <Segmented
+          options={[{ label: "This month", value: "month" }]}
+          value={value === "month" ? "month" : ""}
+          onChange={(next) => applyPreset(next as string)}
+        />}
         <Segmented
           options={[{ label: "Custom", value: "custom" }]}
           value={value === "custom" ? "custom" : ""}

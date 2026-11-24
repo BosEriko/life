@@ -12,6 +12,7 @@ import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/mode
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { AccountBadge } from "@/components/finance-category-icon";
 import { CategorySelect } from "@/components/finance-category-select";
+import { LabelMultiSelect } from "@/components/finance-label-select";
 import { ArrowRightOutlined } from "@ant-design/icons";
 
 const DEBT_ACTION_HINTS: Record<DebtAction, string> = {
@@ -89,7 +90,6 @@ export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: {
     onSaved();
     onClose();
   }
-  const knownLabels = [...new Set(records.flatMap((record) => record.labels))];
   return <AppModal open title={initial ? "Edit record" : "Add record"} onCancel={pending ? undefined : onClose} closable={!pending} mask={{ closable: !pending }} footer={<Flex justify={initial ? "space-between" : "flex-end"} align="center">
     {initial && <ConfirmDeleteButton ariaLabel="Delete record" tooltip="Delete record" hint="Tap again to delete this record" onConfirm={remove} />}
     <Button type="primary" disabled={!day.ready || day.error || !!pending} onClick={save}>{initial ? "Save changes" : "Add record"}</Button>
@@ -110,7 +110,7 @@ export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: {
       </> : <Form.Item label="Account" required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={ownAccounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>}
       <Form.Item label="Amount" required><InputNumber aria-label="Record amount" value={amount} disabled={!!pending} onChange={setAmount} min={0} precision={currencyDigits(account?.currency ?? "PHP")} style={{ width: "100%" }} suffix={account?.currency} /></Form.Item>
       {type !== "transfer" && type !== "debt" && <Form.Item label="Category" required><CategorySelect ariaLabel="Record category" value={category} disabled={!!pending} onChange={setCategory} /></Form.Item>}
-      <Form.Item label="Labels"><Select aria-label="Record labels" mode="tags" value={labels} disabled={!!pending} onChange={setLabels} options={knownLabels.map((value) => ({ value, label: value }))} placeholder="Select or create labels" /></Form.Item>
+      <Form.Item label="Labels"><LabelMultiSelect ariaLabel="Record labels" value={labels} disabled={!!pending} onChange={setLabels} placeholder="Select labels" /></Form.Item>
       <Form.Item label="Date and time"><DatePicker aria-label="Record date and time" showTime value={date} disabled={!!pending} onChange={setDate} style={{ width: "100%" }} placeholder="Current date and time" /><Typography.Text type="secondary">Leave blank to use the date and time when you save.</Typography.Text></Form.Item>
       <Form.Item label="Description"><Input.TextArea aria-label="Record description" value={description} disabled={!!pending} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} /></Form.Item>
       {day.error && <Typography.Text type="danger">Could not load this day. Close and retry.</Typography.Text>}

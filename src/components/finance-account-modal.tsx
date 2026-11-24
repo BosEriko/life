@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { App, AutoComplete, Button, Checkbox, Flex, Form, Input, InputNumber, Segmented, Select } from "antd";
+import { App, AutoComplete, Button, Checkbox, Flex, Form, Input, InputNumber, Segmented, Select, ColorPicker } from "antd";
 import { DeleteOutlined, EyeInvisibleOutlined, EyeOutlined } from "@ant-design/icons";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -10,6 +10,7 @@ import { ACCOUNT_TYPES, CURRENCIES, accountValidation, currencyDigits, isDebtAcc
 import { getWiseStatus, linkWiseAccount, type WiseStatus } from "@/models/wise";
 import { deleteFinanceAccount, editFinanceAccount, saveFinanceAccount, setFinanceAccountHidden } from "@/models/users/finance";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
+import { LABEL_COLORS } from "@/lib/finance-labels";
 import { AccountTypeIcon } from "@/components/finance-category-icon";
 
 
@@ -83,9 +84,9 @@ export function FinanceAccountModal({ initial = null, defaultType, onClose }: { 
     <Form layout="vertical" onFinish={save}>
       <Form.Item label={debt ? "Person or lender" : "Account name"} required><Input aria-label="Account name" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder={debt ? "e.g. Mom or a friend" : undefined} autoFocus /></Form.Item>
       {!debt && <Form.Item label="Provider"><AutoComplete aria-label="Account provider" value={provider} onChange={setProvider} maxLength={120} placeholder="Optional, e.g. GCash, Metrobank, Maya" options={knownProviders.filter((value) => value.toLowerCase().includes(provider.trim().toLowerCase()) && value !== provider).map((value) => ({ value }))} /></Form.Item>}
-      <Form.Item label="Hexadecimal color" required><Input aria-label="Account color" value={color} onChange={(event) => setColor(event.target.value)} maxLength={7} prefix={<span style={{ width: 16, height: 16, borderRadius: 4, background: /^#[0-9a-f]{6}$/i.test(color) ? color : "transparent" }} />} placeholder="#326647" /></Form.Item>
+      <Form.Item label="Color" required><Input aria-label="Account color" value={color} onChange={(event) => setColor(event.target.value)} maxLength={7} prefix={<ColorPicker size="small" aria-label="Pick account color" value={/^#[0-9a-f]{6}$/i.test(color) ? color : "#326647"} disabledAlpha presets={[{ label: "Colors", colors: ["#326647", ...LABEL_COLORS] }]} onChangeComplete={(value) => setColor(value.toHexString().toUpperCase())} />} placeholder="#326647" /></Form.Item>
       {!personForm && <Form.Item label="Sync with"><Select aria-label="Sync with" value={wiseOn ? "wise" : "none"} onChange={(value) => { const on = value === "wise"; setWiseOn(on); if (!on && type === "Wise") setType("Bank account"); }}
-        options={[{ value: "none", label: "None" }, { value: "wise", disabled: !wiseAvailable, label: wiseAvailable ? "Wise" : "Wise · connect it in Settings first" }]} /></Form.Item>}
+        options={[{ value: "none", label: "None" }, { value: "wise", disabled: !wiseAvailable, label: wiseAvailable ? "Wise" : "Wise · connect it in Profile › Finance first" }]} /></Form.Item>}
       {!personForm && syncing && <Form.Item label="Wise balance" required>
         <Select aria-label="Wise balance" placeholder={wiseStatus === null ? "Loading your Wise balances…" : "Choose a Wise balance"} loading={wiseStatus === null} value={wiseCurrency ?? undefined} onChange={setWiseCurrency}
           optionLabelProp="title"

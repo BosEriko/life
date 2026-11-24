@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { App, Card, Flex, Tag, Typography, theme } from "antd";
 import { HolderOutlined, HomeOutlined, MenuOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import type { NavItem } from "@/components/nav-items";
 import { SortableList } from "@/components/sortable-list";
+import { CollapseToggle } from "@/components/collapse-toggle";
 import { useIsDark } from "@/components/theme-provider";
 import { useNav, type OrderedSubmenu } from "@/components/use-nav";
 import { accentColor } from "@/lib/accents";
@@ -18,6 +20,8 @@ export function MainMenuCard() {
   const isDark = useIsDark();
   const { items, submenus } = useNav();
   const byId = new Map(items.map((item) => [item.id, item]));
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggle = (id: string) => setExpanded((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
 
   function saveMenu(order: string[]) {
     if (!user) return;
@@ -92,10 +96,13 @@ export function MainMenuCard() {
 
   const block = (item: NavItem, home: boolean, interactive: boolean, handleProps: Record<string, unknown> = {}) => (
     <div style={{ padding: 10, borderRadius: token.borderRadiusLG, background: token.colorFillSecondary }}>
-      <div {...handleProps} style={{ padding: "2px 2px", borderRadius: token.borderRadius, cursor: interactive ? "grab" : undefined }}>
-        {header(item, home)}
-      </div>
-      {pages(item, interactive)}
+      <Flex align="center" gap={8}>
+        <div {...handleProps} style={{ flex: 1, minWidth: 0, padding: "2px 2px", borderRadius: token.borderRadius, cursor: interactive ? "grab" : undefined }}>
+          {header(item, home)}
+        </div>
+        {isSubmenuSection(item.id) && <CollapseToggle expanded={expanded.has(item.id)} onToggle={() => toggle(item.id)} label="pages" count={submenus[item.id].tabs.length} />}
+      </Flex>
+      {expanded.has(item.id) && pages(item, interactive)}
     </div>
   );
 
@@ -110,7 +117,7 @@ export function MainMenuCard() {
       }
     >
       <Typography.Paragraph type="secondary" style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}>
-        Drag a section to reorder the menu, or drag its pages to reorder them within that section. The first section is your home page, and the first page opens when you tap that section.
+        Drag a section to reorder the menu, or expand it and drag its pages to reorder them within that section. The first section is your home page, and the first page opens when you tap that section.
       </Typography.Paragraph>
       <Flex vertical gap={10}>
         <SortableList

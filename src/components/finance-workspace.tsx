@@ -26,6 +26,8 @@ import { mergeSubsetOrder } from "@/lib/reorder";
 const DEBT_VERBS: Record<DebtAction, string> = { borrow: "Borrowed from", repay: "Repaid", lend: "Lent to", collect: "Collected from" };
 import { SortableList } from "@/components/sortable-list";
 import { FinanceEntryRow } from "@/components/finance-entry-row";
+import { LabelTags } from "@/components/finance-label-select";
+import { recordLabels } from "@/lib/finance-labels";
 import { Tip } from "@/components/tip";
 import { EmptyState } from "@/components/empty-state";
 
@@ -34,7 +36,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const { message } = App.useApp();
   const { user } = useAuth();
   const screens = Grid.useBreakpoint();
-  const { financeAccounts: allAccounts, financeAccountsLocked: locked, financeRecords: records, financeCategories, financeReady, financeError, cutoff } = useHealthData();
+  const { financeAccounts: allAccounts, financeAccountsLocked: locked, financeRecords: records, financeCategories, financeLabels, financeReady, financeError, cutoff } = useHealthData();
   const categoryName = (record: FinanceRecord) => record.type === "transfer" ? "Transfer" : record.type === "debt" ? "Debt" : categoryPath(financeCategories, resolveCategory(financeCategories, record.category));
   const accounts = sortAccounts(allAccounts.filter((account) => !account.deletedAt));
   const ownAccounts = accounts.filter((account) => !isDebtAccount(account));
@@ -145,7 +147,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const filtered = allRecords.filter((record) =>
     (accountId === "all" || record.accountId === accountId || record.destinationId === accountId)
     && (recordType === "all" || record.type === recordType)
-    && (!query || [record.description, categoryName(record), ...record.labels, accountNames.get(record.accountId), accountNames.get(record.destinationId ?? "")].join(" ").toLowerCase().includes(query)),
+    && (!query || [record.description, categoryName(record), ...recordLabels(financeLabels, record.labels).map((label) => label.name), accountNames.get(record.accountId), accountNames.get(record.destinationId ?? "")].join(" ").toLowerCase().includes(query)),
   ).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id));
   const recordItem = (record: FinanceRecord, withDate = false) => (
     <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
@@ -161,7 +163,7 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
         </>}
       >
         {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
-        {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
+        <LabelTags ids={record.labels} />
       </FinanceEntryRow>
     </div>
   );

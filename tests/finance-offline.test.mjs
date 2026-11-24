@@ -8,6 +8,7 @@ import * as firestore from "firebase/firestore";
 import * as finance from "../src/lib/finance.ts";
 import * as financeCategories from "../src/lib/finance-categories.ts";
 import * as financeBudgets from "../src/lib/finance-budgets.ts";
+import * as financeLabels from "../src/lib/finance-labels.ts";
 
 test("offline records self-echo and atomically update stored balances, including backdated transfers", async () => {
   const app = initializeApp({ projectId: "demo-finance-offline" }, "finance-offline-test");
@@ -20,6 +21,7 @@ test("offline records self-echo and atomically update stored balances, including
     if (name === "@/lib/finance") return finance;
     if (name === "@/lib/finance-categories") return financeCategories;
     if (name === "@/lib/finance-budgets") return financeBudgets;
+    if (name === "@/lib/finance-labels") return financeLabels;
     if (name === "firebase/firestore") return firestore;
     throw new Error(`Unexpected import: ${name}`);
   });
@@ -115,6 +117,7 @@ test("recalculation repairs all balances together and refuses stale record histo
     if (name === "@/lib/finance") return finance;
     if (name === "@/lib/finance-categories") return financeCategories;
     if (name === "@/lib/finance-budgets") return financeBudgets;
+    if (name === "@/lib/finance-labels") return financeLabels;
     if (name === "firebase/firestore") return { ...firestore, runTransaction: async (_db, callback) => {
       const writes = [];
       await callback({ get: async () => ({ data: () => ({ revision, accounts: { cash, bank } }) }), update: (_ref, field, amount) => writes.push({ field, amount }) });

@@ -147,7 +147,7 @@ export function FinanceAnalytics() {
               {tile("Savings rate", savingsRate === null ? "—" : `${savingsRate}%`)}
             </div>
 
-            <Card styles={{ body: { padding: 20 } }} style={card}>
+            <Card styles={{ body: { padding: 20 } }} style={{ ...card, overflow: "hidden" }}>
               <Typography.Text style={{ display: "block", fontSize: 17, marginBottom: 8 }}>Income vs expenses by month</Typography.Text>
               {inPeriod.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No income or expenses in this period." /> : (
                 <FinanceMonthChart data={months} currency={currency} colors={[incomeColor, expenseColor]} isDark={isDark} />

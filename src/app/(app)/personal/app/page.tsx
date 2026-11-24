@@ -1,16 +1,14 @@
 import { MainMenuCard } from "@/components/main-menu-card";
 import { PageHeading } from "@/components/page-heading";
 import { RestartOnboardingCard } from "@/components/restart-onboarding-card";
-import { WiseCard } from "@/components/wise-card";
 
 export default function ProfileAppPage() {
   return (
     <div>
-      <PageHeading title="App settings" subtitle="Arrange your menu, connect Wise, and revisit the getting-started guide." />
+      <PageHeading title="App settings" subtitle="Arrange your menu and revisit the getting-started guide." />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 20, alignItems: "start" }}>
         <MainMenuCard />
         <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-          <WiseCard />
           <RestartOnboardingCard />
         </div>
       </div>

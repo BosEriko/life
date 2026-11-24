@@ -1,5 +1,6 @@
 import { collection, deleteField, doc, FieldPath, increment, onSnapshot, orderBy, query, runTransaction, setDoc, updateDoc, where, writeBatch, type DocumentData, type QueryDocumentSnapshot } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
+import { labelValidation, type FinanceLabel } from "@/lib/finance-labels";
 import { budgetValidation, type FinanceBudget } from "@/lib/finance-budgets";
 import { categoryDeleteBlocker, categoryValidation, resetCategories, type FinanceCategory } from "@/lib/finance-categories";
 import { accountValidation, balanceChanges, EMERGENCY_FUND_AVERAGE_MONTHS, EMERGENCY_FUND_MONTHS, emergencyFundAverageMonthsOrDefault, emergencyFundMonthsOrDefault, rebuiltBalance, recordValidation, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
@@ -95,8 +96,8 @@ export function recalculateFinanceAccounts(uid: string, records: FinanceRecord[]
   });
 }
 
-export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number; categories: FinanceCategory[] | null; budgets: FinanceBudget[] }) => void, fail: (error: Error) => void) {
-  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true, lastRecalculatedAt: (snapshot.data()?.lastRecalculatedAt as string | undefined) ?? null, emergencyFundMonths: emergencyFundMonthsOrDefault(snapshot.data()?.emergencyFundMonths), emergencyFundAverageMonths: emergencyFundAverageMonthsOrDefault(snapshot.data()?.emergencyFundAverageMonths), categories: snapshot.data()?.categories ? Object.values(snapshot.data()!.categories as Record<string, FinanceCategory>) : null, budgets: Object.values((snapshot.data()?.budgets ?? {}) as Record<string, FinanceBudget>) }), fail);
+export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number; categories: FinanceCategory[] | null; budgets: FinanceBudget[]; labels: FinanceLabel[] }) => void, fail: (error: Error) => void) {
+  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true, lastRecalculatedAt: (snapshot.data()?.lastRecalculatedAt as string | undefined) ?? null, emergencyFundMonths: emergencyFundMonthsOrDefault(snapshot.data()?.emergencyFundMonths), emergencyFundAverageMonths: emergencyFundAverageMonthsOrDefault(snapshot.data()?.emergencyFundAverageMonths), categories: snapshot.data()?.categories ? Object.values(snapshot.data()!.categories as Record<string, FinanceCategory>) : null, budgets: Object.values((snapshot.data()?.budgets ?? {}) as Record<string, FinanceBudget>), labels: Object.values((snapshot.data()?.labels ?? {}) as Record<string, FinanceLabel>) }), fail);
 }
 
 const categoryMap = (categories: FinanceCategory[]) => Object.fromEntries(categories.map((category) => [category.id, category]));
@@ -120,6 +121,23 @@ export function reorderFinanceCategories(uid: string, ids: string[], categories:
   if (ids.length === 0) return Promise.resolve();
   if (!seeded) return setDoc(settingsRef(uid), { categories: categoryMap(categories.map((category) => ids.includes(category.id) ? { ...category, order: ids.indexOf(category.id) } : category)) }, { mergeFields: ["categories"] });
   const [first, ...rest] = ids.flatMap((id, index) => [new FieldPath("categories", id, "order"), index] as const);
+  return updateDoc(settingsRef(uid), first as FieldPath, rest[0], ...rest.slice(1));
+}
+
+export function saveFinanceLabel(uid: string, label: FinanceLabel, labels: FinanceLabel[]) {
+  const error = labelValidation(label, labels);
+  if (error) return Promise.reject(new Error(error));
+  const clean = { ...label, name: label.name.trim(), color: label.color.toUpperCase() };
+  return setDoc(settingsRef(uid), { labels: { [clean.id]: clean } }, { mergeFields: [new FieldPath("labels", clean.id)] });
+}
+
+export function deleteFinanceLabel(uid: string, id: string) {
+  return setDoc(settingsRef(uid), { labels: { [id]: deleteField() } }, { merge: true });
+}
+
+export function reorderFinanceLabels(uid: string, ids: string[]) {
+  if (ids.length === 0) return Promise.resolve();
+  const [first, ...rest] = ids.flatMap((id, index) => [new FieldPath("labels", id, "order"), index] as const);
   return updateDoc(settingsRef(uid), first as FieldPath, rest[0], ...rest.slice(1));
 }
 

@@ -26,7 +26,25 @@ const renderOption = (option: { label?: React.ReactNode; data: { depth?: number 
 export function CategoryMultiSelect({ value, onChange, ariaLabel, placeholder }: { value: string[]; onChange: (ids: string[]) => void; ariaLabel: string; placeholder?: string }) {
   const { financeCategories: categories } = useHealthData();
   const known = new Set(categories.map((category) => category.id));
-  return <Select mode="multiple" aria-label={ariaLabel} value={value.filter((id) => known.has(id))} onChange={onChange} placeholder={placeholder} showSearch={{ optionFilterProp: "search" }} options={categoryOptions(categories, false)} optionRender={renderOption} allowClear />;
+  const current = value.filter((id) => known.has(id));
+  const subsOf = (id: string) => categories.filter((category) => category.parentId === id && category.id !== DELETED_CATEGORY_ID).map((category) => category.id);
+  function change(next: string[]) {
+    const picked = new Set(next);
+    const added = next.filter((id) => !current.includes(id));
+    const removed = current.filter((id) => !picked.has(id));
+    for (const id of added) for (const sub of subsOf(id)) picked.add(sub);
+    for (const id of removed) {
+      for (const sub of subsOf(id)) picked.delete(sub);
+      const parent = categories.find((category) => category.id === id)?.parentId;
+      if (parent) picked.delete(parent);
+    }
+    for (const main of categories.filter((category) => category.parentId === null)) {
+      const subs = subsOf(main.id);
+      if (subs.length > 0 && subs.every((sub) => picked.has(sub)) && !removed.some((id) => subs.includes(id) || id === main.id)) picked.add(main.id);
+    }
+    onChange(categoryTree(categories).map(({ category }) => category.id).filter((id) => picked.has(id)));
+  }
+  return <Select mode="multiple" aria-label={ariaLabel} value={current} onChange={change} placeholder={placeholder} showSearch={{ optionFilterProp: "search" }} options={categoryOptions(categories, false)} optionRender={renderOption} maxTagCount="responsive" allowClear />;
 }
 
 export function CategorySelect({ value, onChange, disabled, ariaLabel, placeholder = "Select a category" }: { value?: string; onChange: (id: string) => void; disabled?: boolean; ariaLabel: string; placeholder?: string }) {

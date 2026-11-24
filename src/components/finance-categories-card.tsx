@@ -10,6 +10,7 @@ import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Tip } from "@/components/tip";
 import { SortableList } from "@/components/sortable-list";
+import { CollapseToggle } from "@/components/collapse-toggle";
 import { CategoryBadge } from "@/components/finance-category-icon";
 import { FinanceIconPicker } from "@/components/finance-icon-picker";
 import { categoryDeleteBlocker, categoryTree, categoryValidation, DEFAULT_CATEGORIES, isLockedCategory, nextCategoryOrder, type FinanceCategory } from "@/lib/finance-categories";
@@ -62,6 +63,8 @@ export function FinanceCategoriesCard() {
   const { token } = theme.useToken();
   const { financeCategories: categories, financeCategoriesSeeded: seeded, financeReady, financeError } = useHealthData();
   const [editing, setEditing] = useState<FinanceCategory | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggle = (id: string) => setExpanded((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const rows = categoryTree(categories);
   const mains = rows.filter(({ depth }) => depth === 0).map(({ category }) => category);
   const subsOf = (id: string) => rows.filter(({ category, depth }) => depth === 1 && category.parentId === id).map(({ category }) => category);
@@ -151,16 +154,17 @@ export function FinanceCategoriesCard() {
     <div style={{ padding: 10, borderRadius: token.borderRadiusLG, background: token.colorFillSecondary }}>
       <Flex align="center" gap={8}>
         <div {...handleProps} style={{ display: "flex", flex: 1, minWidth: 0, padding: "2px 2px", borderRadius: token.borderRadius, cursor: interactive && !disabled ? "grab" : undefined }}>{label(main, 0)}</div>
+        {subsOf(main.id).length > 0 && <CollapseToggle expanded={expanded.has(main.id)} onToggle={() => toggle(main.id)} label="subcategories" count={subsOf(main.id).length} />}
         {actions(main, 0)}
       </Flex>
-      {subs(main, interactive)}
+      {expanded.has(main.id) && subs(main, interactive)}
     </div>
   );
 
   return (
     <Card size="small" title={<><TagsOutlined style={{ marginRight: 8 }} />Categories</>} extra={<Button size="small" type="primary" icon={<PlusOutlined />} disabled={disabled} onClick={() => setEditing(blank(null))}>Add category</Button>}>
       <Typography.Paragraph type="secondary" style={{ fontSize: 13, marginTop: 0, marginBottom: 16 }}>
-        Drag a category to reorder it, or drag its subcategories to reorder them within it. Records from a deleted category move to Others › Deleted category.
+        Drag a category to reorder it, or expand it and drag its subcategories to reorder them within it. Records from a deleted category move to Others › Deleted category.
       </Typography.Paragraph>
       <Flex vertical gap={10}>
         <SortableList

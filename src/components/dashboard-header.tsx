@@ -139,7 +139,11 @@ export function DashboardHeader() {
         gap={12}
         style={{
           minHeight: compact ? 60 : 72,
-          padding: compact ? "10px 16px" : "12px 32px",
+          width: "100%",
+          maxWidth: 1200,
+          margin: "0 auto",
+          boxSizing: "border-box",
+          padding: compact ? "10px 16px" : "12px 20px",
         }}
       >
         {brand}
