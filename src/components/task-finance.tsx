@@ -10,6 +10,7 @@ import { accountOption } from "@/components/finance-record-modal";
 import { plainText } from "@/components/rich-text";
 import { currencyDigits, isDebtAccount, money, recordValidation, sortAccounts, taskRecord, taskRecordId, toMinor, type FinanceAccount } from "@/lib/finance";
 import type { SubtaskChecks, Task } from "@/lib/task-schedule";
+import { categoryPath, resolveCategory } from "@/lib/finance-categories";
 import { addFinanceRecord, deleteFinanceRecord } from "@/models/users/finance";
 import { setTaskChecked } from "@/models/users/tasks";
 import { todayKey } from "@/models/users/dailies";
@@ -59,7 +60,7 @@ export function useTaskCompletion() {
 function TaskFinanceSheet({ task, date, subtasks, onClose }: { task: Task; date: string; subtasks: SubtaskChecks; onClose: () => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
-  const { financeAccounts } = useHealthData();
+  const { financeAccounts, financeCategories } = useHealthData();
   const finance = task.finance!;
   const accounts = ownFinanceAccounts(financeAccounts);
   const [accountId, setAccountId] = useState(accounts.some((account) => account.id === finance.accountId) ? finance.accountId : accounts[0]?.id ?? "");
@@ -86,7 +87,7 @@ function TaskFinanceSheet({ task, date, subtasks, onClose }: { task: Task; date:
     <Button type="primary" onClick={() => complete(true)}>Log and complete</Button>
   </Flex>}>
     <Typography.Paragraph type="secondary">
-      {plainText(task.title)} · {finance.type === "income" ? "Income" : "Expense"} · {finance.category}
+      {plainText(task.title)} · {finance.type === "income" ? "Income" : "Expense"} · {categoryPath(financeCategories, resolveCategory(financeCategories, finance.category))}
     </Typography.Paragraph>
     <Form layout="vertical" onFinish={() => complete(true)}>
       <Form.Item label="Amount" required><InputNumber aria-label="Finance amount" value={amount} onChange={setAmount} min={0} precision={currencyDigits(account?.currency ?? "PHP")} style={{ width: "100%" }} suffix={account?.currency} autoFocus /></Form.Item>

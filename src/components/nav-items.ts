@@ -74,6 +74,7 @@ export const PROFILE_SUBMENU: { label: string; tabs: SubmenuTab[] } = {
   tabs: [
     { href: "/personal/details", label: "Personal", Icon: IdcardOutlined },
     { href: "/personal/medical", label: "Medical", Icon: MedicineBoxOutlined },
+    { href: "/personal/finance", label: "Finance", Icon: WalletOutlined },
     { href: "/personal/app", label: "App", Icon: AppstoreOutlined },
     { href: "/personal/data", label: "Data & account", Icon: SafetyCertificateOutlined },
   ],

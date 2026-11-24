@@ -19,7 +19,8 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 import { DebtProgressCard } from "@/components/debt-progress-card";
-import { AccountBadge, AccountTypeIcon, CategoryIcon } from "@/components/finance-category-icon";
+import { AccountBadge, AccountTypeIcon, CategoryBadge, CategoryIcon } from "@/components/finance-category-icon";
+import { categoryPath, resolveCategory } from "@/lib/finance-categories";
 import { mergeSubsetOrder } from "@/lib/reorder";
 
 const DEBT_VERBS: Record<DebtAction, string> = { borrow: "Borrowed from", repay: "Repaid", lend: "Lent to", collect: "Collected from" };
@@ -32,7 +33,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const { message } = App.useApp();
   const { user } = useAuth();
   const screens = Grid.useBreakpoint();
-  const { financeAccounts: allAccounts, financeAccountsLocked: locked, financeRecords: records, financeReady, financeError, cutoff } = useHealthData();
+  const { financeAccounts: allAccounts, financeAccountsLocked: locked, financeRecords: records, financeCategories, financeReady, financeError, cutoff } = useHealthData();
+  const categoryName = (record: FinanceRecord) => record.type === "transfer" ? "Transfer" : record.type === "debt" ? "Debt" : categoryPath(financeCategories, resolveCategory(financeCategories, record.category));
   const accounts = sortAccounts(allAccounts.filter((account) => !account.deletedAt));
   const ownAccounts = accounts.filter((account) => !isDebtAccount(account));
   const debtAccounts = accounts.filter(isDebtAccount);
@@ -142,13 +144,13 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const filtered = allRecords.filter((record) =>
     (accountId === "all" || record.accountId === accountId || record.destinationId === accountId)
     && (recordType === "all" || record.type === recordType)
-    && (!query || [record.description, record.category, ...record.labels, accountNames.get(record.accountId), accountNames.get(record.destinationId ?? "")].join(" ").toLowerCase().includes(query)),
+    && (!query || [record.description, categoryName(record), ...record.labels, accountNames.get(record.accountId), accountNames.get(record.destinationId ?? "")].join(" ").toLowerCase().includes(query)),
   ).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id));
   const recordItem = (record: FinanceRecord, withDate = false) => (
     <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
               <Flex justify="space-between" align="start" gap={12} wrap>
                 <div style={{ minWidth: 0, flex: "1 1 180px", overflowWrap: "anywhere" }}>
-                  <Typography.Text strong><CategoryIcon category={record.type === "transfer" ? "Transfer" : record.type === "debt" ? "Debt" : record.category} style={{ marginRight: 6 }} />{record.type === "debt" && record.debtAction ? `${DEBT_VERBS[record.debtAction]} ${accountNames.get(record.destinationId ?? "") ?? "Unknown account"}` : record.category}</Typography.Text>
+                  <Typography.Text strong>{record.type === "transfer" || record.type === "debt" ? <CategoryIcon category={record.type === "transfer" ? "Transfer" : "Debt"} style={{ marginRight: 6 }} /> : <span style={{ display: "inline-flex", verticalAlign: "-4px", marginRight: 6 }}><CategoryBadge category={resolveCategory(financeCategories, record.category)} size={18} /></span>}{record.type === "debt" && record.debtAction ? `${DEBT_VERBS[record.debtAction]} ${accountNames.get(record.destinationId ?? "") ?? "Unknown account"}` : categoryName(record)}</Typography.Text>
                   <div><Typography.Text type="secondary">{accountNames.get(record.accountId) ?? "Unknown account"}{record.destinationId && record.type !== "debt" ? ` → ${accountNames.get(record.destinationId) ?? "Unknown account"}` : ""} · {dayjs(record.occurredAt).format(withDate ? "MMM D, YYYY · h:mm A" : "h:mm A")}</Typography.Text></div>
                   {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
                   {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
@@ -156,8 +158,8 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
                 <Flex align="center" gap={8}>
                   <Typography.Text strong style={{ fontSize: 16, overflowWrap: "anywhere", color: recordSign(record) === "+" ? token.colorSuccess : recordSign(record) === "−" ? token.colorError : token.colorText }}>{recordSign(record)}{money(record.amountMinor, record.currency)}</Typography.Text>
                   <Flex gap={2}>
-                    <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${record.category} record`} onClick={() => setEditingRecord(record)} />
-                    <ConfirmDeleteButton ariaLabel={`Delete ${record.category} record`} tooltip="Delete record" hint="Tap again to delete this record" onConfirm={() => removeRecord(record)} />
+                    <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${categoryName(record)} record`} onClick={() => setEditingRecord(record)} />
+                    <ConfirmDeleteButton ariaLabel={`Delete ${categoryName(record)} record`} tooltip="Delete record" hint="Tap again to delete this record" onConfirm={() => removeRecord(record)} />
                   </Flex>
                 </Flex>
               </Flex>

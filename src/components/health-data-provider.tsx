@@ -25,6 +25,7 @@ import { watchTodoSettings, watchTodos } from "@/models/users/todos";
 import type { Todo, TodoList } from "@/lib/todos";
 import { DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS, DEFAULT_EMERGENCY_FUND_MONTHS, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { watchFinanceAccounts, watchFinanceRecords } from "@/models/users/finance";
+import { DEFAULT_CATEGORIES, type FinanceCategory } from "@/lib/finance-categories";
 
 type HealthData = {
   financeAccounts: FinanceAccount[];
@@ -32,6 +33,8 @@ type HealthData = {
   financeLastRecalculatedAt: string | null;
   financeEmergencyFundMonths: number;
   financeEmergencyFundAverageMonths: number;
+  financeCategories: FinanceCategory[];
+  financeCategoriesSeeded: boolean;
   financeRecords: FinanceRecord[];
   financeReady: boolean;
   financeError: boolean;
@@ -60,6 +63,8 @@ const HealthDataContext = createContext<HealthData>({
   financeLastRecalculatedAt: null,
   financeEmergencyFundMonths: DEFAULT_EMERGENCY_FUND_MONTHS,
   financeEmergencyFundAverageMonths: DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS,
+  financeCategories: DEFAULT_CATEGORIES,
+  financeCategoriesSeeded: false,
   financeRecords: [],
   financeReady: false,
   financeError: false,
@@ -105,7 +110,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const [todoRecords, setTodoRecords] = useState<{ uid: string; rows: Todo[] } | null>(null);
   const [todoSettings, setTodoSettings] = useState<{ uid: string; lists: TodoList[] } | null>(null);
   const [todoFailure, setTodoFailure] = useState<string | null>(null);
-  const [financeAccountsState, setFinanceAccountsState] = useState<{ uid: string; rows: FinanceAccount[]; locked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number } | null>(null);
+  const [financeAccountsState, setFinanceAccountsState] = useState<{ uid: string; rows: FinanceAccount[]; locked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number; categories: FinanceCategory[] | null } | null>(null);
   const [financeRecordsState, setFinanceRecordsState] = useState<{ uid: string; rows: FinanceRecord[] } | null>(null);
   const [financeFailure, setFinanceFailure] = useState<string | null>(null);
   const seen = useRef({
@@ -140,7 +145,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
     };
 
     const unsubscribers = [
-      watchFinanceAccounts(user.uid, (rows, settings) => setFinanceAccountsState({ uid: user.uid, rows, locked: settings.accountsLocked, lastRecalculatedAt: settings.lastRecalculatedAt, emergencyFundMonths: settings.emergencyFundMonths, emergencyFundAverageMonths: settings.emergencyFundAverageMonths }), () => setFinanceFailure(user.uid)),
+      watchFinanceAccounts(user.uid, (rows, settings) => setFinanceAccountsState({ uid: user.uid, rows, locked: settings.accountsLocked, lastRecalculatedAt: settings.lastRecalculatedAt, emergencyFundMonths: settings.emergencyFundMonths, emergencyFundAverageMonths: settings.emergencyFundAverageMonths, categories: settings.categories }), () => setFinanceFailure(user.uid)),
       watchFinanceRecords(user.uid, cutoff, (rows) => setFinanceRecordsState({ uid: user.uid, rows }), () => setFinanceFailure(user.uid)),
       watchTodos(user.uid, cutoff, (rows) => setTodoRecords({ uid: user.uid, rows }), () => setTodoFailure(user.uid)),
       watchTodoSettings(user.uid, (lists) => setTodoSettings({ uid: user.uid, lists }), () => setTodoFailure(user.uid)),
@@ -209,6 +214,8 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       financeLastRecalculatedAt: financeAccountsState?.uid === user?.uid ? financeAccountsState?.lastRecalculatedAt ?? null : null,
       financeEmergencyFundMonths: financeAccountsState?.uid === user?.uid ? financeAccountsState?.emergencyFundMonths ?? DEFAULT_EMERGENCY_FUND_MONTHS : DEFAULT_EMERGENCY_FUND_MONTHS,
       financeEmergencyFundAverageMonths: financeAccountsState?.uid === user?.uid ? financeAccountsState?.emergencyFundAverageMonths ?? DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS : DEFAULT_EMERGENCY_FUND_AVERAGE_MONTHS,
+      financeCategories: (financeAccountsState?.uid === user?.uid ? financeAccountsState?.categories : null) ?? DEFAULT_CATEGORIES,
+      financeCategoriesSeeded: financeAccountsState?.uid === user?.uid && !!financeAccountsState?.categories,
       financeRecords: financeRecordsState?.uid === user?.uid ? financeRecordsState?.rows ?? [] : [],
       financeReady: !!user && financeAccountsState?.uid === user.uid && financeRecordsState?.uid === user.uid,
       financeError: !!user && financeFailure === user.uid,

@@ -2,7 +2,6 @@ import type { Task, TaskFinance } from "@/lib/task-schedule";
 
 export const ACCOUNT_TYPES = ["Cash", "Bank account", "Savings", "Credit card", "Investment", "Loan", "Wise", "Debt", "Other"];
 export const CURRENCIES = ["PHP", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "HKD", "SGD", "KRW", "INR", "AED", "NZD"];
-export const CATEGORIES = ["Food & drink", "Shopping", "Housing", "Transportation", "Health", "Entertainment", "Education", "Bills", "Salary", "Gifts", "Other"];
 export type FinanceAccount = { id: string; name: string; color: string; type: string; initialMinor: number; balanceMinor: number; currency: string; excludeFromStatistics: boolean; provider?: string; order?: number; deletedAt?: string; hiddenAt?: string | null; source?: "wise" | null };
 export const DEBT_ACTIONS = ["borrow", "repay", "lend", "collect"] as const;
 export type DebtAction = (typeof DEBT_ACTIONS)[number];
@@ -252,7 +251,7 @@ export function wiseRecord(activity: WiseActivity, accountIds: Record<string, st
   const amountMinor = toMinor(amount.value, amount.currency);
   if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return null;
   const description = (wiseText(activity.title) || wiseText(activity.description) || "Wise").slice(0, 2000);
-  return { id, type, amountMinor, accountId: accountIds[amount.currency], destinationId: null, currency: amount.currency, category: "Other", labels: [], date, occurredAt: new Date(activity.createdOn).toISOString(), description, debtAction: null, wiseId: activity.id };
+  return { id, type, amountMinor, accountId: accountIds[amount.currency], destinationId: null, currency: amount.currency, category: "others--missing", labels: [], date, occurredAt: new Date(activity.createdOn).toISOString(), description, debtAction: null, wiseId: activity.id };
 }
 
 export function debtProgress(accounts: FinanceAccount[], records: Pick<FinanceRecord, "type" | "destinationId" | "debtAction" | "amountMinor">[]) {

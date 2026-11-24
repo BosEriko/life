@@ -7,11 +7,12 @@ import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceDay } from "@/components/use-day-records";
-import { CATEGORIES, currencyDigits, debtStatus, isDebtAccount, recordValidation, toMinor, type DebtAction, type FinanceRecord, sortAccounts, sortByLatestDebtRecord, type FinanceAccount } from "@/lib/finance";
+import { currencyDigits, debtStatus, isDebtAccount, recordValidation, toMinor, type DebtAction, type FinanceRecord, sortAccounts, sortByLatestDebtRecord, type FinanceAccount } from "@/lib/finance";
 import { addFinanceRecord, deleteFinanceRecord, editFinanceRecord } from "@/models/users/finance";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
-import { AccountBadge, CategoryIcon } from "@/components/finance-category-icon";
-import { ArrowRightOutlined, PlusOutlined } from "@ant-design/icons";
+import { AccountBadge } from "@/components/finance-category-icon";
+import { CategorySelect } from "@/components/finance-category-select";
+import { ArrowRightOutlined } from "@ant-design/icons";
 
 const DEBT_ACTION_HINTS: Record<DebtAction, string> = {
   borrow: "They give you money that you'll pay back.",
@@ -42,7 +43,6 @@ export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: {
   const [accountId, setAccountId] = useState(initial?.accountId ?? ownAccounts[0]?.id ?? "");
   const [destinationId, setDestinationId] = useState<string | null>(initial?.destinationId ?? null);
   const [category, setCategory] = useState<string | undefined>(initial && initial.type !== "transfer" && initial.type !== "debt" ? initial.category : undefined);
-  const [categorySearch, setCategorySearch] = useState("");
   const [labels, setLabels] = useState<string[]>(initial?.labels ?? []);
   const [date, setDate] = useState<Dayjs | null>(initial ? dayjs(initial.occurredAt) : null);
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -89,13 +89,6 @@ export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: {
     onSaved();
     onClose();
   }
-  const categories = [...new Set([...CATEGORIES, ...records.map((record) => record.category), ...(category ? [category] : [])])];
-  const newCategory = categorySearch.trim();
-  const canAddCategory = !!newCategory && !categories.some((value) => value.toLowerCase() === newCategory.toLowerCase());
-  const categoryOptions = [
-    ...categories.map((value) => ({ value, label: <span><CategoryIcon category={value} style={{ marginRight: 8 }} />{value}</span> })),
-    ...(canAddCategory ? [{ value: newCategory, label: <span><PlusOutlined style={{ marginRight: 8 }} />Add &ldquo;{newCategory}&rdquo;</span> }] : []),
-  ];
   const knownLabels = [...new Set(records.flatMap((record) => record.labels))];
   return <AppModal open title={initial ? "Edit record" : "Add record"} onCancel={pending ? undefined : onClose} closable={!pending} mask={{ closable: !pending }} footer={<Flex justify={initial ? "space-between" : "flex-end"} align="center">
     {initial && <ConfirmDeleteButton ariaLabel="Delete record" tooltip="Delete record" hint="Tap again to delete this record" onConfirm={remove} />}
@@ -116,7 +109,7 @@ export function FinanceRecordModal({ initial, defaultType, onClose, onSaved }: {
         <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 24 }}>Only other accounts using the same currency can receive this transfer.</Typography.Paragraph>
       </> : <Form.Item label="Account" required><Select aria-label="Record account" value={accountId} disabled={!!pending} onChange={(value) => { setAccountId(value); setDestinationId(null); }} options={ownAccounts.map((item) => ({ value: item.id, label: accountOption(item) }))} /></Form.Item>}
       <Form.Item label="Amount" required><InputNumber aria-label="Record amount" value={amount} disabled={!!pending} onChange={setAmount} min={0} precision={currencyDigits(account?.currency ?? "PHP")} style={{ width: "100%" }} suffix={account?.currency} /></Form.Item>
-      {type !== "transfer" && type !== "debt" && <Form.Item label="Category" required><Select aria-label="Record category" value={category} disabled={!!pending} onChange={(value) => { setCategory(value); setCategorySearch(""); }} showSearch={{ searchValue: categorySearch, onSearch: setCategorySearch, filterOption: (input, option) => option?.value === newCategory || String(option?.value ?? "").toLowerCase().includes(input.trim().toLowerCase()) }} onBlur={() => setCategorySearch("")} options={categoryOptions} placeholder="Select or type a new category" /></Form.Item>}
+      {type !== "transfer" && type !== "debt" && <Form.Item label="Category" required><CategorySelect ariaLabel="Record category" value={category} disabled={!!pending} onChange={setCategory} /></Form.Item>}
       <Form.Item label="Labels"><Select aria-label="Record labels" mode="tags" value={labels} disabled={!!pending} onChange={setLabels} options={knownLabels.map((value) => ({ value, label: value }))} placeholder="Select or create labels" /></Form.Item>
       <Form.Item label="Date and time"><DatePicker aria-label="Record date and time" showTime value={date} disabled={!!pending} onChange={setDate} style={{ width: "100%" }} placeholder="Current date and time" /><Typography.Text type="secondary">Leave blank to use the date and time when you save.</Typography.Text></Form.Item>
       <Form.Item label="Description"><Input.TextArea aria-label="Record description" value={description} disabled={!!pending} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} /></Form.Item>

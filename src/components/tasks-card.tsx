@@ -22,9 +22,10 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { TaskDescription } from "@/components/task-description";
 import { EmptyState } from "@/components/empty-state";
 import { ownFinanceAccounts, useTaskCompletion } from "@/components/task-finance";
-import { CategoryIcon } from "@/components/finance-category-icon";
+import { CategorySelect } from "@/components/finance-category-select";
+import { MISSING_CATEGORY_ID } from "@/lib/finance-categories";
 import { accountOption } from "@/components/finance-record-modal";
-import { CATEGORIES, currencyDigits, money, taskFinanceValidation, toMinor, type FinanceAccount } from "@/lib/finance";
+import { currencyDigits, money, taskFinanceValidation, toMinor, type FinanceAccount } from "@/lib/finance";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REPEATS = ["daily", "weekly", "monthly", "yearly"] as const;
@@ -50,14 +51,13 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
   const { message } = App.useApp();
   const [draft, setDraft] = useState(initial);
   const [subtaskTitle, setSubtaskTitle] = useState("");
-  const { financeAccounts, financeRecords } = useHealthData();
+  const { financeAccounts } = useHealthData();
   const ownAccounts = ownFinanceAccounts(financeAccounts);
   const patch = (values: Partial<Task>) => setDraft((current) => ({ ...current, ...values }));
   const finance = draft.finance;
   const financeAccount = financeAccounts.find((account) => account.id === finance?.accountId);
   const financeCurrency = financeAccount?.currency ?? "PHP";
   const patchFinance = (values: Partial<NonNullable<Task["finance"]>>) => setDraft((current) => current.finance ? { ...current, finance: { ...current.finance, ...values } } : current);
-  const categories = [...new Set([...CATEGORIES, ...financeRecords.filter((record) => record.type === "expense" || record.type === "income").map((record) => record.category), ...(finance?.category ? [finance.category] : [])])];
   const chooseFinanceAccount = (accountId: string) => {
     const next = financeAccounts.find((account) => account.id === accountId);
     if (!finance || !next) return;
@@ -118,14 +118,14 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
         </Flex>}
         <Flex align="center" justify="space-between" gap={12} style={{ marginTop: 6 }}>
           <Typography.Text strong><TransactionOutlined style={{ marginRight: 8 }} />Log to Finance when checked off</Typography.Text>
-          <Switch aria-label="Log to Finance when checked off" checked={!!finance} disabled={!finance && ownAccounts.length === 0} onChange={(on) => patch({ finance: on ? { type: "expense", accountId: ownAccounts[0]?.id ?? "", amountMinor: 0, category: "Bills", description: "" } : null })} />
+          <Switch aria-label="Log to Finance when checked off" checked={!!finance} disabled={!finance && ownAccounts.length === 0} onChange={(on) => patch({ finance: on ? { type: "expense", accountId: ownAccounts[0]?.id ?? "", amountMinor: 0, category: MISSING_CATEGORY_ID, description: "" } : null })} />
         </Flex>
         {!finance && ownAccounts.length === 0 && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Add an account in Finance first to link this task.</Typography.Text>}
         {finance && <Flex vertical gap={10}>
           <Segmented block aria-label="Finance record type" value={finance.type} onChange={(type) => patchFinance({ type: type as "expense" | "income" })} options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }]} />
           <Select aria-label="Finance account" value={finance.accountId || undefined} onChange={chooseFinanceAccount} placeholder="Account" options={ownAccounts.map((account: FinanceAccount) => ({ value: account.id, label: accountOption(account) }))} />
           <InputNumber aria-label="Finance amount" placeholder="Amount" value={finance.amountMinor ? finance.amountMinor / 10 ** currencyDigits(financeCurrency) : null} onChange={(value) => patchFinance({ amountMinor: value === null ? 0 : toMinor(value, financeCurrency) })} min={0} precision={currencyDigits(financeCurrency)} style={{ width: "100%" }} suffix={financeCurrency} />
-          <Select aria-label="Finance category" value={finance.category || undefined} onChange={(category) => patchFinance({ category })} placeholder="Category" showSearch options={categories.map((value) => ({ value, label: <span><CategoryIcon category={value} style={{ marginRight: 8 }} />{value}</span> }))} />
+          <CategorySelect ariaLabel="Finance category" value={finance.category || undefined} onChange={(category) => patchFinance({ category })} placeholder="Category" />
           <Input aria-label="Finance description" placeholder={draft.title.trim() ? `Description (defaults to "${draft.title.trim()}")` : "Description (defaults to the task title)"} maxLength={2000} value={finance.description} onChange={(event) => patchFinance({ description: event.target.value })} />
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>Checking this task off opens a quick confirm with this amount, which you can change. Unchecking removes the record.</Typography.Text>
         </Flex>}

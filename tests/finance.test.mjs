@@ -193,7 +193,7 @@ test("Wise amounts are parsed with their sign and currency", () => {
 test("Wise activities become records on the matching currency account", () => {
   const accounts = { PHP: "wise-php", USD: "wise-usd" };
   const activity = (extra) => ({ id: "A1", type: "CARD_PAYMENT", title: "<strong>Jollibee</strong>", description: "Spent by you", primaryAmount: "250.75 PHP", secondaryAmount: "", status: "COMPLETED", createdOn: "2026-11-16T04:30:00.000Z", ...extra });
-  assert.deepEqual(wiseRecord(activity({}), accounts, "2026-11-16", "wise-1"), { id: "wise-1", type: "expense", amountMinor: 25075, accountId: "wise-php", destinationId: null, currency: "PHP", category: "Other", labels: [], date: "2026-11-16", occurredAt: "2026-11-16T04:30:00.000Z", description: "Jollibee", debtAction: null, wiseId: "A1" });
+  assert.deepEqual(wiseRecord(activity({}), accounts, "2026-11-16", "wise-1"), { id: "wise-1", type: "expense", amountMinor: 25075, accountId: "wise-php", destinationId: null, currency: "PHP", category: "others--missing", labels: [], date: "2026-11-16", occurredAt: "2026-11-16T04:30:00.000Z", description: "Jollibee", debtAction: null, wiseId: "A1" });
   assert.equal(wiseRecord(activity({ primaryAmount: "1,000 JPY", secondaryAmount: "6.80 USD" }), accounts, "2026-11-16", "x").accountId, "wise-usd");
   assert.equal(wiseRecord(activity({ primaryAmount: "1,000 JPY" }), accounts, "2026-11-16", "x"), null);
   assert.equal(wiseRecord(activity({ type: "BALANCE_DEPOSIT", primaryAmount: "500 PHP" }), accounts, "2026-11-16", "x").type, "income");

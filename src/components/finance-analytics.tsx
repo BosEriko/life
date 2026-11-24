@@ -12,7 +12,8 @@ import { useIsDark } from "@/components/theme-provider";
 import { currencyDigits, money } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import type { MonthPoint } from "@/components/finance-month-chart";
-import { CategoryIcon } from "@/components/finance-category-icon";
+import { CategoryBadge } from "@/components/finance-category-icon";
+import { mainCategory, resolveCategory, type FinanceCategory } from "@/lib/finance-categories";
 import { EmptyState } from "@/components/empty-state";
 
 const FinanceMonthChart = dynamic(() => import("@/components/finance-month-chart").then((mod) => mod.FinanceMonthChart), {
@@ -35,7 +36,7 @@ export function FinanceAnalytics() {
   const { token } = theme.useToken();
   const isDark = useIsDark();
   const screens = Grid.useBreakpoint();
-  const { financeAccounts, financeRecords, financeReady, financeError, cutoff } = useHealthData();
+  const { financeAccounts, financeRecords, financeCategories, financeReady, financeError, cutoff } = useHealthData();
   const history = useFinanceHistory(true, cutoff);
   const [period, setPeriod] = useState("6");
   const [currencyChoice, setCurrencyChoice] = useState<string | null>(null);
@@ -73,10 +74,38 @@ export function FinanceAnalytics() {
     months.push({ month: label, type: "Expenses", value: rows.filter((record) => record.type === "expense").reduce((sum, record) => sum + record.amountMinor, 0) / scale });
   }
 
-  const byCategory = new Map<string, number>();
-  for (const record of inPeriod) if (record.type === "expense") byCategory.set(record.category, (byCategory.get(record.category) ?? 0) + record.amountMinor);
-  const categories = [...byCategory.entries()].sort((a, b) => b[1] - a[1]);
-  const largest = categories[0]?.[1] ?? 0;
+  const byCategory = new Map<string, { main: FinanceCategory; amount: number; subs: Map<string, { category: FinanceCategory; amount: number }> }>();
+  for (const record of inPeriod) {
+    if (record.type !== "expense") continue;
+    const category = resolveCategory(financeCategories, record.category);
+    const main = mainCategory(financeCategories, category);
+    const group = byCategory.get(main.id) ?? { main, amount: 0, subs: new Map() };
+    group.amount += record.amountMinor;
+    if (category.id !== main.id) {
+      const sub = group.subs.get(category.id) ?? { category, amount: 0 };
+      sub.amount += record.amountMinor;
+      group.subs.set(category.id, sub);
+    }
+    byCategory.set(main.id, group);
+  }
+  const categories = [...byCategory.values()].sort((a, b) => b.amount - a.amount);
+  const largest = categories[0]?.amount ?? 0;
+  const categoryRow = (category: FinanceCategory, amount: number, depth: 0 | 1) => (
+    <div key={category.id} style={{ paddingLeft: depth ? 28 : 0 }}>
+      <Flex justify="space-between" gap={12} style={{ marginBottom: 6 }}>
+        <Flex align="center" gap={8} style={{ minWidth: 0 }}>
+          <CategoryBadge category={category} size={depth ? 16 : 20} />
+          <Typography.Text strong={!depth} type={depth ? "secondary" : undefined} style={{ minWidth: 0, overflowWrap: "anywhere", fontSize: depth ? 13 : undefined }}>{category.name}</Typography.Text>
+        </Flex>
+        <Typography.Text style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", fontSize: depth ? 13 : undefined }}>
+          {money(amount, currency)} <Typography.Text type="secondary" style={{ fontSize: depth ? 13 : undefined }}>· {Math.round((amount / expense) * 100)}%</Typography.Text>
+        </Typography.Text>
+      </Flex>
+      <div aria-hidden style={{ height: depth ? 5 : 8, borderRadius: 4, background: token.colorFillSecondary, overflow: "hidden" }}>
+        <div style={{ width: `${Math.max(2, (amount / largest) * 100)}%`, height: "100%", borderRadius: 4, background: category.color, opacity: depth ? 0.7 : 1 }} />
+      </div>
+    </div>
+  );
 
   const incomeColor = isDark ? INCOME.dark : INCOME.light;
   const expenseColor = isDark ? EXPENSE.dark : EXPENSE.light;
@@ -129,18 +158,11 @@ export function FinanceAnalytics() {
               <Typography.Text style={{ display: "block", fontSize: 17, marginBottom: 16 }}>Expenses by category</Typography.Text>
               {categories.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No expenses in this period." /> : (
                 <Flex vertical gap={14}>
-                  {categories.map(([category, amount]) => (
-                    <div key={category}>
-                      <Flex justify="space-between" gap={12} style={{ marginBottom: 6 }}>
-                        <Typography.Text style={{ minWidth: 0, overflowWrap: "anywhere" }}><CategoryIcon category={category} style={{ marginRight: 6 }} />{category}</Typography.Text>
-                        <Typography.Text style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                          {money(amount, currency)} <Typography.Text type="secondary">· {Math.round((amount / expense) * 100)}%</Typography.Text>
-                        </Typography.Text>
-                      </Flex>
-                      <div aria-hidden style={{ height: 8, borderRadius: 4, background: token.colorFillSecondary, overflow: "hidden" }}>
-                        <div style={{ width: `${Math.max(2, (amount / largest) * 100)}%`, height: "100%", borderRadius: 4, background: expenseColor }} />
-                      </div>
-                    </div>
+                  {categories.map((group) => (
+                    <Flex key={group.main.id} vertical gap={10}>
+                      {categoryRow(group.main, group.amount, 0)}
+                      {[...group.subs.values()].sort((a, b) => b.amount - a.amount).map((sub) => categoryRow(sub.category, sub.amount, 1))}
+                    </Flex>
                   ))}
                 </Flex>
               )}

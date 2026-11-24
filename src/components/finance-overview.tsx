@@ -11,7 +11,8 @@ import { useIsDark } from "@/components/theme-provider";
 import { currencyDigits, money } from "@/lib/finance";
 import { mergeById } from "@/lib/merge-records";
 import { todayKey } from "@/models/users/dailies";
-import { CategoryIcon } from "@/components/finance-category-icon";
+import { CategoryBadge } from "@/components/finance-category-icon";
+import { categoryPath, mainCategory, resolveCategory } from "@/lib/finance-categories";
 
 const chartLoading = () => <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex>;
 const FinanceMonthChart = dynamic(() => import("@/components/finance-month-chart").then((mod) => mod.FinanceMonthChart), { ssr: false, loading: chartLoading });
@@ -20,12 +21,6 @@ const CategoryDonut = dynamic(() => import("@/components/finance-overview-charts
 
 const INCOME = { light: "#0f9488", dark: "#28a0a0" };
 const EXPENSE = { light: "#a8502c", dark: "#d4643a" };
-const SLOT_CATEGORIES = ["Food & drink", "Shopping", "Housing", "Transportation", "Health", "Entertainment", "Education", "Bills"];
-const SLOTS = {
-  light: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"],
-  dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
-};
-const OTHER = { light: "#8f8e88", dark: "#6f6e69" };
 
 type Bucket = { key: string; label: string; start: Dayjs; end: Dayjs };
 
@@ -45,7 +40,7 @@ export function FinanceOverview() {
   const { token } = theme.useToken();
   const isDark = useIsDark();
   const mode = isDark ? "dark" : "light";
-  const { financeAccounts, financeRecords, cutoff } = useHealthData();
+  const { financeAccounts, financeRecords, financeCategories, cutoff } = useHealthData();
   const [range, setRange] = useDateRange();
   const [currencyChoice, setCurrencyChoice] = useState<string | null>(null);
   const [rangeStart, rangeEnd] = range;
@@ -92,12 +87,13 @@ export function FinanceOverview() {
   const expenses = records.filter((record) => record.type === "expense");
   const byCategory = new Map<string, number>();
   for (const record of expenses) {
-    const key = SLOT_CATEGORIES.includes(record.category) ? record.category : "Other";
+    const key = mainCategory(financeCategories, resolveCategory(financeCategories, record.category)).id;
     byCategory.set(key, (byCategory.get(key) ?? 0) + record.amountMinor);
   }
-  const donutDomain = [...SLOT_CATEGORIES, "Other"];
-  const donutRange = [...SLOTS[mode], OTHER[mode]];
-  const donutData = donutDomain.filter((category) => byCategory.has(category)).map((category) => ({ category, value: (byCategory.get(category) ?? 0) / scale, minor: byCategory.get(category) ?? 0 }));
+  const donutMains = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).map(([id, minor]) => ({ main: resolveCategory(financeCategories, id), minor }));
+  const donutDomain = donutMains.map(({ main }) => main.name);
+  const donutRange = donutMains.map(({ main }) => main.color);
+  const donutData = donutMains.map(({ main, minor }) => ({ category: main.name, main, value: minor / scale, minor }));
 
   const byAccount = new Map<string, number>();
   for (const record of expenses) byAccount.set(record.accountId, (byAccount.get(record.accountId) ?? 0) + record.amountMinor);
@@ -145,9 +141,9 @@ export function FinanceOverview() {
             </div>
             <Flex vertical gap={6} style={{ flex: "1 1 140px", minWidth: 0 }}>
               {donutData.map((row) => (
-                <Flex key={row.category} align="center" gap={8} style={{ fontSize: 12 }}>
-                  <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: donutRange[donutDomain.indexOf(row.category)] }} />
-                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><CategoryIcon category={row.category} style={{ marginRight: 6 }} />{row.category}</span>
+                <Flex key={row.main.id} align="center" gap={8} style={{ fontSize: 12 }}>
+                  <CategoryBadge category={row.main} size={16} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.category}</span>
                   <Typography.Text type="secondary" style={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>{pct(row.minor, expense)}</Typography.Text>
                 </Flex>
               ))}
@@ -179,8 +175,8 @@ export function FinanceOverview() {
             {topExpenses.map((record, index) => (
               <Flex key={record.id} justify="space-between" align="center" gap={12} style={{ padding: "10px 0", borderTop: index ? `1px solid ${token.colorBorderSecondary}` : undefined }}>
                 <div style={{ minWidth: 0 }}>
-                  <Typography.Text style={{ display: "block", overflowWrap: "anywhere" }}>{record.description || record.category}</Typography.Text>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}><CategoryIcon category={record.category} style={{ marginRight: 4 }} />{record.category} · {dayjs(record.occurredAt).format("MMM D")}</Typography.Text>
+                  <Typography.Text style={{ display: "block", overflowWrap: "anywhere" }}>{record.description || categoryPath(financeCategories, resolveCategory(financeCategories, record.category))}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}><span style={{ display: "inline-flex", verticalAlign: "-3px", marginRight: 4 }}><CategoryBadge category={resolveCategory(financeCategories, record.category)} size={14} /></span>{categoryPath(financeCategories, resolveCategory(financeCategories, record.category))} · {dayjs(record.occurredAt).format("MMM D")}</Typography.Text>
                 </div>
                 <Typography.Text strong style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{money(record.amountMinor, currency)}</Typography.Text>
               </Flex>
