@@ -38,6 +38,7 @@ type HealthData = {
   financeCategories: FinanceCategory[];
   financeCategoriesSeeded: boolean;
   financeBudgets: FinanceBudget[];
+  financeBudgetsLocked: boolean;
   financeLabels: FinanceLabel[];
   financeRecords: FinanceRecord[];
   financeReady: boolean;
@@ -70,6 +71,7 @@ const HealthDataContext = createContext<HealthData>({
   financeCategories: DEFAULT_CATEGORIES,
   financeCategoriesSeeded: false,
   financeBudgets: [],
+  financeBudgetsLocked: false,
   financeLabels: [],
   financeRecords: [],
   financeReady: false,
@@ -116,7 +118,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
   const [todoRecords, setTodoRecords] = useState<{ uid: string; rows: Todo[] } | null>(null);
   const [todoSettings, setTodoSettings] = useState<{ uid: string; lists: TodoList[] } | null>(null);
   const [todoFailure, setTodoFailure] = useState<string | null>(null);
-  const [financeAccountsState, setFinanceAccountsState] = useState<{ uid: string; rows: FinanceAccount[]; locked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number; categories: FinanceCategory[] | null; budgets: FinanceBudget[]; labels: FinanceLabel[] } | null>(null);
+  const [financeAccountsState, setFinanceAccountsState] = useState<{ uid: string; rows: FinanceAccount[]; locked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number; categories: FinanceCategory[] | null; budgets: FinanceBudget[]; budgetsLocked: boolean; labels: FinanceLabel[] } | null>(null);
   const [financeRecordsState, setFinanceRecordsState] = useState<{ uid: string; rows: FinanceRecord[] } | null>(null);
   const [financeFailure, setFinanceFailure] = useState<string | null>(null);
   const seen = useRef({
@@ -151,7 +153,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
     };
 
     const unsubscribers = [
-      watchFinanceAccounts(user.uid, (rows, settings) => setFinanceAccountsState({ uid: user.uid, rows, locked: settings.accountsLocked, lastRecalculatedAt: settings.lastRecalculatedAt, emergencyFundMonths: settings.emergencyFundMonths, emergencyFundAverageMonths: settings.emergencyFundAverageMonths, categories: settings.categories, budgets: settings.budgets, labels: settings.labels }), () => setFinanceFailure(user.uid)),
+      watchFinanceAccounts(user.uid, (rows, settings) => setFinanceAccountsState({ uid: user.uid, rows, locked: settings.accountsLocked, lastRecalculatedAt: settings.lastRecalculatedAt, emergencyFundMonths: settings.emergencyFundMonths, emergencyFundAverageMonths: settings.emergencyFundAverageMonths, categories: settings.categories, budgets: settings.budgets, budgetsLocked: settings.budgetsLocked, labels: settings.labels }), () => setFinanceFailure(user.uid)),
       watchFinanceRecords(user.uid, cutoff, (rows) => setFinanceRecordsState({ uid: user.uid, rows }), () => setFinanceFailure(user.uid)),
       watchTodos(user.uid, cutoff, (rows) => setTodoRecords({ uid: user.uid, rows }), () => setTodoFailure(user.uid)),
       watchTodoSettings(user.uid, (lists) => setTodoSettings({ uid: user.uid, lists }), () => setTodoFailure(user.uid)),
@@ -223,6 +225,7 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
       financeCategories: (financeAccountsState?.uid === user?.uid ? financeAccountsState?.categories : null) ?? DEFAULT_CATEGORIES,
       financeCategoriesSeeded: financeAccountsState?.uid === user?.uid && !!financeAccountsState?.categories,
       financeBudgets: financeAccountsState?.uid === user?.uid ? financeAccountsState?.budgets ?? [] : [],
+      financeBudgetsLocked: financeAccountsState?.uid === user?.uid ? financeAccountsState?.budgetsLocked ?? false : false,
       financeLabels: financeAccountsState?.uid === user?.uid ? sortLabels(financeAccountsState?.labels ?? []) : [],
       financeRecords: financeRecordsState?.uid === user?.uid ? financeRecordsState?.rows ?? [] : [],
       financeReady: !!user && financeAccountsState?.uid === user.uid && financeRecordsState?.uid === user.uid,

@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { Alert, App, Button, Card, ColorPicker, Empty, Flex, Form, Grid, InputNumber, Input, Segmented, Select, Spin, Switch, Tag, Typography, theme } from "antd";
-import { EditOutlined, LeftOutlined, PlusOutlined, RightOutlined, TransactionOutlined } from "@ant-design/icons";
+import { EditOutlined, HolderOutlined, LeftOutlined, LockOutlined, PlusOutlined, RightOutlined, TransactionOutlined, UnlockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -27,7 +27,7 @@ import { CURRENCIES, currencyDigits, isDebtAccount, money, sortAccounts, type Fi
 import { categoryPath, mainCategory, resolveCategory, type FinanceCategory } from "@/lib/finance-categories";
 import { BUDGET_PERIOD_LABELS, BUDGET_PERIODS, budgetPeriodBounds, budgetProgress, budgetRecords, budgetValidation, type BudgetPeriod, type BudgetScope, type BudgetStatus, type FinanceBudget } from "@/lib/finance-budgets";
 import { mergeById } from "@/lib/merge-records";
-import { deleteFinanceBudget, deleteFinanceRecord, reorderFinanceBudgets, saveFinanceBudget } from "@/models/users/finance";
+import { deleteFinanceBudget, deleteFinanceRecord, reorderFinanceBudgets, saveFinanceBudget, setFinanceBudgetsLocked } from "@/models/users/finance";
 import { todayKey } from "@/models/users/dailies";
 
 const BudgetPaceChart = dynamic(() => import("@/components/finance-overview-charts").then((mod) => mod.BudgetPaceChart), { ssr: false, loading: () => <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> });
@@ -228,7 +228,7 @@ export function FinanceBudgets() {
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const statusColor = useStatusColor();
-  const { financeAccounts, financeRecords, financeCategories, financeBudgets, financeLabels, financeReady, financeError } = useHealthData();
+  const { financeAccounts, financeRecords, financeCategories, financeBudgets, financeBudgetsLocked: locked, financeLabels, financeReady, financeError } = useHealthData();
   const scope = useBudgetScope();
   const [editing, setEditing] = useState<FinanceBudget | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -266,6 +266,7 @@ export function FinanceBudgets() {
     return (
       <Flex vertical gap={10}>
         <Flex align="start" gap={10}>
+          {!locked && <HolderOutlined aria-hidden style={{ color: token.colorTextTertiary, alignSelf: "flex-start", marginTop: 4, marginLeft: -2, fontSize: 13 }} />}
           <CategoryBadge category={budget} size={34} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere" }}>{budget.name}</Typography.Text>
@@ -299,26 +300,33 @@ export function FinanceBudgets() {
       {!financeReady ? <Spin /> : <>
         <EmergencyFundBanner />
         {budgets.length === 0 ? <Card><EmptyState title="No budgets yet" description="Set a spending limit, like ₱10,000 a month for food, and see if you're on pace to stay within it." action={<Button type="primary" icon={<PlusOutlined />} disabled={disabled} onClick={() => setEditing(blank())}>Add budget</Button>} /></Card> : <>
-          <Flex gap={8} wrap style={{ marginBottom: 16 }}>
-            <Tag color={statusColor("on-track")} style={{ marginInlineEnd: 0 }}>{counts["on-track"]} on track</Tag>
-            <Tag color={statusColor("at-risk")} style={{ marginInlineEnd: 0 }}>{counts["at-risk"]} at risk</Tag>
-            <Tag color={statusColor("over")} style={{ marginInlineEnd: 0 }}>{counts.over} over budget</Tag>
+          <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 16 }}>
+            <Flex gap={8} wrap>
+              <Tag color={statusColor("on-track")} style={{ marginInlineEnd: 0 }}>{counts["on-track"]} on track</Tag>
+              <Tag color={statusColor("at-risk")} style={{ marginInlineEnd: 0 }}>{counts["at-risk"]} at risk</Tag>
+              <Tag color={statusColor("over")} style={{ marginInlineEnd: 0 }}>{counts.over} over budget</Tag>
+            </Flex>
+            {budgets.length > 1 && <Tip title={locked ? "Unlock to reorder budgets" : "Lock budget order"}>
+              <Button type="text" size="small" aria-label={locked ? "Unlock budget order" : "Lock budget order"} aria-pressed={locked} icon={locked ? <LockOutlined /> : <UnlockOutlined />} disabled={disabled}
+                onClick={() => { if (user) void setFinanceBudgetsLocked(user.uid, !locked).catch(() => message.error("Could not update the lock.")); }}
+                style={{ color: locked ? token.colorPrimary : token.colorTextSecondary }} />
+            </Tip>}
           </Flex>
           <div style={{ display: "grid", gridTemplateColumns: screens.sm === false ? "minmax(0, 1fr)" : "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
             <SortableList
               ids={budgets.map((budget) => budget.id)}
               layout="grid"
-              disabled={disabled}
+              disabled={disabled || locked}
               onReorder={reorder}
               renderOverlay={(id) => { const budget = byId.get(id); return budget ? <Card size="small" style={{ boxShadow: token.boxShadowSecondary }}>{cardBody(budget)}</Card> : null; }}
               renderItem={(id, { ref, style, handlers, wasDragged }) => {
                 const budget = byId.get(id);
                 if (!budget) return null;
                 return (
-                  <Card key={id} ref={ref} size="small" {...handlers} className="reorder-item" role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records, or Space to pick up and reorder.`}
+                  <Card key={id} ref={ref} size="small" {...handlers} className="reorder-item budget-card" role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records${locked ? "" : ", or Space to pick up and reorder"}.`}
                     onClick={() => { if (!wasDragged()) setOpenId(budget.id); }}
                     onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setOpenId(budget.id); } else handlers.onKeyDown?.(event); }}
-                    style={{ ...style, minWidth: 0, cursor: "pointer", boxShadow: token.boxShadowTertiary } as CSSProperties}>
+                    style={{ ...style, minWidth: 0, cursor: "pointer", boxShadow: token.boxShadowTertiary, "--card-accent": budget.color } as CSSProperties}>
                     {cardBody(budget)}
                   </Card>
                 );

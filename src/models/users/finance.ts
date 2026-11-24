@@ -96,8 +96,8 @@ export function recalculateFinanceAccounts(uid: string, records: FinanceRecord[]
   });
 }
 
-export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number; categories: FinanceCategory[] | null; budgets: FinanceBudget[]; labels: FinanceLabel[] }) => void, fail: (error: Error) => void) {
-  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true, lastRecalculatedAt: (snapshot.data()?.lastRecalculatedAt as string | undefined) ?? null, emergencyFundMonths: emergencyFundMonthsOrDefault(snapshot.data()?.emergencyFundMonths), emergencyFundAverageMonths: emergencyFundAverageMonthsOrDefault(snapshot.data()?.emergencyFundAverageMonths), categories: snapshot.data()?.categories ? Object.values(snapshot.data()!.categories as Record<string, FinanceCategory>) : null, budgets: Object.values((snapshot.data()?.budgets ?? {}) as Record<string, FinanceBudget>), labels: Object.values((snapshot.data()?.labels ?? {}) as Record<string, FinanceLabel>) }), fail);
+export function watchFinanceAccounts(uid: string, next: (accounts: FinanceAccount[], settings: { accountsLocked: boolean; budgetsLocked: boolean; lastRecalculatedAt: string | null; emergencyFundMonths: number; emergencyFundAverageMonths: number; categories: FinanceCategory[] | null; budgets: FinanceBudget[]; labels: FinanceLabel[] }) => void, fail: (error: Error) => void) {
+  return onSnapshot(settingsRef(uid), (snapshot) => next(Object.values(snapshot.data()?.accounts ?? {}), { accountsLocked: snapshot.data()?.accountsLocked === true, budgetsLocked: snapshot.data()?.budgetsLocked === true, lastRecalculatedAt: (snapshot.data()?.lastRecalculatedAt as string | undefined) ?? null, emergencyFundMonths: emergencyFundMonthsOrDefault(snapshot.data()?.emergencyFundMonths), emergencyFundAverageMonths: emergencyFundAverageMonthsOrDefault(snapshot.data()?.emergencyFundAverageMonths), categories: snapshot.data()?.categories ? Object.values(snapshot.data()!.categories as Record<string, FinanceCategory>) : null, budgets: Object.values((snapshot.data()?.budgets ?? {}) as Record<string, FinanceBudget>), labels: Object.values((snapshot.data()?.labels ?? {}) as Record<string, FinanceLabel>) }), fail);
 }
 
 const categoryMap = (categories: FinanceCategory[]) => Object.fromEntries(categories.map((category) => [category.id, category]));
@@ -160,6 +160,10 @@ export function reorderFinanceBudgets(uid: string, ids: string[]) {
 
 export function resetFinanceCategories(uid: string, categories: FinanceCategory[]) {
   return setDoc(settingsRef(uid), { categories: categoryMap(resetCategories(categories)) }, { mergeFields: ["categories"] });
+}
+
+export function setFinanceBudgetsLocked(uid: string, locked: boolean) {
+  return setDoc(settingsRef(uid), { budgetsLocked: locked }, { merge: true });
 }
 
 export function setFinanceAccountsLocked(uid: string, locked: boolean) {

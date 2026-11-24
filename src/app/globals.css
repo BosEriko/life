@@ -540,6 +540,16 @@ body.todo-board-grabbing * {
   outline: none;
 }
 
+.budget-card {
+  transition: border-color 150ms ease;
+}
+
+.budget-card:hover,
+.budget-card:focus-visible {
+  border-color: var(--card-accent);
+  outline: none;
+}
+
 .debt-person-row {
   transition: box-shadow 150ms ease;
 }
