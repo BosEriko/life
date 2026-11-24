@@ -32,6 +32,15 @@ export const MISSING_CATEGORY_ID = "others--missing";
 export const DELETED_CATEGORY_ID = "others--deleted-category";
 const DELETED_FALLBACK = DEFAULT_CATEGORIES.find((category) => category.id === DELETED_CATEGORY_ID)!;
 
+export const TRANSFER_BADGE = { color: "#607D8B", icon: "right-left" };
+export const DEBT_BADGE = { color: "#8D6E63", icon: "handshake" };
+
+export function recordBadge(categories: FinanceCategory[], record: { type: string; category: string }) {
+  if (record.type === "transfer") return TRANSFER_BADGE;
+  if (record.type === "debt") return DEBT_BADGE;
+  return resolveCategory(categories, record.category);
+}
+
 export function isLockedCategory(id: string) {
   return id === DELETED_CATEGORY_ID;
 }

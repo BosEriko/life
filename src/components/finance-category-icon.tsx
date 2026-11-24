@@ -142,21 +142,8 @@ import {
   SafetyOutlined,
   WalletOutlined,
   DollarOutlined,
-  InteractionOutlined,
-  SwapOutlined,
-  TagOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-
-const ICONS: Record<string, typeof TagOutlined> = {
-  Transfer: SwapOutlined,
-  Debt: InteractionOutlined,
-};
-
-export function CategoryIcon({ category, style }: { category: string; style?: CSSProperties }) {
-  const Icon = ICONS[category] ?? TagOutlined;
-  return <Icon aria-hidden style={style} />;
-}
 
 const CATEGORY_ICON_LIST: IconDefinition[] = [
   faUtensils,

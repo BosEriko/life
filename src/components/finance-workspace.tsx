@@ -19,12 +19,13 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { FinanceOverview } from "@/components/finance-overview";
 import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 import { DebtProgressCard } from "@/components/debt-progress-card";
-import { AccountBadge, AccountTypeIcon, CategoryBadge, CategoryIcon } from "@/components/finance-category-icon";
-import { categoryPath, resolveCategory } from "@/lib/finance-categories";
+import { AccountBadge, AccountTypeIcon, CategoryBadge } from "@/components/finance-category-icon";
+import { categoryPath, recordBadge, resolveCategory } from "@/lib/finance-categories";
 import { mergeSubsetOrder } from "@/lib/reorder";
 
 const DEBT_VERBS: Record<DebtAction, string> = { borrow: "Borrowed from", repay: "Repaid", lend: "Lent to", collect: "Collected from" };
 import { SortableList } from "@/components/sortable-list";
+import { FinanceEntryRow } from "@/components/finance-entry-row";
 import { Tip } from "@/components/tip";
 import { EmptyState } from "@/components/empty-state";
 
@@ -90,21 +91,21 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   const lastDebtRecord = new Map<string, string>();
   for (const record of allRecords) if (record.type === "debt" && record.destinationId && record.occurredAt > (lastDebtRecord.get(record.destinationId) ?? "")) lastDebtRecord.set(record.destinationId, record.occurredAt);
   const accountRow = (account: FinanceAccount, draggable = true) => (
-  <Flex align="center" gap={12}>
-    {draggable && handle}
-    <AccountBadge account={account} size={36} />
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere" }}>{account.name}</Typography.Text>
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{account.type} · {account.currency}{account.provider ? ` · ${account.provider}` : ""}{isDebtAccount(account) ? ` · ${debtStatus(account)}` : account.excludeFromStatistics ? " · Excluded from statistics" : ""}{isDebtAccount(account) && !draggable ? ` · ${lastDebtRecord.has(account.id) ? `Last record ${dayjs(lastDebtRecord.get(account.id)).format("MMM D, YYYY")}` : "No records yet"}` : ""}</Typography.Text>
-      {account.source === "wise" && <Tag icon={<SyncOutlined />} color="green" title="Synced from Wise" style={{ marginLeft: 8 }}>Synced</Tag>}
-      {account.hiddenAt && <Tag style={{ marginLeft: 8 }}>Hidden</Tag>}
-    </div>
-    <Typography.Text strong style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", minWidth: 0, overflowWrap: "anywhere", textAlign: "right" }}>{money(account.balanceMinor, account.currency)}</Typography.Text>
-    <Flex gap={2} onKeyDown={(event) => event.stopPropagation()}>
-      <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${account.name}`} onClick={(event) => { event.stopPropagation(); setEditingAccount(account); }} />
-      {isDebtAccount(account) ? <Tip title={account.hiddenAt ? "Unhide" : "Hide"}><Button type="text" size="small" icon={account.hiddenAt ? <EyeOutlined /> : <EyeInvisibleOutlined />} aria-label={`${account.hiddenAt ? "Unhide" : "Hide"} ${account.name}`} onClick={() => toggleHidden(account)} /></Tip> : <ConfirmDeleteButton ariaLabel={`Delete ${account.name}`} tooltip="Delete account" hint="Tap again to delete this account. Existing records will be kept." onConfirm={() => removeAccount(account)} />}
-    </Flex>
-  </Flex>
+    <FinanceEntryRow
+      icon={<>{draggable && handle}<AccountBadge account={account} size={20} /></>}
+      title={account.name}
+      meta={`${account.type} · ${account.currency}${account.provider ? ` · ${account.provider}` : ""}${isDebtAccount(account) ? ` · ${debtStatus(account)}` : account.excludeFromStatistics ? " · Excluded from statistics" : ""}${isDebtAccount(account) && !draggable ? ` · ${lastDebtRecord.has(account.id) ? `Last record ${dayjs(lastDebtRecord.get(account.id)).format("MMM D, YYYY")}` : "No records yet"}` : ""}`}
+      amount={money(account.balanceMinor, account.currency)}
+      actions={<>
+        <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${account.name}`} onClick={(event) => { event.stopPropagation(); setEditingAccount(account); }} />
+        {isDebtAccount(account) ? <Tip title={account.hiddenAt ? "Unhide" : "Hide"}><Button type="text" size="small" icon={account.hiddenAt ? <EyeOutlined /> : <EyeInvisibleOutlined />} aria-label={`${account.hiddenAt ? "Unhide" : "Hide"} ${account.name}`} onClick={(event) => { event.stopPropagation(); toggleHidden(account); }} /></Tip> : <ConfirmDeleteButton ariaLabel={`Delete ${account.name}`} tooltip="Delete account" hint="Tap again to delete this account. Existing records will be kept." onConfirm={() => removeAccount(account)} />}
+      </>}
+    >
+      {(account.source === "wise" || account.hiddenAt) && <Flex gap={4} wrap style={{ marginTop: 8 }}>
+        {account.source === "wise" && <Tag icon={<SyncOutlined />} color="green" title="Synced from Wise" style={{ marginInlineEnd: 0 }}>Synced</Tag>}
+        {account.hiddenAt && <Tag style={{ marginInlineEnd: 0 }}>Hidden</Tag>}
+      </Flex>}
+    </FinanceEntryRow>
   );
   const accountCardStyle = (account: FinanceAccount) => ({ minWidth: 0, position: "relative" as const, overflow: "hidden", background: account.color, borderColor: account.color, color: accountTextColor(account.color) });
   const compactCards = screens.sm === false;
@@ -148,22 +149,21 @@ export function FinanceWorkspace({ view }: { view: "dashboard" | "accounts" | "r
   ).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id));
   const recordItem = (record: FinanceRecord, withDate = false) => (
     <div key={record.id} style={{ padding: "14px 16px", borderRadius: token.borderRadius, background: token.colorFillSecondary }}>
-              <Flex justify="space-between" align="start" gap={12} wrap>
-                <div style={{ minWidth: 0, flex: "1 1 180px", overflowWrap: "anywhere" }}>
-                  <Typography.Text strong>{record.type === "transfer" || record.type === "debt" ? <CategoryIcon category={record.type === "transfer" ? "Transfer" : "Debt"} style={{ marginRight: 6 }} /> : <span style={{ display: "inline-flex", verticalAlign: "-4px", marginRight: 6 }}><CategoryBadge category={resolveCategory(financeCategories, record.category)} size={18} /></span>}{record.type === "debt" && record.debtAction ? `${DEBT_VERBS[record.debtAction]} ${accountNames.get(record.destinationId ?? "") ?? "Unknown account"}` : categoryName(record)}</Typography.Text>
-                  <div><Typography.Text type="secondary">{accountNames.get(record.accountId) ?? "Unknown account"}{record.destinationId && record.type !== "debt" ? ` → ${accountNames.get(record.destinationId) ?? "Unknown account"}` : ""} · {dayjs(record.occurredAt).format(withDate ? "MMM D, YYYY · h:mm A" : "h:mm A")}</Typography.Text></div>
-                  {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
-                  {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
-                </div>
-                <Flex align="center" gap={8}>
-                  <Typography.Text strong style={{ fontSize: 16, overflowWrap: "anywhere", color: recordSign(record) === "+" ? token.colorSuccess : recordSign(record) === "−" ? token.colorError : token.colorText }}>{recordSign(record)}{money(record.amountMinor, record.currency)}</Typography.Text>
-                  <Flex gap={2}>
-                    <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${categoryName(record)} record`} onClick={() => setEditingRecord(record)} />
-                    <ConfirmDeleteButton ariaLabel={`Delete ${categoryName(record)} record`} tooltip="Delete record" hint="Tap again to delete this record" onConfirm={() => removeRecord(record)} />
-                  </Flex>
-                </Flex>
-              </Flex>
-            </div>
+      <FinanceEntryRow
+        icon={<CategoryBadge category={recordBadge(financeCategories, record)} size={20} />}
+        title={record.type === "debt" && record.debtAction ? `${DEBT_VERBS[record.debtAction]} ${accountNames.get(record.destinationId ?? "") ?? "Unknown account"}` : categoryName(record)}
+        meta={`${accountNames.get(record.accountId) ?? "Unknown account"}${record.destinationId && record.type !== "debt" ? ` → ${accountNames.get(record.destinationId) ?? "Unknown account"}` : ""} · ${dayjs(record.occurredAt).format(withDate ? "MMM D, YYYY · h:mm A" : "h:mm A")}`}
+        amount={`${recordSign(record)}${money(record.amountMinor, record.currency)}`}
+        amountColor={recordSign(record) === "+" ? token.colorSuccess : recordSign(record) === "−" ? token.colorError : token.colorText}
+        actions={<>
+          <Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${categoryName(record)} record`} onClick={() => setEditingRecord(record)} />
+          <ConfirmDeleteButton ariaLabel={`Delete ${categoryName(record)} record`} tooltip="Delete record" hint="Tap again to delete this record" onConfirm={() => removeRecord(record)} />
+        </>}
+      >
+        {record.description && <Typography.Paragraph style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{record.description}</Typography.Paragraph>}
+        {record.labels.length > 0 && <Flex gap={4} wrap style={{ marginTop: 8 }}>{record.labels.map((label) => <Tag key={label} style={{ maxWidth: "100%", whiteSpace: "normal", overflowWrap: "anywhere" }}>{label}</Tag>)}</Flex>}
+      </FinanceEntryRow>
+    </div>
   );
   const person = personId ? debtAccounts.find((account) => account.id === personId) ?? null : null;
   const personRecords = person ? allRecords.filter((record) => record.type === "debt" && record.destinationId === person.id).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || a.id.localeCompare(b.id)) : [];
