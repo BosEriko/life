@@ -17,10 +17,10 @@ const RANGE_OPTIONS = [
 
 const PRESET_DAYS = ["7", "30", "90", "365"] as const;
 
-export function useDateRange(initialDays = 30) {
+export function useDateRange(initial: number | "month" = 30) {
   return useState<DateRange>(() => {
     const now = dayjs(todayKey());
-    return [now.subtract(initialDays - 1, "day"), now];
+    return [initial === "month" ? now.startOf("month") : now.subtract(initial - 1, "day"), now];
   });
 }
 
@@ -40,9 +40,9 @@ export function RangeFilter({
   const today = dayjs(todayKey());
   const [start, end] = range;
   const [custom, setCustom] = useState(false);
-  const [month, setMonth] = useState(false);
   const endIsToday = end.isSame(today, "day");
   const isMonth = thisMonth && endIsToday && start != null && start.isSame(today.startOf("month"), "day");
+  const [month, setMonth] = useState(isMonth);
   const presetValue = endIsToday
     ? start == null
       ? "all"

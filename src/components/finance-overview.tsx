@@ -41,7 +41,7 @@ export function FinanceOverview() {
   const isDark = useIsDark();
   const mode = isDark ? "dark" : "light";
   const { financeAccounts, financeRecords, financeCategories, cutoff } = useHealthData();
-  const [range, setRange] = useDateRange();
+  const [range, setRange] = useDateRange("month");
   const [currencyChoice, setCurrencyChoice] = useState<string | null>(null);
   const [rangeStart, rangeEnd] = range;
   const needHistory = rangeStart === null || rangeStart.format("YYYY-MM-DD") < cutoff;
