@@ -75,7 +75,6 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
     if (!user || !valid) return;
     const saved = { ...draft, id: draft.id || crypto.randomUUID(), title: draft.title.trim(), description: draft.description.trim(), subtasks: (draft.subtasks ?? []).map((subtask) => ({ ...subtask, title: subtask.title.trim() })) };
     saveTask(user.uid, saved).catch(() => message.error("Could not save task."));
-    setDraft({ ...draft, title: "", description: "" });
     onSaved(saved);
     message.success(navigator.onLine ? "Task saved" : "Saved offline · will sync");
   }
@@ -139,7 +138,7 @@ function TaskForm({ initial, onSaved, onCancel }: { initial: Task; onSaved: (tas
 export function AddTaskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   return (
-    <AppModal open={open} centered title={<><ScheduleOutlined style={{ marginRight: 8 }} />New task</>} footer={null} onCancel={onClose} destroyOnHidden>
+    <AppModal open={open} centered title={<><ScheduleOutlined style={{ marginRight: 8 }} />New task</>} footer={null} onCancel={onClose}>
       {open && <TaskForm initial={newTask(todayKey())} onSaved={onClose} />}
       {pathname !== "/journal/tasks" && (
         <Flex justify="center" style={{ marginTop: 12 }}>

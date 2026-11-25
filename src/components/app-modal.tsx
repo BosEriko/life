@@ -2,6 +2,6 @@
 
 import { Modal, type ModalProps } from "antd";
 
-export function AppModal({ rootClassName, ...props }: ModalProps) {
-  return <Modal centered {...props} rootClassName={["app-modal", rootClassName].filter(Boolean).join(" ")} />;
+export function AppModal({ rootClassName, destroyOnHidden = true, ...props }: ModalProps) {
+  return <Modal centered destroyOnHidden={destroyOnHidden} {...props} rootClassName={["app-modal", rootClassName].filter(Boolean).join(" ")} />;
 }
