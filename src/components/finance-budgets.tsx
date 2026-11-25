@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { Alert, App, Button, Card, ColorPicker, Empty, Flex, Form, Grid, InputNumber, Input, Segmented, Select, Spin, Switch, Tag, Typography, theme } from "antd";
-import { AppstoreOutlined, EditOutlined, FundOutlined, HolderOutlined, UnorderedListOutlined, LeftOutlined, LockOutlined, PlusOutlined, RightOutlined, TransactionOutlined, UnlockOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, CheckCircleOutlined, CloseCircleOutlined, EditOutlined, ExclamationCircleOutlined, FundOutlined, HolderOutlined, UnorderedListOutlined, LeftOutlined, LockOutlined, PlusOutlined, RightOutlined, TransactionOutlined, UnlockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -22,7 +22,7 @@ import { FinanceEntryRow } from "@/components/finance-entry-row";
 import { LabelMultiSelect, LabelTags } from "@/components/finance-label-select";
 import { LABEL_COLORS, recordLabels, type FinanceLabel } from "@/lib/finance-labels";
 import { FinanceRecordModal, accountOption } from "@/components/finance-record-modal";
-import { accountTextColor, CURRENCIES, currencyDigits, isDebtAccount, money, sortAccounts, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
+import { accountTextColor, CURRENCIES, FINANCE_STATUS_COLORS, surfaceColor, currencyDigits, isDebtAccount, money, sortAccounts, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { categoryPath, mainCategory, resolveCategory, type FinanceCategory } from "@/lib/finance-categories";
 import { BUDGET_PERIOD_LABELS, BUDGET_PERIODS, budgetPeriodBounds, budgetProgress, budgetRecords, budgetValidation, type BudgetPeriod, type BudgetScope, type BudgetStatus, type FinanceBudget } from "@/lib/finance-budgets";
 import { mergeById } from "@/lib/merge-records";
@@ -31,7 +31,7 @@ import { todayKey } from "@/models/users/dailies";
 
 const BudgetPaceChart = dynamic(() => import("@/components/finance-overview-charts").then((mod) => mod.BudgetPaceChart), { ssr: false, loading: () => <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> });
 
-const TOTAL_COLORS: Record<BudgetStatus, string> = { "on-track": "#2f6b45", under: "#2f6b45", "at-risk": "#7a5212", over: "#8c442c" };
+const TOTAL_COLORS: Record<BudgetStatus, string> = { "on-track": FINANCE_STATUS_COLORS.good, under: FINANCE_STATUS_COLORS.good, "at-risk": FINANCE_STATUS_COLORS.fair, over: FINANCE_STATUS_COLORS.low };
 
 const STATUS_LABELS: Record<BudgetStatus, string> = { "on-track": "On track", "at-risk": "At risk", over: "Over budget", under: "Within budget" };
 
@@ -88,10 +88,11 @@ function ProgressBar({ ratio, expected, color, height = 10, solid = false }: { r
   );
 }
 
-function StatusPill({ status, color }: { status: BudgetStatus; color: string }) {
+function StatusPill({ status }: { status: BudgetStatus }) {
+  const Icon = status === "over" ? CloseCircleOutlined : status === "at-risk" ? ExclamationCircleOutlined : CheckCircleOutlined;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "1px 10px", borderRadius: 999, background: "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
-      <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: color, boxShadow: "0 0 0 1.5px rgba(255, 255, 255, 0.85)" }} />
+      <Icon aria-hidden />
       {STATUS_LABELS[status]}
     </span>
   );
@@ -99,7 +100,7 @@ function StatusPill({ status, color }: { status: BudgetStatus; color: string }) 
 
 function PaceLine({ budget, progress, compact = false, solid = false }: { budget: FinanceBudget; progress: ReturnType<typeof budgetProgress>; compact?: boolean; solid?: boolean }) {
   const fontSize = compact ? 12 : 13;
-  const muted = solid ? { color: "inherit", opacity: 0.85 } : {};
+  const muted = solid ? { color: "inherit" } : {};
   const type = solid ? undefined : "secondary" as const;
   if (progress.past) return <Typography.Text type={type} style={{ fontSize, ...muted }}>{progress.leftMinor >= 0 ? `Finished ${money(progress.leftMinor, budget.currency)} under` : `Went ${money(-progress.leftMinor, budget.currency)} over`}</Typography.Text>;
   if (progress.leftMinor < 0) return <Typography.Text type={solid ? undefined : "danger"} strong={solid} style={{ fontSize, ...(solid ? { color: "inherit" } : {}) }}>Over by {money(-progress.leftMinor, budget.currency)}</Typography.Text>;
@@ -212,7 +213,7 @@ function BudgetRecordsModal({ budget, onClose }: { budget: FinanceBudget; onClos
       </Flex>
       <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 8 }}>
         <Typography.Text style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(spent, budget.currency)} <Typography.Text type="secondary" style={{ fontSize: 14, fontWeight: 400 }}>of {money(budget.amountMinor, budget.currency)}</Typography.Text></Typography.Text>
-        <Tag color={statusColor(progress.status)} style={{ marginInlineEnd: 0 }}>{STATUS_LABELS[progress.status]}</Tag>
+        <Tag color={statusColor(progress.status)} icon={progress.status === "over" ? <CloseCircleOutlined /> : progress.status === "at-risk" ? <ExclamationCircleOutlined /> : <CheckCircleOutlined />} style={{ marginInlineEnd: 0 }}>{STATUS_LABELS[progress.status]}</Tag>
       </Flex>
       <ProgressBar ratio={progress.ratio} expected={progress.paced ? progress.elapsed / progress.total : undefined} color={budget.color} />
       <Flex justify="space-between" align="start" gap={8} wrap style={{ marginTop: 10, marginBottom: 16 }}>
@@ -251,9 +252,9 @@ const VIEW_KEY = "finance-budgets-view";
 
 function loadView(): "cards" | "list" {
   try {
-    return window.localStorage.getItem(VIEW_KEY) === "list" ? "list" : "cards";
+    return window.localStorage.getItem(VIEW_KEY) === "cards" ? "cards" : "list";
   } catch {
-    return "cards";
+    return "list";
   }
 }
 
@@ -326,8 +327,11 @@ export function FinanceBudgets() {
     </Flex>
   );
 
-  const muted = { color: "inherit", opacity: 0.85 };
-  const surface = (budget: FinanceBudget): CSSProperties => ({ position: "relative", overflow: "hidden", background: budget.color, borderColor: budget.color, color: accountTextColor(budget.color), cursor: "pointer" });
+  const muted = { color: "inherit" };
+  const surface = (budget: FinanceBudget): CSSProperties => {
+    const fill = surfaceColor(budget.color);
+    return { position: "relative", overflow: "hidden", background: fill, borderColor: fill, color: accountTextColor(fill), cursor: "pointer" };
+  };
   const listBody = (budget: FinanceBudget) => {
     const state = states.get(budget.id)!;
     const { progress } = state;
@@ -343,8 +347,8 @@ export function FinanceBudgets() {
             </div>
           </Flex>
           <Flex align="center" gap={8} style={{ marginLeft: "auto" }}>
-            <span style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><strong>{money(state.spent, budget.currency)}</strong> <span style={{ fontSize: 12, opacity: 0.85 }}>/ {money(budget.amountMinor, budget.currency)}</span></span>
-            <StatusPill status={progress.status} color={statusColor(progress.status)} />
+            <span style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><strong>{money(state.spent, budget.currency)}</strong> <span style={{ fontSize: 12, }}>/ {money(budget.amountMinor, budget.currency)}</span></span>
+            <StatusPill status={progress.status} />
             {actions(budget)}
           </Flex>
         </Flex>
@@ -370,8 +374,8 @@ export function FinanceBudgets() {
             {actions(budget)}
           </Flex>
           <Flex align="baseline" justify="space-between" gap={8} wrap>
-            <span style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(state.spent, budget.currency)} <span style={{ fontSize: 13, fontWeight: 400, opacity: 0.85 }}>of {money(budget.amountMinor, budget.currency)}</span></span>
-            <StatusPill status={progress.status} color={statusColor(progress.status)} />
+            <span style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(state.spent, budget.currency)} <span style={{ fontSize: 13, fontWeight: 400 }}>of {money(budget.amountMinor, budget.currency)}</span></span>
+            <StatusPill status={progress.status} />
           </Flex>
           <ProgressBar ratio={progress.ratio} expected={progress.paced ? progress.elapsed / progress.total : undefined} solid />
           <Flex justify="space-between" align="start" gap={8} wrap>
@@ -402,8 +406,8 @@ export function FinanceBudgets() {
             {groupKeys.length > 1 && <Segmented size="small" className="solid-surface-segmented" value={totalKey} onChange={(value) => setTotalChoice(value as string)} options={groupKeys.map((key) => { const [period, currency] = key.split("|"); return { value: key, label: `${BUDGET_PERIOD_LABELS[period as BudgetPeriod]}${multipleCurrencies ? ` ${currency}` : ""}` }; })} />}
           </Flex>
           <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(totalSpent, totalCurrency)} <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.85 }}>of {money(totalAmount, totalCurrency)}</span></span>
-            <span style={{ padding: "2px 10px", borderRadius: 999, background: "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600 }}>{STATUS_LABELS[totalProgress.status]}</span>
+            <span style={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(totalSpent, totalCurrency)} <span style={{ fontSize: 14, fontWeight: 400 }}>of {money(totalAmount, totalCurrency)}</span></span>
+            <StatusPill status={totalProgress.status} />
           </Flex>
           <ProgressBar ratio={totalProgress.ratio} expected={totalProgress.paced ? totalProgress.elapsed / totalProgress.total : undefined} height={12} solid />
           <Flex justify="space-between" align="start" gap={8} wrap style={{ marginTop: 10 }}>

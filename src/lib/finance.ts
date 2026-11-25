@@ -125,9 +125,51 @@ export function emergencyFundOutlook(fund: Pick<EmergencyFund, "balance" | "aver
   return { target, gap, saving, savingsRate, goalMonth };
 }
 
+export const FINANCE_STATUS_COLORS = { good: "#2f6b45", fair: "#7a5212", low: "#8c442c", neutral: "#3e5a4a" };
+
 export function accountTextColor(color: string) {
   const dark = "#172019";
   return apcaContrast("#ffffff", color) >= apcaContrast(dark, color) ? "#ffffff" : dark;
+}
+
+export function readableContrast(color: string) {
+  return Math.round(Math.max(apcaContrast("#ffffff", color), apcaContrast("#172019", color)) * 100);
+}
+
+function hexToHsl(hex: string): [number, number, number] {
+  const [r, g, b] = [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h / 6, s, l];
+}
+
+function hslToHex(h: number, s: number, l: number) {
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const channel = (t: number) => {
+    const x = t < 0 ? t + 1 : t > 1 ? t - 1 : t;
+    const v = x < 1 / 6 ? p + (q - p) * 6 * x : x < 1 / 2 ? q : x < 2 / 3 ? p + (q - p) * (2 / 3 - x) * 6 : p;
+    return Math.round(v * 255).toString(16).padStart(2, "0");
+  };
+  return `#${channel(h + 1 / 3)}${channel(h)}${channel(h - 1 / 3)}`.toUpperCase();
+}
+
+export function surfaceColor(color: string) {
+  if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
+  const [h, s] = hexToHsl(color);
+  let l = hexToHsl(color)[2];
+  const softened = s * 0.82;
+  let out = hslToHex(h, softened, l);
+  while (readableContrast(out) < 70 && l > 0.05) {
+    l = Math.max(0.05, l - 0.03);
+    out = hslToHex(h, softened, l);
+  }
+  return out;
 }
 
 export function accountValidation(account: FinanceAccount) {

@@ -2,10 +2,10 @@
 
 import { Card, Flex, Typography, theme } from "antd";
 import { InfoCircleOutlined, InteractionOutlined } from "@ant-design/icons";
-import { accountTextColor, debtProgress, money, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
+import { accountTextColor, debtProgress, money, type FinanceAccount, type FinanceRecord, FINANCE_STATUS_COLORS } from "@/lib/finance";
 import { Tip } from "@/components/tip";
 
-const STOPS = ["#8c442c", "#7a5212", "#2f6b45"];
+const STOPS = [FINANCE_STATUS_COLORS.low, FINANCE_STATUS_COLORS.fair, FINANCE_STATUS_COLORS.good];
 
 function progressColor(progress: number) {
   const scaled = Math.min(1, Math.max(0, progress)) * (STOPS.length - 1);

@@ -4,12 +4,11 @@ import { App, Button, Card, Dropdown, Flex, Typography, theme } from "antd";
 import { CheckCircleOutlined, DownOutlined, ExclamationCircleOutlined, FieldTimeOutlined, InfoCircleOutlined, SafetyOutlined, ShoppingOutlined, WalletOutlined, WarningOutlined } from "@ant-design/icons";
 import { useAuth } from "@/components/auth-provider";
 import { useHealthData } from "@/components/health-data-provider";
-import { accountTextColor, EMERGENCY_FUND_AVERAGE_MONTHS, EMERGENCY_FUND_MONTHS, emergencyFund, money, type EmergencyFund } from "@/lib/finance";
+import { accountTextColor, EMERGENCY_FUND_AVERAGE_MONTHS, FINANCE_STATUS_COLORS, EMERGENCY_FUND_MONTHS, emergencyFund, money, type EmergencyFund } from "@/lib/finance";
 import { setEmergencyFundAverageMonths, setEmergencyFundMonths } from "@/models/users/finance";
 import { Tip } from "@/components/tip";
 import { todayKey } from "@/models/users/dailies";
 
-const STATUS_COLORS = { good: "#2f6b45", fair: "#7a5212", low: "#8c442c", neutral: "#3e5a4a" };
 
 export function EmergencyFundBanner() {
   const { message } = App.useApp();
@@ -29,7 +28,7 @@ export function EmergencyFundBanner() {
 export function EmergencyFundCard({ fund, onGoal, onPeriod, ownerName }: { fund: EmergencyFund; onGoal?: (months: number) => void; onPeriod?: (months: number) => void; ownerName?: string }) {
   const { token } = theme.useToken();
   const { currency, accountCount: count, balance, monthsCovered, average, months, shown, status, goal, period } = fund;
-  const color = STATUS_COLORS[status];
+  const color = FINANCE_STATUS_COLORS[status];
   const Icon = status === "good" ? CheckCircleOutlined : status === "fair" ? ExclamationCircleOutlined : status === "low" ? WarningOutlined : CheckCircleOutlined;
   const label = status === "good" ? "Healthy" : status === "fair" ? "Building" : status === "low" ? "Low" : null;
 
