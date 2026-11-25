@@ -541,13 +541,29 @@ body.todo-board-grabbing * {
 }
 
 .budget-card {
-  transition: border-color 150ms ease;
+  transition: box-shadow 150ms ease;
 }
 
 .budget-card:hover,
 .budget-card:focus-visible {
-  border-color: var(--card-accent);
+  box-shadow: 0 0 0 2px var(--card-ring) !important;
   outline: none;
+}
+
+.solid-surface-actions .ant-btn-variant-text:not(:disabled) {
+  color: inherit;
+}
+
+.solid-surface-actions .ant-btn-variant-text:not(:disabled):hover {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.solid-surface-segmented.ant-segmented {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.solid-surface-segmented .ant-segmented-item {
+  color: inherit;
 }
 
 .debt-person-row {

@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { Alert, App, Button, Card, ColorPicker, Empty, Flex, Form, Grid, InputNumber, Input, Segmented, Select, Spin, Switch, Tag, Typography, theme } from "antd";
-import { EditOutlined, HolderOutlined, LeftOutlined, LockOutlined, PlusOutlined, RightOutlined, TransactionOutlined, UnlockOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, EditOutlined, FundOutlined, HolderOutlined, UnorderedListOutlined, LeftOutlined, LockOutlined, PlusOutlined, RightOutlined, TransactionOutlined, UnlockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -11,19 +11,18 @@ import { useHealthData } from "@/components/health-data-provider";
 import { useFinanceHistory } from "@/components/use-health-history";
 import { PageHeading } from "@/components/page-heading";
 import { EmptyState } from "@/components/empty-state";
-import { EmergencyFundBanner } from "@/components/emergency-fund-banner";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { SortableList } from "@/components/sortable-list";
 import { Tip } from "@/components/tip";
 import { useIsDark } from "@/components/theme-provider";
-import { CategoryBadge } from "@/components/finance-category-icon";
+import { CategoryBadge, CategoryGlyph } from "@/components/finance-category-icon";
 import { CategoryMultiSelect } from "@/components/finance-category-select";
 import { FinanceIconPicker } from "@/components/finance-icon-picker";
 import { FinanceEntryRow } from "@/components/finance-entry-row";
 import { LabelMultiSelect, LabelTags } from "@/components/finance-label-select";
 import { LABEL_COLORS, recordLabels, type FinanceLabel } from "@/lib/finance-labels";
 import { FinanceRecordModal, accountOption } from "@/components/finance-record-modal";
-import { CURRENCIES, currencyDigits, isDebtAccount, money, sortAccounts, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
+import { accountTextColor, CURRENCIES, currencyDigits, isDebtAccount, money, sortAccounts, type FinanceAccount, type FinanceRecord } from "@/lib/finance";
 import { categoryPath, mainCategory, resolveCategory, type FinanceCategory } from "@/lib/finance-categories";
 import { BUDGET_PERIOD_LABELS, BUDGET_PERIODS, budgetPeriodBounds, budgetProgress, budgetRecords, budgetValidation, type BudgetPeriod, type BudgetScope, type BudgetStatus, type FinanceBudget } from "@/lib/finance-budgets";
 import { mergeById } from "@/lib/merge-records";
@@ -31,6 +30,8 @@ import { deleteFinanceBudget, deleteFinanceRecord, reorderFinanceBudgets, saveFi
 import { todayKey } from "@/models/users/dailies";
 
 const BudgetPaceChart = dynamic(() => import("@/components/finance-overview-charts").then((mod) => mod.BudgetPaceChart), { ssr: false, loading: () => <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex> });
+
+const TOTAL_COLORS: Record<BudgetStatus, string> = { "on-track": "#2f6b45", under: "#2f6b45", "at-risk": "#7a5212", over: "#8c442c" };
 
 const STATUS_LABELS: Record<BudgetStatus, string> = { "on-track": "On track", "at-risk": "At risk", over: "Over budget", under: "Within budget" };
 
@@ -64,26 +65,50 @@ function budgetSummary(budget: FinanceBudget, categories: FinanceCategory[], acc
   return [list(names, "All categories"), list(accountNames, "All accounts"), ...(recordLabels(labels, budget.labels).length ? [list(recordLabels(labels, budget.labels).map((label) => label.name), "")] : []), budget.currency].join(" · ");
 }
 
-function ProgressBar({ ratio, expected, color, height = 10 }: { ratio: number; expected?: number; color: string; height?: number }) {
+function defaultCurrencyOf(accounts: FinanceAccount[]) {
+  const counts = new Map<string, number>();
+  for (const account of accounts) counts.set(account.currency, (counts.get(account.currency) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "PHP";
+}
+
+function PaceText({ budget, progress }: { budget: FinanceBudget; progress: ReturnType<typeof budgetProgress> }) {
+  if (progress.leftMinor < 0) return <>Over by {money(-progress.leftMinor, budget.currency)}</>;
+  if (progress.leftMinor === 0) return <>No budget left</>;
+  if (budget.period === "daily") return <>{money(progress.leftMinor, budget.currency)} left today</>;
+  return <>{money(progress.dailyAllowanceMinor, budget.currency)}/day · {progress.daysLeft} {progress.daysLeft === 1 ? "day" : "days"} left</>;
+}
+
+function ProgressBar({ ratio, expected, color, height = 10, solid = false }: { ratio: number; expected?: number; color?: string; height?: number; solid?: boolean }) {
   const { token } = theme.useToken();
   return (
-    <div aria-hidden style={{ position: "relative", height, borderRadius: height / 2, background: token.colorFillSecondary }}>
-      <div style={{ width: `${Math.min(100, Math.max(ratio > 0 ? 2 : 0, ratio * 100))}%`, height: "100%", borderRadius: height / 2, background: color }} />
-      {expected !== undefined && <div title="Where you should be today" style={{ position: "absolute", top: -3, bottom: -3, left: `calc(${Math.min(100, expected * 100)}% - 1px)`, width: 2, borderRadius: 1, background: token.colorText }} />}
+    <div aria-hidden style={{ position: "relative", height, borderRadius: height / 2, background: solid ? "rgba(0, 0, 0, 0.22)" : token.colorFillSecondary }}>
+      <div style={{ width: `${Math.min(100, Math.max(ratio > 0 ? 2 : 0, ratio * 100))}%`, height: "100%", borderRadius: height / 2, background: solid ? "currentColor" : color }} />
+      {expected !== undefined && <div title="Where you should be today" style={{ position: "absolute", top: -3, bottom: -3, left: `calc(${Math.min(100, expected * 100)}% - 1px)`, width: 2, borderRadius: 1, background: solid ? "currentColor" : token.colorText, opacity: solid ? 0.6 : 1 }} />}
     </div>
   );
 }
 
-function PaceLine({ budget, progress, compact = false }: { budget: FinanceBudget; progress: ReturnType<typeof budgetProgress>; compact?: boolean }) {
+function StatusPill({ status, color }: { status: BudgetStatus; color: string }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "1px 10px", borderRadius: 999, background: "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+      <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: color, boxShadow: "0 0 0 1.5px rgba(255, 255, 255, 0.85)" }} />
+      {STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+function PaceLine({ budget, progress, compact = false, solid = false }: { budget: FinanceBudget; progress: ReturnType<typeof budgetProgress>; compact?: boolean; solid?: boolean }) {
   const fontSize = compact ? 12 : 13;
-  if (progress.past) return <Typography.Text type="secondary" style={{ fontSize }}>{progress.leftMinor >= 0 ? `Finished ${money(progress.leftMinor, budget.currency)} under` : `Went ${money(-progress.leftMinor, budget.currency)} over`}</Typography.Text>;
-  if (progress.leftMinor < 0) return <Typography.Text type="danger" style={{ fontSize }}>Over by {money(-progress.leftMinor, budget.currency)}</Typography.Text>;
-  if (progress.leftMinor === 0) return <Typography.Text type="secondary" style={{ fontSize }}>No budget left</Typography.Text>;
+  const muted = solid ? { color: "inherit", opacity: 0.85 } : {};
+  const type = solid ? undefined : "secondary" as const;
+  if (progress.past) return <Typography.Text type={type} style={{ fontSize, ...muted }}>{progress.leftMinor >= 0 ? `Finished ${money(progress.leftMinor, budget.currency)} under` : `Went ${money(-progress.leftMinor, budget.currency)} over`}</Typography.Text>;
+  if (progress.leftMinor < 0) return <Typography.Text type={solid ? undefined : "danger"} strong={solid} style={{ fontSize, ...(solid ? { color: "inherit" } : {}) }}>Over by {money(-progress.leftMinor, budget.currency)}</Typography.Text>;
+  if (progress.leftMinor === 0) return <Typography.Text type={type} style={{ fontSize, ...muted }}>No budget left</Typography.Text>;
   const allowance = budget.period === "daily" ? `${money(progress.leftMinor, budget.currency)} left today` : `${money(progress.dailyAllowanceMinor, budget.currency)}/day for the next ${progress.daysLeft} ${progress.daysLeft === 1 ? "day" : "days"}`;
   return (
     <Flex vertical gap={2}>
-      <Typography.Text strong style={{ fontSize }}>{allowance}</Typography.Text>
-      {progress.paced && <Typography.Text type="secondary" style={{ fontSize: 12 }}>On pace for {money(progress.projectedMinor, budget.currency)}{progress.early ? " · early estimate" : ""}</Typography.Text>}
+      <Typography.Text strong style={{ fontSize, ...(solid ? { color: "inherit" } : {}) }}>{allowance}</Typography.Text>
+      {progress.paced && <Typography.Text type={type} style={{ fontSize: 12, ...muted }}>On pace for {money(progress.projectedMinor, budget.currency)}{progress.early ? " · early estimate" : ""}</Typography.Text>}
     </Flex>
   );
 }
@@ -222,6 +247,24 @@ function BudgetRecordsModal({ budget, onClose }: { budget: FinanceBudget; onClos
   </>;
 }
 
+const VIEW_KEY = "finance-budgets-view";
+
+function loadView(): "cards" | "list" {
+  try {
+    return window.localStorage.getItem(VIEW_KEY) === "list" ? "list" : "cards";
+  } catch {
+    return "cards";
+  }
+}
+
+function saveView(view: "cards" | "list") {
+  try {
+    window.localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    return;
+  }
+}
+
 export function FinanceBudgets() {
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -233,6 +276,8 @@ export function FinanceBudgets() {
   const [editing, setEditing] = useState<FinanceBudget | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [recordOpen, setRecordOpen] = useState(false);
+  const [view, setView] = useState<"cards" | "list">(loadView);
+  const [totalChoice, setTotalChoice] = useState<string | null>(null);
   const today = todayKey();
   const ownAccounts = financeAccounts.filter((account) => !account.deletedAt && !isDebtAccount(account));
   const budgets = [...financeBudgets].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
@@ -244,11 +289,25 @@ export function FinanceBudgets() {
     return { spent, start, end, progress: budgetProgress(budget, spent, start, end, today, 10 ** currencyDigits(budget.currency)) };
   };
   const states = new Map(budgets.map((budget) => [budget.id, progressOf(budget)]));
+  const groups = new Map<string, FinanceBudget[]>();
+  for (const budget of [...budgets].sort((a, b) => BUDGET_PERIODS.indexOf(a.period) - BUDGET_PERIODS.indexOf(b.period) || a.currency.localeCompare(b.currency))) {
+    const key = `${budget.period}|${budget.currency}`;
+    groups.set(key, [...(groups.get(key) ?? []), budget]);
+  }
+  const groupKeys = [...groups.keys()];
+  const multipleCurrencies = new Set(budgets.map((budget) => budget.currency)).size > 1;
+  const totalKey = totalChoice && groups.has(totalChoice) ? totalChoice : groupKeys.find((key) => key.startsWith("monthly|")) ?? groupKeys[0];
+  const totalBudgets = totalKey ? groups.get(totalKey)! : [];
+  const totalPeriod = totalBudgets[0]?.period ?? "monthly";
+  const totalCurrency = totalBudgets[0]?.currency ?? defaultCurrencyOf(ownAccounts);
+  const totalBounds = budgetPeriodBounds(totalPeriod, today);
+  const totalAmount = totalBudgets.reduce((sum, budget) => sum + budget.amountMinor, 0);
+  const totalSpent = totalBudgets.reduce((sum, budget) => sum + (states.get(budget.id)?.spent ?? 0), 0);
+  const totalProgress = budgetProgress({ amountMinor: totalAmount, period: totalPeriod, fixed: totalBudgets.every((budget) => budget.fixed) }, totalSpent, totalBounds.start, totalBounds.end, today, 10 ** currencyDigits(totalCurrency));
+  const totalBudget = { ...(totalBudgets[0] ?? {}), amountMinor: totalAmount, currency: totalCurrency, period: totalPeriod } as FinanceBudget;
   const counts = { "on-track": 0, "at-risk": 0, over: 0 };
   for (const state of states.values()) if (state.progress.status !== "under") counts[state.progress.status] += 1;
-  const currencyCounts = new Map<string, number>();
-  for (const account of ownAccounts) currencyCounts.set(account.currency, (currencyCounts.get(account.currency) ?? 0) + 1);
-  const defaultCurrency = [...currencyCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "PHP";
+  const defaultCurrency = defaultCurrencyOf(ownAccounts);
   const blank = (): FinanceBudget => ({ id: crypto.randomUUID(), name: "", color: "#F44336", icon: "utensils", amountMinor: 0, currency: defaultCurrency, period: "monthly", categoryIds: [], accountIds: [], labels: [], fixed: false, order: budgets.reduce((max, budget) => Math.max(max, budget.order + 1), 0) });
   const remove = (budget: FinanceBudget) => {
     if (!user) return;
@@ -260,33 +319,67 @@ export function FinanceBudgets() {
   };
   const openBudget = openId ? byId.get(openId) ?? null : null;
 
+  const actions = (budget: FinanceBudget) => (
+    <Flex gap={2} className="solid-surface-actions" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
+      <Tip title="Edit"><Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${budget.name}`} disabled={disabled} onClick={() => setEditing(budget)} /></Tip>
+      <ConfirmDeleteButton ariaLabel={`Delete ${budget.name}`} tooltip="Delete budget" hint="Tap again to delete this budget. Records are kept." onConfirm={() => remove(budget)} />
+    </Flex>
+  );
+
+  const muted = { color: "inherit", opacity: 0.85 };
+  const surface = (budget: FinanceBudget): CSSProperties => ({ position: "relative", overflow: "hidden", background: budget.color, borderColor: budget.color, color: accountTextColor(budget.color), cursor: "pointer" });
+  const listBody = (budget: FinanceBudget) => {
+    const state = states.get(budget.id)!;
+    const { progress } = state;
+    return (
+      <Flex vertical gap={8}>
+        <Flex justify="space-between" align="center" gap={10} wrap>
+          <Flex align="center" gap={10} style={{ flex: "1 1 220px", minWidth: 0 }}>
+            {!locked && <HolderOutlined aria-hidden style={{ opacity: 0.7, fontSize: 13 }} />}
+            <CategoryGlyph icon={budget.icon} style={{ fontSize: 18, opacity: 0.9, flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <Typography.Text strong style={{ display: "block", color: "inherit", overflowWrap: "anywhere" }}>{budget.name}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12, overflowWrap: "anywhere", ...muted }}>{BUDGET_PERIOD_LABELS[budget.period]} · <PaceText budget={budget} progress={progress} /></Typography.Text>
+            </div>
+          </Flex>
+          <Flex align="center" gap={8} style={{ marginLeft: "auto" }}>
+            <span style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><strong>{money(state.spent, budget.currency)}</strong> <span style={{ fontSize: 12, opacity: 0.85 }}>/ {money(budget.amountMinor, budget.currency)}</span></span>
+            <StatusPill status={progress.status} color={statusColor(progress.status)} />
+            {actions(budget)}
+          </Flex>
+        </Flex>
+        <ProgressBar ratio={progress.ratio} expected={progress.paced ? progress.elapsed / progress.total : undefined} height={6} solid />
+      </Flex>
+    );
+  };
+
   const cardBody = (budget: FinanceBudget) => {
     const state = states.get(budget.id)!;
     const { progress } = state;
     return (
-      <Flex vertical gap={10}>
-        <Flex align="start" gap={10}>
-          {!locked && <HolderOutlined aria-hidden style={{ color: token.colorTextTertiary, alignSelf: "flex-start", marginTop: 4, marginLeft: -2, fontSize: 13 }} />}
-          <CategoryBadge category={budget} size={34} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere" }}>{budget.name}</Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12, overflowWrap: "anywhere" }}>{BUDGET_PERIOD_LABELS[budget.period]}{budget.fixed ? " · Fixed" : ""} · {budgetSummary(budget, financeCategories, financeAccounts, financeLabels)}</Typography.Text>
-          </div>
-          <Flex gap={2} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
-            <Tip title="Edit"><Button type="text" size="small" icon={<EditOutlined />} aria-label={`Edit ${budget.name}`} disabled={disabled} onClick={() => setEditing(budget)} /></Tip>
-            <ConfirmDeleteButton ariaLabel={`Delete ${budget.name}`} tooltip="Delete budget" hint="Tap again to delete this budget. Records are kept." onConfirm={() => remove(budget)} />
+      <>
+        <CategoryGlyph icon={budget.icon} style={{ position: "absolute", right: -6, bottom: -10, fontSize: 84, opacity: 0.14, pointerEvents: "none" }} />
+        <Flex vertical gap={10} style={{ position: "relative" }}>
+          <Flex align="start" gap={10}>
+            {!locked && <HolderOutlined aria-hidden style={{ opacity: 0.7, alignSelf: "flex-start", marginTop: 4, marginLeft: -2, fontSize: 13 }} />}
+            <CategoryGlyph icon={budget.icon} style={{ fontSize: 18, marginTop: 2, opacity: 0.9, flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Typography.Text strong style={{ display: "block", color: "inherit", overflowWrap: "anywhere" }}>{budget.name}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12, overflowWrap: "anywhere", ...muted }}>{BUDGET_PERIOD_LABELS[budget.period]}{budget.fixed ? " · Fixed" : ""} · {budgetSummary(budget, financeCategories, financeAccounts, financeLabels)}</Typography.Text>
+            </div>
+            {actions(budget)}
+          </Flex>
+          <Flex align="baseline" justify="space-between" gap={8} wrap>
+            <span style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(state.spent, budget.currency)} <span style={{ fontSize: 13, fontWeight: 400, opacity: 0.85 }}>of {money(budget.amountMinor, budget.currency)}</span></span>
+            <StatusPill status={progress.status} color={statusColor(progress.status)} />
+          </Flex>
+          <ProgressBar ratio={progress.ratio} expected={progress.paced ? progress.elapsed / progress.total : undefined} solid />
+          <Flex justify="space-between" align="start" gap={8} wrap>
+            <PaceLine budget={budget} progress={progress} compact solid />
+            {budget.period !== "daily" && <Typography.Text style={{ fontSize: 12, ...muted }}>{progress.daysLeft} {progress.daysLeft === 1 ? "day" : "days"} left</Typography.Text>}
           </Flex>
         </Flex>
-        <Flex align="baseline" justify="space-between" gap={8} wrap>
-          <Typography.Text style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(state.spent, budget.currency)} <Typography.Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>of {money(budget.amountMinor, budget.currency)}</Typography.Text></Typography.Text>
-          <Tag color={statusColor(progress.status)} style={{ marginInlineEnd: 0 }}>{STATUS_LABELS[progress.status]}</Tag>
-        </Flex>
-        <ProgressBar ratio={progress.ratio} expected={progress.paced ? progress.elapsed / progress.total : undefined} color={budget.color} />
-        <Flex justify="space-between" align="start" gap={8} wrap>
-          <PaceLine budget={budget} progress={progress} compact />
-          {budget.period !== "daily" && <Typography.Text type="secondary" style={{ fontSize: 12 }}>{progress.daysLeft} {progress.daysLeft === 1 ? "day" : "days"} left</Typography.Text>}
-        </Flex>
-      </Flex>
+      </>
     );
   };
 
@@ -298,7 +391,28 @@ export function FinanceBudgets() {
       </>} />
       {financeError && <Alert type="error" title="Could not load your finance data. Reload to try again." style={{ marginBottom: 24 }} />}
       {!financeReady ? <Spin /> : <>
-        <EmergencyFundBanner />
+        {budgets.length > 0 && <Card size="small" role="status" style={{ marginBottom: 20, position: "relative", overflow: "hidden", background: TOTAL_COLORS[totalProgress.status], borderColor: TOTAL_COLORS[totalProgress.status], color: accountTextColor(TOTAL_COLORS[totalProgress.status]), boxShadow: token.boxShadowTertiary }} styles={{ body: { padding: 20 } }}>
+          <FundOutlined aria-hidden style={{ position: "absolute", right: -10, bottom: -13, fontSize: 96, opacity: 0.14, pointerEvents: "none" }} />
+          <div style={{ position: "relative" }}>
+          <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 12 }}>
+            <div>
+              <Typography.Text strong style={{ display: "block", fontSize: 16, color: "inherit" }}>{BUDGET_PERIOD_LABELS[totalPeriod]} total{multipleCurrencies ? ` · ${totalCurrency}` : ""}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12, ...muted }}>{totalBudgets.length} {totalBudgets.length === 1 ? "budget" : "budgets"} · {periodLabel(totalPeriod, totalBounds.start, totalBounds.end)}</Typography.Text>
+            </div>
+            {groupKeys.length > 1 && <Segmented size="small" className="solid-surface-segmented" value={totalKey} onChange={(value) => setTotalChoice(value as string)} options={groupKeys.map((key) => { const [period, currency] = key.split("|"); return { value: key, label: `${BUDGET_PERIOD_LABELS[period as BudgetPeriod]}${multipleCurrencies ? ` ${currency}` : ""}` }; })} />}
+          </Flex>
+          <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(totalSpent, totalCurrency)} <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.85 }}>of {money(totalAmount, totalCurrency)}</span></span>
+            <span style={{ padding: "2px 10px", borderRadius: 999, background: "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600 }}>{STATUS_LABELS[totalProgress.status]}</span>
+          </Flex>
+          <ProgressBar ratio={totalProgress.ratio} expected={totalProgress.paced ? totalProgress.elapsed / totalProgress.total : undefined} height={12} solid />
+          <Flex justify="space-between" align="start" gap={8} wrap style={{ marginTop: 10 }}>
+            <PaceLine budget={totalBudget} progress={totalProgress} solid />
+            {totalPeriod !== "daily" && <Typography.Text style={{ fontSize: 12, ...muted }}>{totalProgress.daysLeft} {totalProgress.daysLeft === 1 ? "day" : "days"} left</Typography.Text>}
+          </Flex>
+          <Typography.Text style={{ display: "block", fontSize: 11, marginTop: 8, ...muted }}>A record that fits more than one budget is counted in each.</Typography.Text>
+          </div>
+        </Card>}
         {budgets.length === 0 ? <Card><EmptyState title="No budgets yet" description="Set a spending limit, like ₱10,000 a month for food, and see if you're on pace to stay within it." action={<Button type="primary" icon={<PlusOutlined />} disabled={disabled} onClick={() => setEditing(blank())}>Add budget</Button>} /></Card> : <>
           <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 16 }}>
             <Flex gap={8} wrap>
@@ -306,19 +420,43 @@ export function FinanceBudgets() {
               <Tag color={statusColor("at-risk")} style={{ marginInlineEnd: 0 }}>{counts["at-risk"]} at risk</Tag>
               <Tag color={statusColor("over")} style={{ marginInlineEnd: 0 }}>{counts.over} over budget</Tag>
             </Flex>
+            <Flex align="center" gap={8}>
+            <Segmented size="small" aria-label="Budget view" value={view} onChange={(value) => { setView(value as "cards" | "list"); saveView(value as "cards" | "list"); }} options={[{ value: "cards", icon: <AppstoreOutlined />, title: "Cards" }, { value: "list", icon: <UnorderedListOutlined />, title: "List" }]} />
             {budgets.length > 1 && <Tip title={locked ? "Unlock to reorder budgets" : "Lock budget order"}>
               <Button type="text" size="small" aria-label={locked ? "Unlock budget order" : "Lock budget order"} aria-pressed={locked} icon={locked ? <LockOutlined /> : <UnlockOutlined />} disabled={disabled}
                 onClick={() => { if (user) void setFinanceBudgetsLocked(user.uid, !locked).catch(() => message.error("Could not update the lock.")); }}
                 style={{ color: locked ? token.colorPrimary : token.colorTextSecondary }} />
             </Tip>}
+            </Flex>
           </Flex>
+          {view === "list" ? <Flex vertical gap={10}>
+            <SortableList
+              ids={budgets.map((budget) => budget.id)}
+              layout="list"
+              disabled={disabled || locked}
+              onReorder={reorder}
+              renderOverlay={(id) => { const budget = byId.get(id); return budget ? <div style={{ ...surface(budget), padding: "12px 16px", borderRadius: token.borderRadiusLG, boxShadow: token.boxShadowSecondary }}>{listBody(budget)}</div> : null; }}
+              renderItem={(id, { ref, style, handlers, wasDragged }) => {
+                const budget = byId.get(id);
+                if (!budget) return null;
+                return (
+                  <div key={id} ref={ref} {...handlers} className="reorder-item budget-card" role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records${locked ? "" : ", or Space to pick up and reorder"}.`}
+                    onClick={() => { if (!wasDragged()) setOpenId(budget.id); }}
+                    onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setOpenId(budget.id); } else handlers.onKeyDown?.(event); }}
+                    style={{ ...surface(budget), ...style, padding: "12px 16px", borderRadius: token.borderRadiusLG, "--card-ring": token.colorText } as CSSProperties}>
+                    {listBody(budget)}
+                  </div>
+                );
+              }}
+            />
+          </Flex> : (
           <div style={{ display: "grid", gridTemplateColumns: screens.sm === false ? "minmax(0, 1fr)" : "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
             <SortableList
               ids={budgets.map((budget) => budget.id)}
               layout="grid"
               disabled={disabled || locked}
               onReorder={reorder}
-              renderOverlay={(id) => { const budget = byId.get(id); return budget ? <Card size="small" style={{ boxShadow: token.boxShadowSecondary }}>{cardBody(budget)}</Card> : null; }}
+              renderOverlay={(id) => { const budget = byId.get(id); return budget ? <Card size="small" style={{ ...surface(budget), boxShadow: token.boxShadowSecondary }}>{cardBody(budget)}</Card> : null; }}
               renderItem={(id, { ref, style, handlers, wasDragged }) => {
                 const budget = byId.get(id);
                 if (!budget) return null;
@@ -326,13 +464,14 @@ export function FinanceBudgets() {
                   <Card key={id} ref={ref} size="small" {...handlers} className="reorder-item budget-card" role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records${locked ? "" : ", or Space to pick up and reorder"}.`}
                     onClick={() => { if (!wasDragged()) setOpenId(budget.id); }}
                     onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setOpenId(budget.id); } else handlers.onKeyDown?.(event); }}
-                    style={{ ...style, minWidth: 0, cursor: "pointer", boxShadow: token.boxShadowTertiary, "--card-accent": budget.color } as CSSProperties}>
+                    style={{ ...surface(budget), ...style, minWidth: 0, boxShadow: token.boxShadowTertiary, "--card-ring": token.colorText } as CSSProperties}>
                     {cardBody(budget)}
                   </Card>
                 );
               }}
             />
           </div>
+          )}
         </>}
       </>}
       {editing && <BudgetModal key={editing.id} initial={editing} onClose={() => setEditing(null)} />}
