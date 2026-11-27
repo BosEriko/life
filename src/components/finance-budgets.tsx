@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { Alert, App, Button, Card, ColorPicker, Empty, Flex, Form, Grid, InputNumber, Input, Segmented, Select, Spin, Switch, Tag, Typography, theme } from "antd";
-import { AppstoreOutlined, CheckCircleOutlined, CloseCircleOutlined, EditOutlined, ExclamationCircleOutlined, FundOutlined, HolderOutlined, UnorderedListOutlined, LeftOutlined, LockOutlined, PlusOutlined, RightOutlined, TransactionOutlined, UnlockOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, CheckCircleOutlined, EditOutlined, ExclamationCircleOutlined, FundOutlined, HolderOutlined, UnorderedListOutlined, LeftOutlined, LockOutlined, PlusOutlined, RightOutlined, TransactionOutlined, UnlockOutlined, WarningOutlined, CloseOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { AppModal } from "@/components/app-modal";
 import { useAuth } from "@/components/auth-provider";
@@ -88,10 +88,12 @@ function ProgressBar({ ratio, expected, color, height = 10, solid = false }: { r
   );
 }
 
+const PILL_TINTS: Partial<Record<BudgetStatus, string>> = { over: "rgba(255, 77, 79, 0.5)", "at-risk": "rgba(250, 173, 20, 0.5)" };
+
 function StatusPill({ status }: { status: BudgetStatus }) {
-  const Icon = status === "over" ? CloseCircleOutlined : status === "at-risk" ? ExclamationCircleOutlined : CheckCircleOutlined;
+  const Icon = status === "over" ? WarningOutlined : status === "at-risk" ? ExclamationCircleOutlined : CheckCircleOutlined;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "1px 10px", borderRadius: 999, background: "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "1px 10px", borderRadius: 999, background: PILL_TINTS[status] ?? "rgba(0, 0, 0, 0.22)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
       <Icon aria-hidden />
       {STATUS_LABELS[status]}
     </span>
@@ -213,7 +215,7 @@ function BudgetRecordsModal({ budget, onClose }: { budget: FinanceBudget; onClos
       </Flex>
       <Flex align="baseline" justify="space-between" gap={8} wrap style={{ marginBottom: 8 }}>
         <Typography.Text style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(spent, budget.currency)} <Typography.Text type="secondary" style={{ fontSize: 14, fontWeight: 400 }}>of {money(budget.amountMinor, budget.currency)}</Typography.Text></Typography.Text>
-        <Tag color={statusColor(progress.status)} icon={progress.status === "over" ? <CloseCircleOutlined /> : progress.status === "at-risk" ? <ExclamationCircleOutlined /> : <CheckCircleOutlined />} style={{ marginInlineEnd: 0 }}>{STATUS_LABELS[progress.status]}</Tag>
+        <Tag className="status-tag" color={statusColor(progress.status)} icon={progress.status === "over" ? <WarningOutlined /> : progress.status === "at-risk" ? <ExclamationCircleOutlined /> : <CheckCircleOutlined />} style={{ marginInlineEnd: 0 }}>{STATUS_LABELS[progress.status]}</Tag>
       </Flex>
       <ProgressBar ratio={progress.ratio} expected={progress.paced ? progress.elapsed / progress.total : undefined} color={budget.color} />
       <Flex justify="space-between" align="start" gap={8} wrap style={{ marginTop: 10, marginBottom: 16 }}>
@@ -277,6 +279,7 @@ export function FinanceBudgets() {
   const [editing, setEditing] = useState<FinanceBudget | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [recordOpen, setRecordOpen] = useState(false);
+  const [statusChoice, setStatusChoice] = useState<"on-track" | "at-risk" | "over" | null>(null);
   const [view, setView] = useState<"cards" | "list">(loadView);
   const [totalChoice, setTotalChoice] = useState<string | null>(null);
   const today = todayKey();
@@ -308,6 +311,8 @@ export function FinanceBudgets() {
   const totalBudget = { ...(totalBudgets[0] ?? {}), amountMinor: totalAmount, currency: totalCurrency, period: totalPeriod } as FinanceBudget;
   const counts = { "on-track": 0, "at-risk": 0, over: 0 };
   for (const state of states.values()) if (state.progress.status !== "under") counts[state.progress.status] += 1;
+  const statusFilter = statusChoice && counts[statusChoice] ? statusChoice : null;
+  const visibleIds = budgets.filter((budget) => !statusFilter || states.get(budget.id)?.progress.status === statusFilter).map((budget) => budget.id);
   const defaultCurrency = defaultCurrencyOf(ownAccounts);
   const blank = (): FinanceBudget => ({ id: crypto.randomUUID(), name: "", color: "#F44336", icon: "utensils", amountMinor: 0, currency: defaultCurrency, period: "monthly", categoryIds: [], accountIds: [], labels: [], fixed: false, order: budgets.reduce((max, budget) => Math.max(max, budget.order + 1), 0) });
   const remove = (budget: FinanceBudget) => {
@@ -339,16 +344,18 @@ export function FinanceBudgets() {
       <Flex vertical gap={8}>
         <Flex justify="space-between" align="center" gap={10} wrap>
           <Flex align="center" gap={10} style={{ flex: "1 1 220px", minWidth: 0 }}>
-            {!locked && <HolderOutlined aria-hidden style={{ opacity: 0.7, fontSize: 13 }} />}
+            {!locked && !statusFilter && <HolderOutlined aria-hidden style={{ opacity: 0.7, fontSize: 13 }} />}
             <CategoryGlyph icon={budget.icon} style={{ fontSize: 18, opacity: 0.9, flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
-              <Typography.Text strong style={{ display: "block", color: "inherit", overflowWrap: "anywhere" }}>{budget.name}</Typography.Text>
+              <Flex align="center" gap={8} wrap>
+                <Typography.Text strong style={{ color: "inherit", overflowWrap: "anywhere" }}>{budget.name}</Typography.Text>
+                <StatusPill status={progress.status} />
+              </Flex>
               <Typography.Text style={{ fontSize: 12, overflowWrap: "anywhere", ...muted }}>{BUDGET_PERIOD_LABELS[budget.period]} · <PaceText budget={budget} progress={progress} /></Typography.Text>
             </div>
           </Flex>
           <Flex align="center" gap={8} style={{ marginLeft: "auto" }}>
             <span style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><strong>{money(state.spent, budget.currency)}</strong> <span style={{ fontSize: 12, }}>/ {money(budget.amountMinor, budget.currency)}</span></span>
-            <StatusPill status={progress.status} />
             {actions(budget)}
           </Flex>
         </Flex>
@@ -365,7 +372,7 @@ export function FinanceBudgets() {
         <CategoryGlyph icon={budget.icon} style={{ position: "absolute", right: -6, bottom: -10, fontSize: 84, opacity: 0.14, pointerEvents: "none" }} />
         <Flex vertical gap={10} style={{ position: "relative" }}>
           <Flex align="start" gap={10}>
-            {!locked && <HolderOutlined aria-hidden style={{ opacity: 0.7, alignSelf: "flex-start", marginTop: 4, marginLeft: -2, fontSize: 13 }} />}
+            {!locked && !statusFilter && <HolderOutlined aria-hidden style={{ opacity: 0.7, alignSelf: "flex-start", marginTop: 4, marginLeft: -2, fontSize: 13 }} />}
             <CategoryGlyph icon={budget.icon} style={{ fontSize: 18, marginTop: 2, opacity: 0.9, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <Typography.Text strong style={{ display: "block", color: "inherit", overflowWrap: "anywhere" }}>{budget.name}</Typography.Text>
@@ -420,9 +427,20 @@ export function FinanceBudgets() {
         {budgets.length === 0 ? <Card><EmptyState title="No budgets yet" description="Set a spending limit, like ₱10,000 a month for food, and see if you're on pace to stay within it." action={<Button type="primary" icon={<PlusOutlined />} disabled={disabled} onClick={() => setEditing(blank())}>Add budget</Button>} /></Card> : <>
           <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 16 }}>
             <Flex gap={8} wrap>
-              <Tag color={statusColor("on-track")} style={{ marginInlineEnd: 0 }}>{counts["on-track"]} on track</Tag>
-              <Tag color={statusColor("at-risk")} style={{ marginInlineEnd: 0 }}>{counts["at-risk"]} at risk</Tag>
-              <Tag color={statusColor("over")} style={{ marginInlineEnd: 0 }}>{counts.over} over budget</Tag>
+              {([["on-track", CheckCircleOutlined, "on track"], ["at-risk", ExclamationCircleOutlined, "at risk"], ["over", WarningOutlined, "over budget"]] as const).map(([status, Icon, label]) => {
+                const count = counts[status];
+                const tint = count ? statusColor(status) : undefined;
+                const toggle = () => setStatusChoice(statusFilter === status ? null : status);
+                const style: CSSProperties = tint
+                  ? { borderColor: tint, cursor: "pointer", opacity: statusFilter && statusFilter !== status ? 0.45 : 1 }
+                  : { color: token.colorTextQuaternary, borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary };
+                return <Tag key={status} className="status-tag" color={tint} icon={<Icon />} role={count ? "button" : undefined} tabIndex={count ? 0 : undefined} aria-pressed={count ? statusFilter === status : undefined}
+                  onClick={count ? toggle : undefined} onKeyDown={count ? (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(); } } : undefined}
+                  style={{ marginInlineEnd: 0, transition: "opacity 150ms ease", ...style }}>{count} {label}</Tag>;
+              })}
+              {statusFilter && <Tag className="status-tag" icon={<CloseOutlined />} role="button" tabIndex={0} aria-label="Clear status filter" onClick={() => setStatusChoice(null)}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setStatusChoice(null); } }}
+                style={{ marginInlineEnd: 0, cursor: "pointer", border: `1px solid ${token.colorTextTertiary}` }}>Clear</Tag>}
             </Flex>
             <Flex align="center" gap={8}>
             <Segmented size="small" aria-label="Budget view" value={view} onChange={(value) => { setView(value as "cards" | "list"); saveView(value as "cards" | "list"); }} options={[{ value: "cards", icon: <AppstoreOutlined />, title: "Cards" }, { value: "list", icon: <UnorderedListOutlined />, title: "List" }]} />
@@ -435,16 +453,16 @@ export function FinanceBudgets() {
           </Flex>
           {view === "list" ? <Flex vertical gap={10}>
             <SortableList
-              ids={budgets.map((budget) => budget.id)}
+              ids={visibleIds}
               layout="list"
-              disabled={disabled || locked}
+              disabled={disabled || locked || !!statusFilter}
               onReorder={reorder}
               renderOverlay={(id) => { const budget = byId.get(id); return budget ? <div style={{ ...surface(budget), padding: "12px 16px", borderRadius: token.borderRadiusLG, boxShadow: token.boxShadowSecondary }}>{listBody(budget)}</div> : null; }}
               renderItem={(id, { ref, style, handlers, wasDragged }) => {
                 const budget = byId.get(id);
                 if (!budget) return null;
                 return (
-                  <div key={id} ref={ref} {...handlers} className="reorder-item budget-card" role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records${locked ? "" : ", or Space to pick up and reorder"}.`}
+                  <div key={id} ref={ref} {...handlers} className={`reorder-item budget-card${states.get(budget.id)?.progress.status === "over" ? " budget-card-over" : ""}`} role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records${locked || statusFilter ? "" : ", or Space to pick up and reorder"}.`}
                     onClick={() => { if (!wasDragged()) setOpenId(budget.id); }}
                     onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setOpenId(budget.id); } else handlers.onKeyDown?.(event); }}
                     style={{ ...surface(budget), ...style, padding: "12px 16px", borderRadius: token.borderRadiusLG, "--card-ring": token.colorText } as CSSProperties}>
@@ -456,16 +474,16 @@ export function FinanceBudgets() {
           </Flex> : (
           <div style={{ display: "grid", gridTemplateColumns: screens.sm === false ? "minmax(0, 1fr)" : "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
             <SortableList
-              ids={budgets.map((budget) => budget.id)}
+              ids={visibleIds}
               layout="grid"
-              disabled={disabled || locked}
+              disabled={disabled || locked || !!statusFilter}
               onReorder={reorder}
               renderOverlay={(id) => { const budget = byId.get(id); return budget ? <Card size="small" style={{ ...surface(budget), boxShadow: token.boxShadowSecondary }}>{cardBody(budget)}</Card> : null; }}
               renderItem={(id, { ref, style, handlers, wasDragged }) => {
                 const budget = byId.get(id);
                 if (!budget) return null;
                 return (
-                  <Card key={id} ref={ref} size="small" {...handlers} className="reorder-item budget-card" role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records${locked ? "" : ", or Space to pick up and reorder"}.`}
+                  <Card key={id} ref={ref} size="small" {...handlers} className={`reorder-item budget-card${states.get(budget.id)?.progress.status === "over" ? " budget-card-over" : ""}`} role="button" tabIndex={0} aria-label={`${budget.name} budget. Press Enter to see records${locked || statusFilter ? "" : ", or Space to pick up and reorder"}.`}
                     onClick={() => { if (!wasDragged()) setOpenId(budget.id); }}
                     onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setOpenId(budget.id); } else handlers.onKeyDown?.(event); }}
                     style={{ ...surface(budget), ...style, minWidth: 0, boxShadow: token.boxShadowTertiary, "--card-ring": token.colorText } as CSSProperties}>

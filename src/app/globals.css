@@ -541,13 +541,13 @@ body.todo-board-grabbing * {
 }
 
 .budget-card {
-  transition: box-shadow 150ms ease;
+  outline: 1px solid transparent;
+  transition: outline-color 150ms ease;
 }
 
 .budget-card:hover,
 .budget-card:focus-visible {
-  box-shadow: 0 0 0 2px var(--card-ring) !important;
-  outline: none;
+  outline-color: var(--card-ring);
 }
 
 .solid-surface-actions .ant-btn-variant-text:not(:disabled) {
@@ -905,4 +905,30 @@ html,
 body {
   overflow-x: clip;
   max-width: 100%;
+}
+
+.ant-tag.status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ant-tag.status-tag > .anticon,
+.ant-tag.status-tag > .anticon + span {
+  margin-inline: 0;
+}
+
+@keyframes budget-card-pulse {
+  0%, 100% { box-shadow: 0 0 4px 0 rgba(255, 77, 79, 0.25); }
+  50% { box-shadow: 0 0 22px 4px rgba(255, 77, 79, 0.55); }
+}
+
+.budget-card-over {
+  animation: budget-card-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .budget-card-over {
+    animation: none;
+  }
 }
